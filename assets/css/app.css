@@ -1,15 +1,15 @@
 @import "tailwindcss";
 @import "./fonts.css";
+@import "./base/grid.css";
+@import "./base/typography.css";
+@import "./base/image.css";
+@import "./components/buttons.css";
+@import "./components/rich-text.css";
+
 @theme {
-    --font-sans: 'Public Sans', 'sans-serif';
+    --font-sans: 'Playfair Display', 'serif';
     --text-heading-1-desktop: calc(96 / 16 * 1rem);
     --text-heading-1-desktop--line-height: 110%;
     --text-heading-1-mobile: calc(40 / 16 * 1rem);
     --text-heading-1-mobile--line-height: 110%;
 }
-@import "./base/grid.css";
-@import "./base/typography.css";
-@import "./base/image.css";
-
-@import "./components/buttons.css";
-@import "./components/rich-text.css"

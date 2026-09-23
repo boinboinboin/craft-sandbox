@@ -23,6 +23,9 @@ export default ({command}) => ({
     strictPort: true,
     secure: false,
     allowedHosts: ['craft-boilerplate.ddev.site'],
+    cors: {
+      origin: 'https://craft-boilerplate.ddev.site',
+    },
   },
   plugins: [
     tailwindcss(),
