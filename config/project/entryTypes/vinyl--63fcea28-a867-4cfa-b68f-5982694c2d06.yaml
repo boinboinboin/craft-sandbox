@@ -89,6 +89,74 @@ fieldLayouts:
             userCondition: null
             warning: null
             width: 100
+          -
+            dateAdded: '2026-09-23T14:48:25+00:00'
+            editCondition: null
+            elementCondition: null
+            fieldUid: 6063994b-ceff-4c98-992b-89bb1b6f198c # Vinyl year
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: ce643068-7132-472a-8fc1-e48f2157844b
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: '2026-09-23T14:48:25+00:00'
+            editCondition: null
+            elementCondition: null
+            fieldUid: b883a2fc-876a-4a15-9b3e-43b004529b5f # Vinyl label
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: dffa4176-9f1e-4d0b-94e2-a13c8d170e81
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: '2026-09-23T14:48:25+00:00'
+            editCondition: null
+            elementCondition: null
+            fieldUid: 79db34d0-53e2-480e-b239-efe941831a2c # Vinyl tracklist
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: 57eb426f-c4e2-4c1b-b722-48cb023de4a5
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: '2026-09-23T14:48:25+00:00'
+            editCondition: null
+            elementCondition: null
+            fieldUid: 2e7c80fe-da4c-4367-a048-04f50462e1a4 # Discogs release ID
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: 050ef72f-5b9c-4db7-8588-4b974de9433a
+            userCondition: null
+            warning: null
+            width: 100
         name: Content
         uid: 811bac0c-df2c-4e5f-b98c-ae4598a07356
         userCondition: null

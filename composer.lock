@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "5122a3b0e0ebaceb820bf4b38fcdafa7",
+    "content-hash": "b6b3b14b0e8ae25504381326ee0fc1bc",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -103,6 +103,73 @@
                 }
             ],
             "time": "2025-02-28T13:11:00+00:00"
+        },
+        {
+            "name": "calliostro/php-discogs-api",
+            "version": "v4.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/calliostro/php-discogs-api.git",
+                "reference": "3add2c02b94003bbb88964522c2fccd549277962"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/calliostro/php-discogs-api/zipball/3add2c02b94003bbb88964522c2fccd549277962",
+                "reference": "3add2c02b94003bbb88964522c2fccd549277962",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.0 || ^8.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.0",
+                "phpstan/phpstan": "^2.0",
+                "phpunit/phpunit": "^10.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Calliostro\\Discogs\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Richard van den Brand",
+                    "email": "richard@vandenbrand.org"
+                },
+                {
+                    "name": "calliostro",
+                    "email": "calliostro@gmail.com"
+                }
+            ],
+            "description": "Lightweight Discogs API client for PHP 8.1+ with built-in resilience and minimal dependencies.",
+            "keywords": [
+                "API-Client",
+                "Guzzle",
+                "audio",
+                "clean-api",
+                "discogs",
+                "discogs-api",
+                "library",
+                "lightweight",
+                "minimal-dependencies",
+                "modern-php",
+                "music",
+                "php",
+                "php8",
+                "vinyl",
+                "web-api"
+            ],
+            "support": {
+                "issues": "https://github.com/calliostro/php-discogs-api/issues",
+                "source": "https://github.com/calliostro/php-discogs-api/tree/v4.1.0"
+            },
+            "time": "2026-09-18T19:01:20+00:00"
         },
         {
             "name": "cebe/markdown",
@@ -7774,13 +7841,13 @@
     ],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": true,
     "prefer-lowest": false,
-    "platform": [],
-    "platform-dev": [],
+    "platform": {},
+    "platform-dev": {},
     "platform-overrides": {
         "php": "8.2"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }

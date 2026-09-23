@@ -7,7 +7,22 @@
       {{ imageMacro.srcset(entry.vinylCoverImage.one(), { width: 600, height: 600, lazyload: false }) }}
       <h1 class="h1">{{ entry.title }}</h1>
       <p class="base">{{ entry.vinylArtist }}</p>
-      <p class="base">{{ entry.vinylStatus == 'owned' ? 'Owned' : 'Wanted' }}</p>
+      {% if entry.vinylYear %}<p class="base">{{ entry.vinylYear }}</p>{% endif %}
+      {% if entry.vinylLabel %}<p class="base">{{ entry.vinylLabel }}</p>{% endif %}
+      <p class="base">{{ entry.vinylStatus == 'owned' ? 'In Collection' : 'On Wishlist' }}</p>
+
+      {% if entry.vinylTracklist %}
+        <h2 class="text-2xl mt-8 mb-4">Tracklist</h2>
+        <table class="base">
+          {% for row in entry.vinylTracklist %}
+            <tr>
+              <td class="pr-4">{{ row.position }}</td>
+              <td class="pr-4">{{ row.title }}</td>
+              <td>{{ row.duration }}</td>
+            </tr>
+          {% endfor %}
+        </table>
+      {% endif %}
     </div>
   </section>
 {% endblock %}

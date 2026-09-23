@@ -9,6 +9,18 @@
     </div>
   </section>
 
+  <section class="base-section" data-controller="discogs-search">
+    <div class="base-container">
+      <h2 class="text-3xl mb-4">Add from Discogs</h2>
+      <div class="flex gap-2 mb-4">
+        <input type="text" data-discogs-search-target="input" placeholder="Search Discogs..." class="border border-gray-400 rounded px-3 py-2 flex-1">
+        <button type="button" class="btn" data-action="click->discogs-search#search">Search</button>
+      </div>
+      <p data-discogs-search-target="status" class="text-gray-700 mb-4"></p>
+      <div data-discogs-search-target="results" class="max-h-96 overflow-y-auto"></div>
+    </div>
+  </section>
+
   {% set owned = craft.entries().section('vinyls').vinylStatus('owned').all() %}
   {% set wanted = craft.entries().section('vinyls').vinylStatus('wanted').all() %}
 
@@ -17,11 +29,11 @@
     {% if owned|length == 0 %}
       <section class="base-section">
         <div class="base-container">
-          <p class="base">No owned vinyls found.</p>
+          <p class="base">No vinyls in your collection yet.</p>
         </div>
       </section>
     {% else %}
-      <h2 class="text-5xl mb-10">Owned</h2>
+      <h2 class="text-5xl mb-10">Collection</h2>
       <div class="base-grid">
         {% for vinyl in owned %}
           {{ blockMacro.include("_cards/vinylCard.twig", entry, { vinyl: vinyl }) }}
@@ -36,18 +48,17 @@
     {% if wanted|length == 0 %}
       <section class="base-section">
         <div class="base-container">
-          <p class="base">No wanted vinyls found.</p>
+          <p class="base">No vinyls on your wishlist yet.</p>
         </div>
       </section>
     {% else %}
-      <h2 class="text-5xl mb-10">Wanted</h2>
+      <h2 class="text-5xl mb-10">Wishlist</h2>
       <div class="base-grid">
         {% for vinyl in wanted %}
           {{ blockMacro.include("_cards/vinylCard.twig", entry, { vinyl: vinyl }) }}
         {% endfor %}
       </div>
     {% endif %}
-      
     </div>
   </section>
 {% endblock %}

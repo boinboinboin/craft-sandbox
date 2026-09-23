@@ -1,4 +1,4 @@
-dateModified: 1790170550
+dateModified: 1790174905
 email:
   fromEmail: johannes@seeds.no
   fromName: 'Craft Boilerplate'
@@ -18,6 +18,7 @@ meta:
     0fb8bcd8-5d86-4c9a-af22-23df3a6e2302: 'Open Graph Image' # Open Graph Image
     1b8e1298-21e1-4747-ac15-890cf7319601: 'Accordion block' # Accordion block
     2b9af926-8d62-4f3a-b5b1-9d19006e130e: 'Public Schema' # Public Schema
+    2e7c80fe-da4c-4367-a048-04f50462e1a4: 'Discogs release ID' # Discogs release ID
     3b40d248-aaa7-4b0b-9e8e-08a40c1ad77a: Preamble # Preamble
     3b539f3a-1c6c-4524-986d-2f0283911cbc: Vinyls # Vinyls
     7c80f4dd-0ff7-401e-b0df-a7f8206bd6f1: 'SEO Title' # SEO Title
@@ -27,11 +28,13 @@ meta:
     36cdd5ae-647b-4390-ac1e-2cffd4d1b206: 'Rich text' # Rich text
     63fcea28-a867-4cfa-b68f-5982694c2d06: Vinyl # Vinyl
     75e61f0a-b17f-4cc8-911a-2d881af87a05: Pages # Pages
+    79db34d0-53e2-480e-b239-efe941831a2c: 'Vinyl tracklist' # Vinyl tracklist
     799ffacb-f326-443b-bfb5-0bd1af9b1b07: Content # Content
     2603e5fe-3c82-4b96-a5a3-7c692af109e7: Image # Image
     4079dc7d-a87a-4567-8052-0e0bbdb74fb5: 'Vinyl cover image' # Vinyl cover image
     4872f3f0-94b8-4ef2-879f-027404965e51: 'Twitter Image' # Twitter Image
     6875af28-74ab-47c6-bc24-74252024703e: 'Page cards' # Page cards
+    6063994b-ceff-4c98-992b-89bb1b6f198c: 'Vinyl year' # Vinyl year
     13820824-cb63-4a98-bf78-8b24cc7fd1d0: 'Accordion blocks' # Accordion blocks
     a9b95943-04d9-4a99-bd95-fb35c1b79ac6: Entries # Entries
     a716da50-3c3f-4a5d-b06f-1e92c7eab81e: 'Single line text' # Single line text
@@ -39,6 +42,7 @@ meta:
     afe9de2c-abb1-46e5-99e9-4d3dfd9ed33a: 'Open Graph Description' # Open Graph Description
     b2dd055a-589f-4c39-a6d4-cb708dd6e7e7: home # home
     b43bcddf-8cc3-4971-b8ef-c4efe4bce91e: Default # Default
+    b883a2fc-876a-4a15-9b3e-43b004529b5f: 'Vinyl label' # Vinyl label
     b8533f63-9755-4dec-9adf-717eaeaf72f1: Accordion # Accordion
     bcb248a7-aad7-4e0f-b728-96180cd12460: Page # Page
     bfb6dd1e-9068-42ec-946b-f49b2c699667: 'Vinyl artist' # Vinyl artist

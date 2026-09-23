@@ -23,6 +23,6 @@ siteSettings:
   b43bcddf-8cc3-4971-b8ef-c4efe4bce91e: # Default
     enabledByDefault: true
     hasUrls: true
-    template: vinyls/_entry.twig
+    template: _sections/vinyls/entry.twig
     uriFormat: 'vinyls/{slug}'
 type: channel

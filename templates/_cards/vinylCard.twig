@@ -1,11 +1,16 @@
 {% import "_macros/image.twig" as imageMacro %}
-<div class="col-span-12 sm:col-span-6 md:col-span-4">
-  <div class="h-fit overflow-hidden">
-    {{ imageMacro.srcset(vinyl.vinylCoverImage.one(), { width: 600, height: 600, class: 'hover:scale-105 transition overflow-hidden duration-500 ease-in-out w-full aspect-square object-cover' }) }}
-  </div>
+<div class="col-span-12 sm:col-span-6 md:col-span-4" data-controller="vinyl-actions" data-vinyl-actions-entry-id-value="{{ vinyl.id }}" data-vinyl-actions-status-value="{{ vinyl.vinylStatus }}">
+  <a class="block" href="{{ vinyl.url }}">
+    <div class="h-fit overflow-hidden">
+      {{ imageMacro.srcset(vinyl.vinylCoverImage.one(), { width: 600, height: 600, class: 'hover:scale-105 transition overflow-hidden duration-500 ease-in-out w-full aspect-square object-cover' }) }}
+    </div>
     <div class="py-6">
       <h3 class="text-2xl">{{ vinyl.title }}</h3>
       <p class="text-gray-700 mb-4">{{ vinyl.vinylArtist }}</p>
-      {# <a href="{{ vinyl.url }}" class="btn">View</a> #}
     </div>
+  </a>
+  <div class="flex gap-2">
+    <button type="button" class="btn" data-action="click->vinyl-actions#move">Move to {{ vinyl.vinylStatus == 'owned' ? 'Wishlist' : 'Collection' }}</button>
+    <button type="button" class="btn btn-red" data-action="click->vinyl-actions#remove">Remove</button>
+  </div>
 </div>
