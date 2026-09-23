@@ -1,4 +1,4 @@
-dateModified: 1790168954
+dateModified: 1790170550
 email:
   fromEmail: johannes@seeds.no
   fromName: 'Craft Boilerplate'
@@ -67,7 +67,8 @@ plugins:
 system:
   edition: pro
   live: true
-  name: 'Craft Boilerplate'
+  name: 'Craft Sandbox'
+  retryDuration: null
   schemaVersion: 5.7.0.3
   timeZone: America/Los_Angeles
 users:

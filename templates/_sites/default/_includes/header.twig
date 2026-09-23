@@ -1,6 +1,7 @@
+{% set navPages = craft.entries().section('pages').level(1).all() %}
 <nav class="bg-white shadow-md" data-controller="menu">
     <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-        <a href="#" class="text-2xl font-bold">Craft Sandbox</a>
+        <a href="/" class="text-2xl font-bold">{{ craft.app.projectConfig.get('system.name') }}</a>
 
         <!-- Hamburger-icon for mobile -->
         <div class="block md:hidden" data-action="click->menu#toggle">
@@ -13,18 +14,18 @@
 
         <!-- Menu for larger screens -->
         <ul id="menu" class="hidden md:flex space-x-6">
-            <li><a href="#tjenester" class="hover:text-blue-500">Tjenester</a></li>
-            <li><a href="#om-oss" class="hover:text-blue-500">Om oss</a></li>
-            <li><a href="#kontakt" class="hover:text-blue-500">Kontakt</a></li>
+            {% for page in navPages %}
+                <li><a href="{{ page.url }}" class="hover:text-blue-500">{{ page.title }}</a></li>
+            {% endfor %}
         </ul>
     </div>
 
     <!-- Mobilemenu -->
     <div id="mobile-menu" class="md:hidden hidden" data-menu-target="mobileMenu">
         <ul class="flex flex-col space-y-4 px-4 py-2">
-            <li><a href="#tjenester" class="block text-gray-700 hover:text-blue-500">Tjenester</a></li>
-            <li><a href="#om-oss" class="block text-gray-700 hover:text-blue-500">Om oss</a></li>
-            <li><a href="#kontakt" class="block text-gray-700 hover:text-blue-500">Kontakt</a></li>
+            {% for page in navPages %}
+                <li><a href="{{ page.url }}" class="block text-gray-700 hover:text-blue-500">{{ page.title }}</a></li>
+            {% endfor %}
         </ul>
     </div>
 </nav>

@@ -14,23 +14,40 @@
 
   <section class="base-section">
     <div class="base-container">
+    {% if owned|length == 0 %}
+      <section class="base-section">
+        <div class="base-container">
+          <p class="base">No owned vinyls found.</p>
+        </div>
+      </section>
+    {% else %}
       <h2 class="h2">Owned</h2>
       <div class="base-grid">
         {% for vinyl in owned %}
           {{ blockMacro.include("_cards/vinylCard.twig", entry, { vinyl: vinyl }) }}
         {% endfor %}
       </div>
+    {% endif %}
     </div>
   </section>
 
   <section class="base-section">
     <div class="base-container">
+    {% if wanted|length == 0 %}
+      <section class="base-section">
+        <div class="base-container">
+          <p class="base">No wanted vinyls found.</p>
+        </div>
+      </section>
+    {% else %}
       <h2 class="h2">Wanted</h2>
       <div class="base-grid">
         {% for vinyl in wanted %}
           {{ blockMacro.include("_cards/vinylCard.twig", entry, { vinyl: vinyl }) }}
         {% endfor %}
       </div>
+    {% endif %}
+      
     </div>
   </section>
 {% endblock %}
