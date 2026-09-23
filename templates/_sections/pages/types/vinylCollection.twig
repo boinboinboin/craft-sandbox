@@ -1,0 +1,36 @@
+{% extends "_base.twig" %}
+{% import "_macros/block.twig" as blockMacro %}
+
+{% block body %}
+  <section class="base-section">
+    <div class="base-container">
+      <h1 class="h1">{{ entry.title }}</h1>
+      {% if entry.preamble %}<p class="base">{{ entry.preamble }}</p>{% endif %}
+    </div>
+  </section>
+
+  {% set owned = craft.entries().section('vinyls').vinylStatus('owned').all() %}
+  {% set wanted = craft.entries().section('vinyls').vinylStatus('wanted').all() %}
+
+  <section class="base-section">
+    <div class="base-container">
+      <h2 class="h2">Owned</h2>
+      <div class="base-grid">
+        {% for vinyl in owned %}
+          {{ blockMacro.include("_cards/vinylCard.twig", entry, { vinyl: vinyl }) }}
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+
+  <section class="base-section">
+    <div class="base-container">
+      <h2 class="h2">Wanted</h2>
+      <div class="base-grid">
+        {% for vinyl in wanted %}
+          {{ blockMacro.include("_cards/vinylCard.twig", entry, { vinyl: vinyl }) }}
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+{% endblock %}

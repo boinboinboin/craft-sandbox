@@ -1,4 +1,4 @@
-dateModified: 1748606339
+dateModified: 1790168954
 email:
   fromEmail: johannes@seeds.no
   fromName: 'Craft Boilerplate'
@@ -14,18 +14,22 @@ fs:
 meta:
   __names__:
     0c8b2983-c380-4ba5-bbb1-9df7aad4b755: 'SEO Description' # SEO Description
+    00c4505d-a3ff-4b5a-8ab6-51633a754514: 'Vinyl status' # Vinyl status
     0fb8bcd8-5d86-4c9a-af22-23df3a6e2302: 'Open Graph Image' # Open Graph Image
     1b8e1298-21e1-4747-ac15-890cf7319601: 'Accordion block' # Accordion block
     2b9af926-8d62-4f3a-b5b1-9d19006e130e: 'Public Schema' # Public Schema
     3b40d248-aaa7-4b0b-9e8e-08a40c1ad77a: Preamble # Preamble
+    3b539f3a-1c6c-4524-986d-2f0283911cbc: Vinyls # Vinyls
     7c80f4dd-0ff7-401e-b0df-a7f8206bd6f1: 'SEO Title' # SEO Title
     8fba1319-bc8c-4d5d-93b0-6fb2092c7963: 'Main Image' # Main Image
     20afde05-3960-4d67-9d7e-b9c1bf81e641: 'Twitter title' # Twitter title
     029f9285-7999-4728-8cd1-106627aac9c8: Assets # Assets
     36cdd5ae-647b-4390-ac1e-2cffd4d1b206: 'Rich text' # Rich text
+    63fcea28-a867-4cfa-b68f-5982694c2d06: Vinyl # Vinyl
     75e61f0a-b17f-4cc8-911a-2d881af87a05: Pages # Pages
     799ffacb-f326-443b-bfb5-0bd1af9b1b07: Content # Content
     2603e5fe-3c82-4b96-a5a3-7c692af109e7: Image # Image
+    4079dc7d-a87a-4567-8052-0e0bbdb74fb5: 'Vinyl cover image' # Vinyl cover image
     4872f3f0-94b8-4ef2-879f-027404965e51: 'Twitter Image' # Twitter Image
     6875af28-74ab-47c6-bc24-74252024703e: 'Page cards' # Page cards
     13820824-cb63-4a98-bf78-8b24cc7fd1d0: 'Accordion blocks' # Accordion blocks
@@ -37,8 +41,10 @@ meta:
     b43bcddf-8cc3-4971-b8ef-c4efe4bce91e: Default # Default
     b8533f63-9755-4dec-9adf-717eaeaf72f1: Accordion # Accordion
     bcb248a7-aad7-4e0f-b728-96180cd12460: Page # Page
+    bfb6dd1e-9068-42ec-946b-f49b2c699667: 'Vinyl artist' # Vinyl artist
     d2a8f44c-4470-4014-8157-787329adccc9: 'Open Graph Title' # Open Graph Title
     d8dfd673-dce1-4fd4-b7d7-6ed8fd18c66e: Home # Home
+    d50169e8-ebc6-41f0-a5e5-23fa7957086c: 'Vinyl Collection' # Vinyl Collection
     dacb046e-a191-40ad-b79f-70bdefe599e4: 'Twitter Description' # Twitter Description
     de621190-e0bd-4807-b66d-96d0e26a93d9: 'SEO image' # SEO image
     e6d5ce9a-038f-4ca5-9708-d1a6087e92bd: 'Craft Boilerplate' # Craft Boilerplate

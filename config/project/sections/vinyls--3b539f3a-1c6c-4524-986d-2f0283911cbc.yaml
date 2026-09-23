@@ -2,12 +2,10 @@ defaultPlacement: end
 enableVersioning: true
 entryTypes:
   -
-    uid: bcb248a7-aad7-4e0f-b728-96180cd12460 # Page
-  -
-    uid: d50169e8-ebc6-41f0-a5e5-23fa7957086c # Vinyl Collection
-handle: pages
+    uid: 63fcea28-a867-4cfa-b68f-5982694c2d06 # Vinyl
+handle: vinyls
 maxAuthors: 1
-name: Pages
+name: Vinyls
 previewTargets:
   -
     __assoc__:
@@ -25,9 +23,6 @@ siteSettings:
   b43bcddf-8cc3-4971-b8ef-c4efe4bce91e: # Default
     enabledByDefault: true
     hasUrls: true
-    template: _sections/pages/entry.twig
-    uriFormat: '{parent.uri}/{slug}'
-structure:
-  maxLevels: 3
-  uid: 778359cb-9cc5-453d-a784-81c2e2ed6f06
-type: structure
+    template: vinyls/_entry.twig
+    uriFormat: 'vinyls/{slug}'
+type: channel
