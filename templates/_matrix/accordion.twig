@@ -1,0 +1,13 @@
+{% import "_macros/block.twig" as blockMacro %}
+{# Serialize data for accordion blocks #}
+{% set accordionBlocks = [] %}
+{% for accordionBlock in block.accordionBlocks.all() %}
+    {% set accordionBlocks = accordionBlocks|merge([{
+        title: accordionBlock.title,
+        text: accordionBlock.text
+    }]) %}
+{% endfor %}
+{{ blockMacro.include("_blocks/matrix/accordion.twig", entry, {
+    title: block.title,
+    accordionBlocks: accordionBlocks
+}) }}

@@ -1,0 +1,14 @@
+{% extends "_base.twig" %}
+{% import "_macros/block.twig" as blockMacro %}
+{% import "_macros/image.twig" as imageMacro %}
+
+{% block body %}
+    <h1 class="text-3xl font-bold">{{ entry.title }}</h1>
+    <p class="text-xl">{{ entry.preamble }}</p>
+    {{ imageMacro.srcset(entry.mainImage.one(), {
+        width: 800,
+        height:300,
+        lazyload: false
+        }) }}
+    {{ blockMacro.blocksFromMatrix(entry.contentMatrix, entry) }}
+{% endblock %}

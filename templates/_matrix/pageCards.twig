@@ -1,0 +1,14 @@
+{% import "_macros/block.twig" as blockMacro %}
+{# Serialize data for page card blocks #}
+{% set cards = [] %}
+{% for card in block.entries.all() %}
+    {% set cards = cards|merge([{
+        title: card.title,
+        text: card.preamble,
+        url: card.url,
+        image: card.mainImage ? card.mainImage.one() : null
+    }]) %}
+{% endfor %}
+{{ blockMacro.include("_blocks/matrix/pageCards.twig", entry, {
+    cards: cards
+}) }}

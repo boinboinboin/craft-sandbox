@@ -1,0 +1,15 @@
+{% import "_macros/image.twig" as imageMacro %}
+<section class="base-section">
+    <div class="base-container">
+        <div class="base-grid">
+            <div class="col-span-12 md:col-span-8 md:col-start-3">
+                <figure>
+                    {{ imageMacro.srcset(image, {width: 400, height:300}) }}
+                    {% if caption is defined and caption %}
+                        <figcaption>{{ caption }}</figcaption>
+                    {% endif %}
+                </figure>
+            </div>
+        </div>
+    </div>
+</section>

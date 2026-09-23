@@ -1,0 +1,67 @@
+color: red
+fieldLayouts:
+  5ec75f7f-4248-4f19-a84e-242f5f706930:
+    tabs:
+      -
+        elementCondition: null
+        elements:
+          -
+            autocapitalize: true
+            autocomplete: false
+            autocorrect: true
+            class: null
+            dateAdded: '2024-10-17T09:02:26+00:00'
+            disabled: false
+            elementCondition: null
+            id: null
+            includeInCards: false
+            inputType: null
+            instructions: null
+            label: null
+            max: null
+            min: null
+            name: null
+            orientation: null
+            placeholder: null
+            providesThumbs: false
+            readonly: false
+            requirable: false
+            size: null
+            step: null
+            tip: null
+            title: null
+            type: craft\fieldlayoutelements\entries\EntryTitleField
+            uid: ddc05805-addf-43e5-b422-72eba95451a9
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: '2024-10-17T09:06:31+00:00'
+            elementCondition: null
+            fieldUid: 13820824-cb63-4a98-bf78-8b24cc7fd1d0 # Accordion blocks
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: 38d7bb20-cbe9-4123-85ec-4fdd2773ccba
+            userCondition: null
+            warning: null
+            width: 100
+        name: Content
+        uid: 7466b4e4-3cbb-4713-8107-16bdf99c42bb
+        userCondition: null
+handle: accordion
+hasTitleField: true
+icon: bars
+name: Accordion
+showSlugField: true
+showStatusField: true
+slugTranslationKeyFormat: null
+slugTranslationMethod: site
+titleFormat: ''
+titleTranslationKeyFormat: null
+titleTranslationMethod: site

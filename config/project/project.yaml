@@ -1,0 +1,73 @@
+dateModified: 1748606339
+email:
+  fromEmail: johannes@seeds.no
+  fromName: 'Craft Boilerplate'
+  transportType: craft\mail\transportadapters\Sendmail
+fs:
+  assets:
+    hasUrls: true
+    name: Assets
+    settings:
+      path: '@webroot/assets'
+    type: craft\fs\Local
+    url: /assets/
+meta:
+  __names__:
+    0c8b2983-c380-4ba5-bbb1-9df7aad4b755: 'SEO Description' # SEO Description
+    0fb8bcd8-5d86-4c9a-af22-23df3a6e2302: 'Open Graph Image' # Open Graph Image
+    1b8e1298-21e1-4747-ac15-890cf7319601: 'Accordion block' # Accordion block
+    2b9af926-8d62-4f3a-b5b1-9d19006e130e: 'Public Schema' # Public Schema
+    3b40d248-aaa7-4b0b-9e8e-08a40c1ad77a: Preamble # Preamble
+    7c80f4dd-0ff7-401e-b0df-a7f8206bd6f1: 'SEO Title' # SEO Title
+    8fba1319-bc8c-4d5d-93b0-6fb2092c7963: 'Main Image' # Main Image
+    20afde05-3960-4d67-9d7e-b9c1bf81e641: 'Twitter title' # Twitter title
+    029f9285-7999-4728-8cd1-106627aac9c8: Assets # Assets
+    36cdd5ae-647b-4390-ac1e-2cffd4d1b206: 'Rich text' # Rich text
+    75e61f0a-b17f-4cc8-911a-2d881af87a05: Pages # Pages
+    799ffacb-f326-443b-bfb5-0bd1af9b1b07: Content # Content
+    2603e5fe-3c82-4b96-a5a3-7c692af109e7: Image # Image
+    4872f3f0-94b8-4ef2-879f-027404965e51: 'Twitter Image' # Twitter Image
+    6875af28-74ab-47c6-bc24-74252024703e: 'Page cards' # Page cards
+    13820824-cb63-4a98-bf78-8b24cc7fd1d0: 'Accordion blocks' # Accordion blocks
+    a9b95943-04d9-4a99-bd95-fb35c1b79ac6: Entries # Entries
+    a716da50-3c3f-4a5d-b06f-1e92c7eab81e: 'Single line text' # Single line text
+    ade0ba61-fbf6-458f-baee-9e0c78cdfd6d: Simple # Simple
+    afe9de2c-abb1-46e5-99e9-4d3dfd9ed33a: 'Open Graph Description' # Open Graph Description
+    b2dd055a-589f-4c39-a6d4-cb708dd6e7e7: home # home
+    b43bcddf-8cc3-4971-b8ef-c4efe4bce91e: Default # Default
+    b8533f63-9755-4dec-9adf-717eaeaf72f1: Accordion # Accordion
+    bcb248a7-aad7-4e0f-b728-96180cd12460: Page # Page
+    d2a8f44c-4470-4014-8157-787329adccc9: 'Open Graph Title' # Open Graph Title
+    d8dfd673-dce1-4fd4-b7d7-6ed8fd18c66e: Home # Home
+    dacb046e-a191-40ad-b79f-70bdefe599e4: 'Twitter Description' # Twitter Description
+    de621190-e0bd-4807-b66d-96d0e26a93d9: 'SEO image' # SEO image
+    e6d5ce9a-038f-4ca5-9708-d1a6087e92bd: 'Craft Boilerplate' # Craft Boilerplate
+    e902a893-dd5f-4961-b967-3fa2d49aae4a: Image # Image
+    e9315311-6ed3-4da5-a8df-4f913356c56b: 'Plain text' # Plain text
+    fff9e1fe-da4c-4b03-8607-3aad0f33a168: 'Rich text' # Rich text
+plugins:
+  ckeditor:
+    edition: standard
+    enabled: true
+    schemaVersion: 3.0.0.0
+  seomate:
+    edition: standard
+    enabled: true
+    schemaVersion: 1.0.0
+  vite:
+    edition: standard
+    enabled: true
+    schemaVersion: 1.0.0
+system:
+  edition: pro
+  live: true
+  name: 'Craft Boilerplate'
+  schemaVersion: 5.7.0.3
+  timeZone: America/Los_Angeles
+users:
+  allowPublicRegistration: false
+  defaultGroup: null
+  photoSubpath: null
+  photoVolumeUid: null
+  require2fa: false
+  requireEmailVerification: true

@@ -1,0 +1,5 @@
+{% import "_macros/block.twig" as blockMacro %}
+{{ blockMacro.include("_blocks/matrix/image.twig", entry, {
+    image: block.image.one(),
+    caption: block.caption
+}) }}

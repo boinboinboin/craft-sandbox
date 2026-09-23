@@ -1,0 +1,10 @@
+{% import "_macros/block.twig" as blockMacro %}
+<section class="base-section">
+    <div class="base-container">
+        <div class="base-grid">
+            <div class="col-span-12 md:col-span-8 md:col-start-3 rich-text">
+                {{ blockMacro.blocksFromEditor(richText, entry) }}
+            </div>
+        </div>
+    </div>
+</section>

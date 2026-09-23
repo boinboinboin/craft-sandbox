@@ -1,0 +1,29 @@
+{% import "_macros/block.twig" as blockMacro %}
+<!doctype html>
+<html lang="{{ currentSite.language }}">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0">
+
+        {{ blockMacro.include("_includes/favicons.twig") }}
+
+        {% hook 'seomateMeta' %}
+        {{ craft.vite.script("assets/js/app.js", false) }}
+        {{ head() }}
+        {% block head %}
+        {% endblock %}
+    </head>
+    <body data-controller="main" class="bg-gray-100 text-gray-900 antialiased leading-relaxed">
+        <a id="mainContentLink" href="#mainContent" class="absolute -left-[2000px] focus:left-2 top-2">{{ 'text.to.main.content'|t }}</a>
+       	{{ blockMacro.include("/_includes/header.twig") }}
+
+    	{% block body %}
+       	Something went wrong, block body is missing
+    	{% endblock %}
+
+    	{{ blockMacro.include("/_includes/footer.twig") }}
+
+    	{% block javascript %}
+    	{% endblock %}
+    </body>
+</html>

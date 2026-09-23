@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="En moderne nettside som følger WCAG 2.1 retningslinjer og bruker Tailwind CSS">
+    <title>Moderne nettside</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Gjør bilder mer tilgjengelige */
+        img {
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900 antialiased leading-relaxed">
+
+    <!-- Navigasjonsbar -->
+    <nav class="bg-white shadow-md">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <a href="#" class="text-2xl font-bold">Brand</a>
+
+            <!-- Hamburger-ikon for mobil -->
+            <div class="block md:hidden">
+                <button id="menu-toggle" class="text-gray-700 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Meny for større skjermer -->
+            <ul id="menu" class="hidden md:flex space-x-6">
+                <li><a href="#tjenester" class="hover:text-blue-500">Tjenester</a></li>
+                <li><a href="#om-oss" class="hover:text-blue-500">Om oss</a></li>
+                <li><a href="#kontakt" class="hover:text-blue-500">Kontakt</a></li>
+            </ul>
+        </div>
+
+        <!-- Mobilmeny -->
+        <div id="mobile-menu" class="md:hidden hidden">
+            <ul class="flex flex-col space-y-4 px-4 py-2">
+                <li><a href="#tjenester" class="block text-gray-700 hover:text-blue-500">Tjenester</a></li>
+                <li><a href="#om-oss" class="block text-gray-700 hover:text-blue-500">Om oss</a></li>
+                <li><a href="#kontakt" class="block text-gray-700 hover:text-blue-500">Kontakt</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Header-seksjon -->
+    <header class="bg-cover bg-center h-screen text-white" style="background-image: url('https://via.placeholder.com/1920x1080');">
+        <div class="container mx-auto h-full flex flex-col justify-center items-start px-4">
+            <h1 class="text-6xl font-bold mb-4">Velkommen til vår nettside</h1>
+            <p class="text-xl max-w-xl">Vi tilbyr innovative løsninger som hjelper deg med å nå dine mål. Utforsk hva vi har å tilby!</p>
+        </div>
+    </header>
+
+    <!-- Tekstseksjon -->
+    <section class="container mx-auto my-16 px-4">
+        <div class="grid grid-cols-12 gap-6">
+            <div class="col-span-12 md:col-span-8">
+                <h2 class="text-3xl font-bold mb-4">Vårt fokus</h2>
+                <p class="text-lg">Vi streber etter å tilby tjenester av høy kvalitet som er tilgjengelige og nyttige for alle våre kunder. Vi tilpasser våre løsninger for å møte dine spesifikke behov og sikre at vi oppfyller WCAG 2.1-standarden for tilgjengelighet.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Kort-seksjon -->
+    <section class="container mx-auto my-16 px-4">
+        <div class="grid grid-cols-12 gap-6">
+            <!-- Kort 1 -->
+            <div class="col-span-12 sm:col-span-6 md:col-span-4">
+                <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                    <img src="https://via.placeholder.com/600x400" alt="Tjeneste 1" class="w-full h-48">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2">Tjeneste 1</h3>
+                        <p class="text-gray-700 mb-4">Vi tilbyr fremragende tjenester for å møte dine behov.</p>
+                        <a href="#" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Les mer</a>
+                    </div>
+                </div>
+            </div>
+            <!-- Kort 2 -->
+            <div class="col-span-12 sm:col-span-6 md:col-span-4">
+                <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                    <img src="https://via.placeholder.com/600x400" alt="Tjeneste 2" class="w-full h-48">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2">Tjeneste 2</h3>
+                        <p class="text-gray-700 mb-4">Vår erfaring og kompetanse sikrer kvalitet.</p>
+                        <a href="#" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Les mer</a>
+                    </div>
+                </div>
+            </div>
+            <!-- Kort 3 -->
+            <div class="col-span-12 sm:col-span-6 md:col-span-4">
+                <div class="bg-white shadow-md rounded-lg overflow-hidden">
+                    <img src="https://via.placeholder.com/600x400" alt="Tjeneste 3" class="w-full h-48">
+                    <div class="p-6">
+                        <h3 class="text-xl font-semibold mb-2">Tjeneste 3</h3>
+                        <p class="text-gray-700 mb-4">Oppdag våre unike løsninger tilpasset deg.</p>
+                        <a href="#" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Les mer</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tjenester-seksjon -->
+    <section id="tjenester" class="bg-gray-50 py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-8">Våre tjenester</h2>
+            <div class="grid grid-cols-12 gap-6">
+                <div class="col-span-12 md:col-span-6">
+                    <h3 class="text-2xl font-semibold mb-4">Tilpassede løsninger</h3>
+                    <p>Vi tilbyr skreddersydde løsninger som hjelper deg å oppnå suksess. Våre tjenester er designet med tilgjengelighet i fokus, og vi jobber for å sikre at alle kan dra nytte av dem.</p>
+                </div>
+                <div class="col-span-12 md:col-span-6">
+                    <h3 class="text-2xl font-semibold mb-4">Support og vedlikehold</h3>
+                    <p>Vi er her for å hjelpe deg gjennom hele prosessen, fra implementering til vedlikehold og support. Våre team er klare til å gi den hjelpen du trenger når du trenger det.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Om oss-seksjon -->
+    <section id="om-oss" class="py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-8">Om oss</h2>
+            <p class="text-lg text-center max-w-3xl mx-auto">Vi er en dedikert gruppe fagfolk som brenner for å levere løsninger som gjør en forskjell. Vårt mål er å sikre at alle har tilgang til teknologi som er enkel å bruke og effektiv, uavhengig av ferdighetsnivå.</p>
+        </div>
+    </section>
+
+    <!-- Kontakt-seksjon -->
+    <section id="kontakt" class="bg-gray-800 text-white py-16">
+        <div class="container mx-auto px-4">
+            <h2 class="text-3xl font-bold text-center mb-8">Kontakt oss</h2>
+            <div class="grid grid-cols-12 gap-6">
+                <div class="col-span-12 md:col-span-6">
+                    <p class="text-lg mb-4">Adresse: 123 Eksempelgate, Oslo</p>
+                    <p class="text-lg mb-4">Telefon: +47 123 45 678</p>
+                    <p class="text-lg">E-post: kontakt@eksempel.no</p>
+                </div>
+                <div class="col-span-12 md:col-span-6">
+                    <form>
+                        <div class="mb-4">
+                            <label for="name" class="block text-sm">Navn</label>
+                            <input type="text" id="name" class="w-full p-2 rounded bg-gray-900 text-white" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="email" class="block text-sm">E-post</label>
+                            <input type="email" id="email" class="w-full p-2 rounded bg-gray-900 text-white" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="message" class="block text-sm">Melding</label>
+                            <textarea id="message" class="w-full p-2 rounded bg-gray-900 text-white" required></textarea>
+                        </div>
+                        <button type="submit" class="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-8">
+        <div class="container mx-auto text-center">
+            <p>&copy; 2024 Brand. Alle rettigheter reservert.</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript for å håndtere hamburger-menyen -->
+    <script>
+        const menuToggle = document.getElementById('menu-toggle');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        menuToggle.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+headingLevels:
+  - 2
+name: Simple
+toolbar:
+  - sourceEditing
+  - heading
+  - '|'
+  - bold
+  - italic
+  - link
+  - createEntry

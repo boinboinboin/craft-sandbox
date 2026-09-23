@@ -1,0 +1,88 @@
+{#
+options: {
+    ratio: 16/9,
+    width: 768,
+    height: null,
+    mode: crop,
+    quality: 80
+    class: '',
+    proportional: false
+    lazyload: true
+}
+#}
+{%- macro srcset(image, options) -%}
+    {% if image is not instance of("craft\\elements\\Asset") %}
+        {% set image = null %}
+    {% endif %}
+    {% set ratio = options.ratio is defined ? options.ratio : 16/9 %}
+    {% set width = options.width is defined ? options.width : 768 %}
+    {% set height = options.height is defined ? options.height : width / (ratio) %}
+    {% set mode = options.mode is defined ? options.mode : 'crop' %}
+    {% set quality = options.quality is defined ? options.quality : 82 %}
+    {% set lazyload = options.lazyload is defined ? options.lazyload : true %}
+    {% set class = options.class is defined ? options.class %}
+    {# check if mode is proportional #}
+    {% set proportional =  options.proportional is defined ? options.proportional : false %}
+    {% if proportional %}
+        {% set ratio = image.width / image.height %}
+        {% set height = width / ratio %}
+    {% endif %}
+    {% if image and image.url is defined %}
+        {% if image.extension == 'svg' %}
+            {#
+            rendering svg inline can slow down server if images are loaded from CDN,
+            and CDN is down. Can be replaced with
+            <img src="{{ image.url }}" class="{{ lazyload ? ' lazyload' }} {{ class }}" alt="{{ image.alt ? image.alt : image.title }}">
+            remove cache tag if it generates problems
+            #}
+            {% cache using key image.url %}
+                {{ svg(image)|attr({
+                    class: class
+                }) }}
+            {% endcache %}
+        {% else %}
+            {% do image.setTransform({
+                width: width,
+                height: height,
+                mode: mode,
+                quality: quality,
+                format:  craft.app.request.headers.accept is defined and "image/webp" in craft.app.request.headers.accept|split(',') and craft.app.images.supportsWebP ? 'webp' : 'jpg'
+            }) %}
+
+            {% set srcset = image.getSrcset(['1x', '2x', '3x']) %}
+
+            {% if image.url is defined %}
+                {# placholder can be replaced with a low res image, but this might hit performance #}
+                {% set placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' %3E%3Crect width='1' height='1' fill='red'/%3E%3C/svg%3E"|replace({' ': ''}) %}
+                {% set imgAttr = {
+                    width: image.width,
+                    height: image.height,
+                    alt: image.alt ? image.alt : image.title
+                } %}
+                {% if lazyload %}
+                    {% set imgAttr = imgAttr|merge({
+                        src: placeholder,
+                        'data-src': image.url,
+                        'data-srcset': srcset,
+                        class: class ~ ' lazyload'
+                    }) %}
+                {% else %}
+                    {% set imgAttr = imgAttr|merge({
+                        src: image.url,
+                        srcset: srcset,
+                        class: class
+                    }) %}
+                {% endif %}
+                {{ tag('img', imgAttr) }}
+            {% endif %}
+        {% endif %}
+    {% else %}
+        {# show placeholder image #}
+        {% set ratio = 100 / (width / height) %}
+        <div
+                class="image-placeholder-color {{ class }}"
+                style="padding-bottom: {{ ratio }}%;"
+        ></div>
+    {% endif %}
+
+{%- endmacro -%}

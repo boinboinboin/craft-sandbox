@@ -1,0 +1,9 @@
+baseUrl: $PRIMARY_SITE_URL
+enabled: true
+handle: default
+hasUrls: true
+language: en-US
+name: Default
+primary: true
+siteGroup: e6d5ce9a-038f-4ca5-9708-d1a6087e92bd # Craft Boilerplate
+sortOrder: 1

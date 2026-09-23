@@ -1,0 +1,34 @@
+{% macro blocksFromMatrix(matrix, entry) %}
+    {% for block in matrix.all() %}
+        {{ _self.include("_matrix/" ~ block.type.handle ~ ".twig", entry, {
+            block: block,
+            entry: entry
+        }) }}
+    {% endfor %}
+{% endmacro %}
+
+{% macro blocksFromEditor(editor, entry) %}
+    {% for chunk in editor %}
+        {% switch chunk.type %}
+            {% case 'entry' %}
+                {% set block = chunk.entry %}
+                {{ _self.include("_editor/" ~ block.type.handle ~ ".twig", entry, {
+                    block: block,
+                    entry: entry
+                }) }}
+            {% case 'markup' %}
+                {{ chunk }}
+        {% endswitch %}
+    {% endfor %}
+{% endmacro %}
+
+{% macro include(path, entry = null, vars = {}) %}
+    {% if entry %}
+        {% set vars = vars|merge({entry: entry}) %}
+    {% endif %}
+    {% include ["_sites/" ~ currentSite.handle ~ "/" ~ path, path] with vars %}
+{% endmacro %}
+
+{% macro includeEntryType(entry) %}
+    {{ _self.include("/_sections/" ~ entry.section.handle ~ "/types/" ~ entry.type.handle ~ ".twig", entry) }}
+{% endmacro %}

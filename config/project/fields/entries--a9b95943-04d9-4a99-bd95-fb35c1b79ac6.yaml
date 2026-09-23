@@ -1,0 +1,22 @@
+columnSuffix: null
+handle: entries
+instructions: null
+name: Entries
+searchable: false
+settings:
+  allowSelfRelations: false
+  branchLimit: null
+  maintainHierarchy: false
+  maxRelations: null
+  minRelations: 1
+  selectionLabel: null
+  showCardsInGrid: true
+  showSiteMenu: false
+  sources:
+    - 'section:75e61f0a-b17f-4cc8-911a-2d881af87a05' # Pages
+  targetSiteId: null
+  validateRelatedElements: false
+  viewMode: cards
+translationKeyFormat: null
+translationMethod: none
+type: craft\fields\Entries

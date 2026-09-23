@@ -1,0 +1,31 @@
+
+<section class="base-section">
+    <div class="base-container">
+        <div class="base-grid">
+            <div class="col-span-12 md:col-span-8 md:col-start-3">
+                <h2 class="text-2xl mb-2">{{ title }}</h2>
+                <div class="flex flex-col gap-4">
+                {% for block in accordionBlocks %}
+                    <div class="block p-4 bg-gray-200 border border-gray-400 rounded-lg drop-shadow" data-controller="accordion" data-accordion-open-rotate-class-value="rotate-0" >
+                        <a href="#" data-action="click->accordion#toggle" aria-expanded="false" class="flex flex-row items-center">
+                            <div class="shrink-0 flex items-center">
+                                {% set svgIcon = include('_svg/icons/chevron-down.svg') %}
+                                {{ svg(svgIcon)|attr({
+                                    class: 'transition-transform duration-300 w-8 h-8 mr-2',
+                                    'data-accordion-target': 'icon'
+                                }) }}
+                            </div>
+                            <h2 class="text-xl grow">{{ block.title }}</h2>
+                        </a>
+                        <div class="overflow-hidden h-0 transition-all duration-300" data-accordion-target="contentContainer">
+                            <div class="p-4" data-accordion-target="content">
+                                {{ block.text }}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

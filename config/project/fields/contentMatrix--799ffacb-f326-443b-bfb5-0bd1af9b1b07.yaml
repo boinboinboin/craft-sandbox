@@ -1,0 +1,23 @@
+columnSuffix: null
+handle: contentMatrix
+instructions: null
+name: Content
+searchable: false
+settings:
+  createButtonLabel: null
+  entryTypes:
+    - 2603e5fe-3c82-4b96-a5a3-7c692af109e7 # Image
+    - 36cdd5ae-647b-4390-ac1e-2cffd4d1b206 # Rich text
+    - 6875af28-74ab-47c6-bc24-74252024703e # Page cards
+    - b8533f63-9755-4dec-9adf-717eaeaf72f1 # Accordion
+  includeTableView: false
+  maxEntries: null
+  minEntries: null
+  pageSize: null
+  propagationKeyFormat: null
+  propagationMethod: all
+  showCardsInGrid: false
+  viewMode: blocks
+translationKeyFormat: null
+translationMethod: site
+type: craft\fields\Matrix

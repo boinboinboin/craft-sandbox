@@ -1,0 +1,22 @@
+{% extends "_base.twig" %}
+{% import "_macros/block.twig" as blockMacro %}
+{% import "_macros/image.twig" as imageMacro %}
+
+{% block body %}
+    <header class="relative h-screen">
+        {{ imageMacro.srcset(entry.mainImage.one(), {
+        width: 960,
+        height: 540,
+        class: 'absolute inset-0 w-full h-full object-cover z-0',
+        lazyload: false,
+        }) }}
+
+        <div class="relative z-10  h-full flex flex-col justify-center items-start px-4 bg-black bg-opacity-50">
+            <div class="base-container">
+                <h1 class="h1 text-white">{{ entry.title }}</h1>
+                <p class="text-xl text-white max-w-xl">{{ entry.preamble }}</p>
+            </div>
+        </div>
+    </header>
+    {{ blockMacro.blocksFromMatrix(entry.contentMatrix, entry) }}
+{% endblock %}

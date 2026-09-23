@@ -1,0 +1,9 @@
+@utility h1 {
+    @apply text-heading-1-mobile xl:text-heading-1-desktop font-normal;
+}
+@utility h2 {
+    @apply text-xl font-bold mb-4;
+}
+@utility base {
+    @apply text-base mb-4;
+}

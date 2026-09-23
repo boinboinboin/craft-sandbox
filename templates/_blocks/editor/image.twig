@@ -1,0 +1,7 @@
+{% import "_macros/image.twig" as imageMacro %}
+<figure>
+    {{ imageMacro.srcset(image, {width: 400, height:300}) }}
+    {% if caption is defined and caption %}
+        <figcaption>{{ caption }}</figcaption>
+    {% endif %}
+</figure>

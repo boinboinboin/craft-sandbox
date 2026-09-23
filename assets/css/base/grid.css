@@ -1,0 +1,9 @@
+@utility base-section {
+    @apply my-16;
+}
+@utility base-container {
+    @apply container mx-auto;
+}
+@utility base-grid {
+    @apply grid grid-cols-12 gap-2;
+}

@@ -1,0 +1,27 @@
+defaultPlacement: end
+enableVersioning: true
+entryTypes:
+  - d8dfd673-dce1-4fd4-b7d7-6ed8fd18c66e # Home
+handle: home
+maxAuthors: 1
+name: home
+previewTargets:
+  -
+    __assoc__:
+      -
+        - label
+        - 'Primary entry page'
+      -
+        - urlFormat
+        - '{url}'
+      -
+        - refresh
+        - '1'
+propagationMethod: all
+siteSettings:
+  b43bcddf-8cc3-4971-b8ef-c4efe4bce91e: # Default
+    enabledByDefault: true
+    hasUrls: true
+    template: _sections/home/entry.twig
+    uriFormat: __home__
+type: single
