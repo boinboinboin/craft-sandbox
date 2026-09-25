@@ -5,6 +5,8 @@ entryTypes:
     uid: bcb248a7-aad7-4e0f-b728-96180cd12460 # Page
   -
     uid: d50169e8-ebc6-41f0-a5e5-23fa7957086c # Vinyl Collection
+  -
+    uid: f3133035-d94a-443c-8d18-f3f8a0d4e2c5 # Birthday Overview
 handle: pages
 maxAuthors: 1
 name: Pages
@@ -15,11 +17,11 @@ previewTargets:
         - label
         - 'Primary entry page'
       -
-        - urlFormat
-        - '{url}'
-      -
         - refresh
         - '1'
+      -
+        - urlFormat
+        - '{url}'
 propagationMethod: all
 siteSettings:
   b43bcddf-8cc3-4971-b8ef-c4efe4bce91e: # Default

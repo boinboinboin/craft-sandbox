@@ -1,0 +1,49 @@
+{#
+  Add / edit form for a Birthday entry, posted to Craft's own entries/save-entry.
+  Vars: person (Entry|null — prefilled, and carries validation errors after a failed save),
+        redirect (URL to return to), submit ('add'|'save')
+#}
+{% set birthDate = person.birthDate ?? null %}
+<form method="post" accept-charset="UTF-8" class="flex flex-col gap-4">
+  {{ csrfInput() }}
+  {{ actionInput('entries/save-entry') }}
+  {{ redirectInput(redirect) }}
+  {# Failed saves come back as `birthdayEntry`, so they don't overwrite the page's own `entry` #}
+  {{ hiddenInput('entryVariable', 'birthdayEntry'|hash) }}
+  {% if person.id ?? false %}
+    {{ hiddenInput('entryId', person.id) }}
+  {% else %}
+    {{ hiddenInput('sectionId', craft.app.entries.getSectionByHandle('birthdays').id) }}
+  {% endif %}
+  {# Without a timezone Craft reads the date as UTC midnight, which can land on the previous day #}
+  {{ hiddenInput('fields[birthDate][timezone]', craft.app.timeZone) }}
+
+  <div class="flex flex-col sm:flex-row gap-4">
+    <label class="flex-1">
+      <span class="form-label">Name</span>
+      <input type="text" name="title" value="{{ person.title ?? '' }}" class="form-input" required>
+      {% for error in person ? person.getErrors('title') : [] %}<span class="form-error">{{ error }}</span>{% endfor %}
+    </label>
+    <label class="sm:w-48">
+      <span class="form-label">Birth date</span>
+      <input type="date" name="fields[birthDate][date]" value="{{ birthDate ? birthDate|date('Y-m-d') }}" max="{{ now|date('Y-m-d') }}" class="form-input" required>
+      {% for error in person ? person.getErrors('birthDate') : [] %}<span class="form-error">{{ error }}</span>{% endfor %}
+    </label>
+  </div>
+
+  <div class="flex items-end gap-4">
+    <label class="flex-1">
+      <span class="form-label">Gift ideas</span>
+      <textarea name="fields[giftIdeas]" rows="2" class="form-input resize-y">{{ person.giftIdeas ?? '' }}</textarea>
+    </label>
+    {% if submit == 'add' %}
+      <button type="submit" class="btn-icon mb-1" aria-label="Add birthday" title="Add birthday">
+        {{ svg(include('_svg/icons/add.svg')) }}
+      </button>
+    {% else %}
+      <button type="submit" class="btn-icon mb-1" aria-label="Save" title="Save">
+        {{ svg(include('_svg/icons/save.svg')) }}
+      </button>
+    {% endif %}
+  </div>
+</form>

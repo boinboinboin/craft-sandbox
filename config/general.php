@@ -20,6 +20,10 @@ return GeneralConfig::create()
     ->preloadSingles()
     // Prevent user enumeration attacks
     ->preventUserEnumeration()
+    // Front-end accounts: members sign up and log in on the site, not the control panel
+    ->useEmailAsUsername()
+    ->loginPath('account/login')
+    ->autoLoginAfterAccountActivation()
     // Set the @webroot alias so the clear-caches command knows where to find CP resources
     ->aliases([
         '@webroot' => dirname(__DIR__) . '/web',

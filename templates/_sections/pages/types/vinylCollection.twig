@@ -2,6 +2,8 @@
 {% import "_macros/block.twig" as blockMacro %}
 
 {% block body %}
+  {% requireLogin %}
+
   <section class="base-section">
     <div class="base-container">
       <h1 class="h1">{{ entry.title }}</h1>
@@ -25,8 +27,8 @@
     </div>
   </section>
 
-  {% set owned = craft.entries().section('vinyls').vinylStatus('owned').all() %}
-  {% set wanted = craft.entries().section('vinyls').vinylStatus('wanted').all() %}
+  {% set owned = craft.entries().section('vinyls').authorId(currentUser.id).vinylStatus('owned').all() %}
+  {% set wanted = craft.entries().section('vinyls').authorId(currentUser.id).vinylStatus('wanted').all() %}
 
   <section class="base-section">
     <div class="base-container">

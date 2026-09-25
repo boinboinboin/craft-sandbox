@@ -6,16 +6,16 @@ use Craft;
 use craft\elements\Entry;
 use craft\web\Controller;
 use yii\web\BadRequestHttpException;
+use yii\web\ForbiddenHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
 
 /**
  * Manages Vinyl entries directly (remove, change status) — no Discogs API involved.
+ * Requires login; users can only touch their own vinyls.
  */
 class VinylController extends Controller
 {
-    protected array|bool|int $allowAnonymous = ['remove', 'move'];
-
     /**
      * POST actions/discogs/vinyl/remove
      * Body: { entryId: int }
@@ -26,6 +26,9 @@ class VinylController extends Controller
         $this->requireAcceptsJson();
 
         $entry = $this->requireVinylEntry();
+        if (!Craft::$app->getElements()->canDelete($entry)) {
+            throw new ForbiddenHttpException('You may not remove this vinyl.');
+        }
         Craft::$app->getElements()->deleteElement($entry);
 
         return $this->asJson(['success' => true]);
@@ -47,6 +50,9 @@ class VinylController extends Controller
         }
 
         $entry = $this->requireVinylEntry();
+        if (!Craft::$app->getElements()->canSave($entry)) {
+            throw new ForbiddenHttpException('You may not change this vinyl.');
+        }
         $entry->setFieldValue('vinylStatus', $status);
         Craft::$app->getElements()->saveElement($entry);
 
@@ -60,6 +66,7 @@ class VinylController extends Controller
         $entry = Entry::find()
             ->id($entryId)
             ->section('vinyls')
+            ->authorId(static::currentUser()->id)
             ->one();
 
         if (!$entry) {

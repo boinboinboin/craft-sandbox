@@ -1,0 +1,60 @@
+{% extends "_base.twig" %}
+
+{% block body %}
+  {% requireLogin %}
+
+  {# Set by entries/save-entry when a save fails (see entryVariable in the form). Read from the route params
+     because this template is rendered through the includeEntryType macro, which only passes `entry` along. #}
+  {% set failed = craft.app.urlManager.routeParams.birthdayEntry ?? null %}
+
+  {# Days until each person's next birthday, soonest first #}
+  {% set today = date(now|date('Y-m-d')) %}
+  {% set upcoming = [] %}
+  {% for person in craft.entries().section('birthdays').authorId(currentUser.id).all() %}
+    {% if person.birthDate %}
+      {% set next = date(today|date('Y') ~ '-' ~ person.birthDate|date('m-d')) %}
+      {% if next < today %}
+        {% set next = next|date_modify('+1 year') %}
+      {% endif %}
+      {% set upcoming = upcoming|merge([{
+        person: person,
+        daysLeft: today.diff(next).days,
+        age: next|date('Y') - person.birthDate|date('Y'),
+      }]) %}
+    {% endif %}
+  {% endfor %}
+  {% set upcoming = upcoming|sort((a, b) => a.daysLeft <=> b.daysLeft) %}
+
+  <section class="base-section">
+    <div class="base-container">
+      <h1 class="h1">{{ entry.title }}</h1>
+      {% if entry.preamble %}<p class="text-2xl">{{ entry.preamble }}</p>{% endif %}
+    </div>
+  </section>
+
+  <section class="base-section">
+    <div class="base-container">
+      <h2 class="text-3xl mb-4">Add birthday</h2>
+      {% include '_includes/birthdayForm.twig' with {
+        person: failed and not failed.id ? failed : null,
+        redirect: entry.url,
+        submit: 'add',
+      } only %}
+    </div>
+  </section>
+
+  <section class="base-section">
+    <div class="base-container">
+    {% if upcoming is empty %}
+      <p class="base">No birthdays added yet.</p>
+    {% else %}
+      <h2 class="text-5xl mb-10">Upcoming</h2>
+      <ul>
+        {% for item in upcoming %}
+          {% include '_cards/birthdayRow.twig' with item|merge({ failed: failed, redirect: entry.url }) only %}
+        {% endfor %}
+      </ul>
+    {% endif %}
+    </div>
+  </section>
+{% endblock %}

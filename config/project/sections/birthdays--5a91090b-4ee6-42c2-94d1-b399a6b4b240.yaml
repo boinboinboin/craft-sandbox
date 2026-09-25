@@ -1,0 +1,25 @@
+defaultPlacement: end
+enableVersioning: true
+entryTypes:
+  -
+    uid: 97cc39c2-672a-4b19-b8b4-20c45afd1477 # Birthday
+handle: birthdays
+maxAuthors: 1
+name: Birthdays
+previewTargets:
+  -
+    __assoc__:
+      -
+        - label
+        - 'Primary entry page'
+      -
+        - urlFormat
+        - '{url}'
+propagationMethod: all
+siteSettings:
+  b43bcddf-8cc3-4971-b8ef-c4efe4bce91e: # Default
+    enabledByDefault: true
+    hasUrls: false
+    template: null
+    uriFormat: null
+type: channel

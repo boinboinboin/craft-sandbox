@@ -12,10 +12,11 @@ use modules\discogs\Module;
 use yii\web\BadRequestHttpException;
 use yii\web\Response;
 
+/**
+ * Requires login; vinyls are added to (and de-duplicated within) the current user's own collection.
+ */
 class DiscogsController extends Controller
 {
-    protected array|bool|int $allowAnonymous = ['search', 'add'];
-
     /**
      * GET actions/discogs/discogs/search?q=...
      * Searches Discogs and returns candidate releases as JSON.
@@ -46,6 +47,10 @@ class DiscogsController extends Controller
         $this->requirePostRequest();
         $this->requireAcceptsJson();
 
+        $section = Craft::$app->getEntries()->getSectionByHandle('vinyls');
+        $this->requirePermission("createEntries:$section->uid");
+        $user = static::currentUser();
+
         $request = Craft::$app->getRequest();
         $discogsId = (int)$request->getRequiredBodyParam('discogsId');
         $status = (string)$request->getRequiredBodyParam('status');
@@ -57,6 +62,7 @@ class DiscogsController extends Controller
         // Already have this release? Just update its status rather than duplicating it.
         $existing = Entry::find()
             ->section('vinyls')
+            ->authorId($user->id)
             ->discogsReleaseId($discogsId)
             ->one();
 
@@ -75,10 +81,10 @@ class DiscogsController extends Controller
             $release = $discogs->getMaster($discogsId);
 
             $entry = new Entry();
-            $section = Craft::$app->getEntries()->getSectionByHandle('vinyls');
             $entryType = Craft::$app->getEntries()->getEntryTypeByHandle('vinyl');
             $entry->sectionId = $section->id;
             $entry->typeId = $entryType->id;
+            $entry->setAuthorIds([$user->id]);
             $entry->title = $release['title'];
             $entry->setFieldValue('vinylArtist', $release['artist']);
             $entry->setFieldValue('vinylStatus', $status);

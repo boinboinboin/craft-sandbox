@@ -1,0 +1,12 @@
+description: null
+handle: members
+name: Members
+permissions:
+  - 'createentries:3b539f3a-1c6c-4524-986d-2f0283911cbc' # Vinyls
+  - 'createentries:5a91090b-4ee6-42c2-94d1-b399a6b4b240' # Birthdays
+  - 'deleteentries:3b539f3a-1c6c-4524-986d-2f0283911cbc' # Vinyls
+  - 'deleteentries:5a91090b-4ee6-42c2-94d1-b399a6b4b240' # Birthdays
+  - 'saveentries:3b539f3a-1c6c-4524-986d-2f0283911cbc' # Vinyls
+  - 'saveentries:5a91090b-4ee6-42c2-94d1-b399a6b4b240' # Birthdays
+  - 'viewentries:3b539f3a-1c6c-4524-986d-2f0283911cbc' # Vinyls
+  - 'viewentries:5a91090b-4ee6-42c2-94d1-b399a6b4b240' # Birthdays

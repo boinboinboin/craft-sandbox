@@ -1,0 +1,41 @@
+{% extends "_base.twig" %}
+
+{% block body %}
+  {% if currentUser %}
+    {% redirect siteUrl %}
+  {% endif %}
+
+  <section class="base-section">
+    <div class="base-container">
+      <div class="max-w-sm">
+        <h1 class="h1 mb-10">Log in</h1>
+        <form method="post" accept-charset="UTF-8" class="flex flex-col gap-6">
+          {{ csrfInput() }}
+          {{ actionInput('users/login') }}
+
+          {% if errorMessage is defined %}
+            <p class="form-error">{{ errorMessage }}</p>
+          {% endif %}
+
+          <label>
+            <span class="form-label">Email</span>
+            <input type="email" name="loginName" value="{{ loginName ?? craft.app.user.rememberedUsername }}" autocomplete="email" class="form-input" required autofocus>
+          </label>
+          <label>
+            <span class="form-label">Password</span>
+            <input type="password" name="password" autocomplete="current-password" class="form-input" required>
+          </label>
+          <label class="flex items-center gap-2 text-gray-700">
+            <input type="checkbox" name="rememberMe" value="1">
+            Remember me
+          </label>
+
+          <div class="flex items-center justify-between gap-4">
+            <button type="submit" class="btn-outline">Log in</button>
+            <a href="{{ url('account/register') }}" class="text-gray-500 hover:text-black">Create an account</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+{% endblock %}

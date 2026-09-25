@@ -2,6 +2,12 @@
 {% import "_macros/image.twig" as imageMacro %}
 
 {% block body %}
+  {# Vinyls are private to the user who added them #}
+  {% requireLogin %}
+  {% if entry.authorId != currentUser.id %}
+    {% exit 404 %}
+  {% endif %}
+
   <section class="base-section">
     <div class="base-container">
       {{ imageMacro.srcset(entry.vinylCoverImage.one(), { width: 600, height: 600, lazyload: false }) }}

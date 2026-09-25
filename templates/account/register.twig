@@ -1,0 +1,42 @@
+{% extends "_base.twig" %}
+
+{% block body %}
+  {% if currentUser %}
+    {% redirect siteUrl %}
+  {% endif %}
+
+  <section class="base-section">
+    <div class="base-container">
+      <div class="max-w-sm">
+        <h1 class="h1 mb-10">Sign up</h1>
+        {# New users land in the Members group (Settings → Users), so they only see their own entries #}
+        <form method="post" accept-charset="UTF-8" class="flex flex-col gap-6">
+          {{ csrfInput() }}
+          {{ actionInput('users/save-user') }}
+          {{ redirectInput(siteUrl) }}
+
+          <label>
+            <span class="form-label">Name</span>
+            <input type="text" name="fullName" value="{{ user.fullName ?? '' }}" autocomplete="name" class="form-input" required autofocus>
+            {% for error in user is defined ? user.getErrors('fullName') : [] %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </label>
+          <label>
+            <span class="form-label">Email</span>
+            <input type="email" name="email" value="{{ user.email ?? '' }}" autocomplete="email" class="form-input" required>
+            {% for error in user is defined ? user.getErrors('email') : [] %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </label>
+          <label>
+            <span class="form-label">Password</span>
+            <input type="password" name="password" autocomplete="new-password" class="form-input" required>
+            {% for error in user is defined ? user.getErrors('password') : [] %}<span class="form-error">{{ error }}</span>{% endfor %}
+          </label>
+
+          <div class="flex items-center justify-between gap-4">
+            <button type="submit" class="btn-outline">Sign up</button>
+            <a href="{{ url('account/login') }}" class="text-gray-500 hover:text-black">I have an account</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+{% endblock %}

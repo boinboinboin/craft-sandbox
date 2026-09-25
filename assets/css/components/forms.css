@@ -1,0 +1,13 @@
+@layer components {
+    .form-input {
+        @apply w-full py-2 bg-transparent border-b border-gray-300 outline-none transition-colors focus:border-black placeholder:text-gray-400;
+    }
+
+    .form-label {
+        @apply block text-sm text-gray-500;
+    }
+
+    .form-error {
+        @apply text-sm text-red-600;
+    }
+}

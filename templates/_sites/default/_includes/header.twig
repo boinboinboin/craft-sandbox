@@ -17,6 +17,11 @@
             {% for page in navPages %}
                 <li><a href="{{ page.url }}" class="hover:text-blue-500">{{ page.title }}</a></li>
             {% endfor %}
+            {% if currentUser %}
+                <li><a href="{{ logoutUrl }}" class="text-gray-500 hover:text-blue-500">Log out</a></li>
+            {% else %}
+                <li><a href="{{ url('account/login') }}" class="text-gray-500 hover:text-blue-500">Log in</a></li>
+            {% endif %}
         </ul>
     </div>
 
@@ -26,6 +31,11 @@
             {% for page in navPages %}
                 <li><a href="{{ page.url }}" class="block text-gray-700 hover:text-blue-500">{{ page.title }}</a></li>
             {% endfor %}
+            {% if currentUser %}
+                <li><a href="{{ logoutUrl }}" class="block text-gray-500 hover:text-blue-500">Log out</a></li>
+            {% else %}
+                <li><a href="{{ url('account/login') }}" class="block text-gray-500 hover:text-blue-500">Log in</a></li>
+            {% endif %}
         </ul>
     </div>
 </nav>

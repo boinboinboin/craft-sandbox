@@ -1,4 +1,4 @@
-dateModified: 1790174905
+dateModified: 1790324135
 email:
   fromEmail: johannes@seeds.no
   fromName: 'Craft Boilerplate'
@@ -21,6 +21,9 @@ meta:
     2e7c80fe-da4c-4367-a048-04f50462e1a4: 'Discogs release ID' # Discogs release ID
     3b40d248-aaa7-4b0b-9e8e-08a40c1ad77a: Preamble # Preamble
     3b539f3a-1c6c-4524-986d-2f0283911cbc: Vinyls # Vinyls
+    5a91090b-4ee6-42c2-94d1-b399a6b4b240: Birthdays # Birthdays
+    5e5bd584-c914-4f06-86c3-61bfe988a8b8: 'Gift ideas' # Gift ideas
+    7a1d1c73-c4f4-4ce8-a011-e1fb3c07a8b0: Members # Members
     7c80f4dd-0ff7-401e-b0df-a7f8206bd6f1: 'SEO Title' # SEO Title
     8fba1319-bc8c-4d5d-93b0-6fb2092c7963: 'Main Image' # Main Image
     20afde05-3960-4d67-9d7e-b9c1bf81e641: 'Twitter title' # Twitter title
@@ -29,6 +32,7 @@ meta:
     63fcea28-a867-4cfa-b68f-5982694c2d06: Vinyl # Vinyl
     75e61f0a-b17f-4cc8-911a-2d881af87a05: Pages # Pages
     79db34d0-53e2-480e-b239-efe941831a2c: 'Vinyl tracklist' # Vinyl tracklist
+    97cc39c2-672a-4b19-b8b4-20c45afd1477: Birthday # Birthday
     799ffacb-f326-443b-bfb5-0bd1af9b1b07: Content # Content
     2603e5fe-3c82-4b96-a5a3-7c692af109e7: Image # Image
     4079dc7d-a87a-4567-8052-0e0bbdb74fb5: 'Vinyl cover image' # Vinyl cover image
@@ -36,6 +40,7 @@ meta:
     6875af28-74ab-47c6-bc24-74252024703e: 'Page cards' # Page cards
     6063994b-ceff-4c98-992b-89bb1b6f198c: 'Vinyl year' # Vinyl year
     13820824-cb63-4a98-bf78-8b24cc7fd1d0: 'Accordion blocks' # Accordion blocks
+    78654068-eb99-4249-b350-a5ba78a2ffb8: 'Birth date' # Birth date
     a9b95943-04d9-4a99-bd95-fb35c1b79ac6: Entries # Entries
     a716da50-3c3f-4a5d-b06f-1e92c7eab81e: 'Single line text' # Single line text
     ade0ba61-fbf6-458f-baee-9e0c78cdfd6d: Simple # Simple
@@ -54,6 +59,7 @@ meta:
     e6d5ce9a-038f-4ca5-9708-d1a6087e92bd: 'Craft Boilerplate' # Craft Boilerplate
     e902a893-dd5f-4961-b967-3fa2d49aae4a: Image # Image
     e9315311-6ed3-4da5-a8df-4f913356c56b: 'Plain text' # Plain text
+    f3133035-d94a-443c-8d18-f3f8a0d4e2c5: 'Birthday Overview' # Birthday Overview
     fff9e1fe-da4c-4b03-8607-3aad0f33a168: 'Rich text' # Rich text
 plugins:
   ckeditor:
@@ -74,11 +80,4 @@ system:
   name: 'Craft Sandbox'
   retryDuration: null
   schemaVersion: 5.7.0.3
-  timeZone: America/Los_Angeles
-users:
-  allowPublicRegistration: false
-  defaultGroup: null
-  photoSubpath: null
-  photoVolumeUid: null
-  require2fa: false
-  requireEmailVerification: true
+  timeZone: Europe/Oslo
