@@ -1,16 +1,21 @@
 {% import "_macros/image.twig" as imageMacro %}
 <div class="col-span-12 sm:col-span-6 md:col-span-4" data-controller="vinyl-actions" data-vinyl-actions-entry-id-value="{{ vinyl.id }}" data-vinyl-actions-status-value="{{ vinyl.vinylStatus }}">
-  <a class="block" href="{{ vinyl.url }}">
-    <div class="h-fit overflow-hidden">
-      {{ imageMacro.srcset(vinyl.vinylCoverImage.one(), { width: 600, height: 600, class: 'hover:scale-105 transition overflow-hidden duration-500 ease-in-out w-full aspect-square object-cover' }) }}
-    </div>
-    <div class="py-6">
-      <h3 class="text-2xl">{{ vinyl.title }}</h3>
-      <p class="text-gray-700 mb-4">{{ vinyl.vinylArtist }}</p>
-    </div>
+  <a class="block h-fit overflow-hidden" href="{{ vinyl.url }}">
+    {{ imageMacro.srcset(vinyl.vinylCoverImage.one(), { width: 600, height: 600, class: 'hover:scale-105 transition overflow-hidden duration-500 ease-in-out w-full aspect-square object-cover' }) }}
   </a>
-  <div class="flex gap-2">
-    <button type="button" class="btn" data-action="click->vinyl-actions#move">Move to {{ vinyl.vinylStatus == 'owned' ? 'Wishlist' : 'Collection' }}</button>
-    <button type="button" class="btn btn-red" data-action="click->vinyl-actions#remove">Remove</button>
+  <div class="flex items-start justify-between gap-4 py-6">
+    <a class="block min-w-0" href="{{ vinyl.url }}">
+      <h3 class="text-2xl">{{ vinyl.title }}</h3>
+      <p class="text-gray-700">{{ vinyl.vinylArtist }}</p>
+    </a>
+    <div class="flex shrink-0 gap-1">
+      {% set moveLabel = vinyl.vinylStatus == 'owned' ? 'Move to wishlist' : 'Move to collection' %}
+      <button type="button" class="btn-icon" data-action="click->vinyl-actions#move" aria-label="{{ moveLabel }}" title="{{ moveLabel }}">
+        {{ svg(include(vinyl.vinylStatus == 'owned' ? '_svg/icons/heart.svg' : '_svg/icons/add.svg')) }}
+      </button>
+      <button type="button" class="btn-icon btn-icon-danger" data-action="click->vinyl-actions#remove" aria-label="Remove" title="Remove">
+        {{ svg(include('_svg/icons/trash.svg')) }}
+      </button>
+    </div>
   </div>
 </div>

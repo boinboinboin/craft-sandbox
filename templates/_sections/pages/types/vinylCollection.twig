@@ -12,10 +12,14 @@
   <section class="base-section" data-controller="discogs-search">
     <div class="base-container">
       <h2 class="text-3xl mb-4">Add from Discogs</h2>
-      <div class="flex gap-2 mb-4">
-        <input type="text" data-discogs-search-target="input" placeholder="Search Discogs..." class="border border-gray-400 rounded px-3 py-2 flex-1">
-        <button type="button" class="btn" data-action="click->discogs-search#search">Search</button>
-      </div>
+      <form class="flex items-center gap-2 mb-4 border-b border-gray-300 focus-within:border-black transition-colors" data-action="submit->discogs-search#search">
+        <input type="text" data-discogs-search-target="input" placeholder="Search Discogs..." class="flex-1 py-2 bg-transparent outline-none">
+        <button type="submit" class="btn-icon" aria-label="Search" title="Search">
+          {{ svg(include('_svg/icons/search.svg')) }}
+        </button>
+      </form>
+      <template data-discogs-search-target="wishlistIcon">{{ svg(include('_svg/icons/heart.svg')) }}</template>
+      <template data-discogs-search-target="collectionIcon">{{ svg(include('_svg/icons/add.svg')) }}</template>
       <p data-discogs-search-target="status" class="text-gray-700 mb-4"></p>
       <div data-discogs-search-target="results" class="max-h-96 overflow-y-auto"></div>
     </div>

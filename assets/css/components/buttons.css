@@ -5,4 +5,14 @@
             @apply bg-red-500 hover:bg-red-600
         }
     }
+
+    .btn-icon {
+        @apply inline-flex items-center justify-center p-1 text-gray-400 hover:text-black transition-colors duration-200 cursor-pointer;
+        svg {
+            @apply w-6 h-6;
+        }
+        &.btn-icon-danger {
+            @apply hover:text-red-600;
+        }
+    }
 }

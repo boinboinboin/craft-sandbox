@@ -1,7 +1,7 @@
 import { Controller } from '@hotwired/stimulus'
 
 export default class extends Controller {
-  static targets = ['input', 'results', 'status']
+  static targets = ['input', 'results', 'status', 'wishlistIcon', 'collectionIcon']
 
   search(event) {
     event.preventDefault()
@@ -41,8 +41,10 @@ export default class extends Controller {
           <p class="font-semibold">${result.title}</p>
           ${result.year ? `<p class="text-gray-700">${result.year}</p>` : ''}
         </div>
-        <button type="button" class="btn" data-action="click->discogs-search#add" data-discogs-id="${result.id}" data-status="wanted">Add to Wishlist</button>
-        <button type="button" class="btn" data-action="click->discogs-search#add" data-discogs-id="${result.id}" data-status="owned">Add to Collection</button>
+        <div class="flex shrink-0 gap-1">
+          <button type="button" class="btn-icon" data-action="click->discogs-search#add" data-discogs-id="${result.id}" data-status="wanted" aria-label="Add to wishlist" title="Add to wishlist">${this.wishlistIconTarget.innerHTML}</button>
+          <button type="button" class="btn-icon" data-action="click->discogs-search#add" data-discogs-id="${result.id}" data-status="owned" aria-label="Add to collection" title="Add to collection">${this.collectionIconTarget.innerHTML}</button>
+        </div>
       `
       this.resultsTarget.appendChild(row)
     })
