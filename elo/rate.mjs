@@ -10,7 +10,9 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import * as R from "./rules.mjs";
 
 const DIR = new URL(".", import.meta.url).pathname;
-const POOLS = { MensSingles: "men", WomensSingles: "women" };
+// Rating pool per discipline. Every pool is rated separately.
+const POOLS = { MensSingles: "men", WomensSingles: "women", MensDoubles: "mensDoubles", WomensDoubles: "womensDoubles", MixedDoubles: "mixedDoubles" };
+const DOUBLES = new Set(["mensDoubles", "womensDoubles", "mixedDoubles"]);
 // Calibration stats skip the warm-up seasons and players with too few matches.
 const CALIBRATION_FROM = "2015-07-01";
 const CALIBRATION_MIN_MATCHES = 10;
@@ -26,8 +28,12 @@ const TYPICAL_MARGIN = 0.2;
 const RIVALS = 3;
 // Club history: a tournament club counts for this long; otherwise the league team's club is used.
 const TOURNAMENT_CLUB_DAYS = 365;
-// Club strength: average rating of a club's best ranked players; clubs need at least this many.
-const CLUB_TOP_PLAYERS = 3;
+// Club strength per pool: average rating of a club's best ranked players, and clubs need at least
+// this many. Doubles: the best 4 players (two pairs). Mixed doubles: the best 3 men and the best 3
+// women, counted per gender since men's and women's mixed ratings can't be compared.
+const CLUB_TOP = { men: 3, women: 3, mensDoubles: 4, womensDoubles: 4, mixedDoubles: { M: 3, K: 3 } };
+const clubTopLabel = (top) =>
+  typeof top === "number" ? `best ${top} ranked players` : `best ${top.M} ranked men and best ${top.K} ranked women`;
 
 const readDir = (sub) =>
   readdirSync(`${DIR}data/${sub}`).map((f) => JSON.parse(readFileSync(`${DIR}data/${sub}/${f}`, "utf8")));
@@ -69,9 +75,10 @@ function roundStage(round) {
 
 export const skipped = { walkover: 0, bye: 0, unplayed: 0, noPlayer: 0 };
 
-// One rateable game: both sides a single player with an id.
+// One rateable game: both sides complete (one player in singles, two in doubles), all with ids.
 function toGame(m, meta) {
   const pool = POOLS[m.discipline];
+  if (!pool) return null;
   const sets = R.parseSets(m.score ?? "");
   if (R.isWalkover(m, sets)) {
     skipped.walkover++;
@@ -81,9 +88,9 @@ function toGame(m, meta) {
     skipped.bye++;
     return null;
   }
-  const [a] = m.side1;
-  const [b] = m.side2;
-  if (!pool || m.side1.length !== 1 || m.side2.length !== 1 || !a.id || !b.id) {
+  const size = DOUBLES.has(pool) ? 2 : 1;
+  const sides = [m.side1, m.side2];
+  if (sides.some((side) => side.length !== size || side.some((p) => !p.id))) {
     skipped.noPlayer++;
     return null;
   }
@@ -92,9 +99,10 @@ function toGame(m, meta) {
     skipped.unplayed++;
     return null;
   }
-  const ra = regionOf(a.club);
-  const rb = regionOf(b.club);
-  return { pool, a, b, s, sets, crossRegion: !!(ra && rb && ra !== rb), ...meta };
+  // Cross-region: every player's region is known and the two sides share none.
+  const [r1, r2] = sides.map((side) => side.map((p) => regionOf(p.club)));
+  const crossRegion = [...r1, ...r2].every(Boolean) && !r1.some((r) => r2.includes(r));
+  return { pool, side1: m.side1, side2: m.side2, s, sets, crossRegion, ...meta };
 }
 
 let regionOf;
@@ -143,9 +151,11 @@ const weekStart = (day) => addDays(day, -((new Date(toTime(day)).getUTCDay() + 6
 const RETURN_GAP_DAYS = 365;
 const RETURN_MATCHES = 5;
 
-// onGame(game, playerA, playerB, expectedA) is called before each rating update, for analysis.
-// Experiment hooks (defaults follow the README): startRating(level), kMultiplier(game),
-// playerMultiplier(player, game), ratingMultiplier(r), expectedScore(ra, rb), kappa.
+// onGame(game, side1, side2, expected1) is called before each rating update, for analysis; sides are
+// arrays of player states. Experiment hooks (defaults follow the README): startRating(level),
+// kMultiplier(game), playerMultiplier(player, game), ratingMultiplier(r), expectedScore(ra, rb),
+// kappa, doublesKappa (base K-factor for doubles) and doublesSplit ("rd" or "equal": how a doubles
+// side's rating change is shared between the partners).
 export function computeRatings(
   games,
   inactivity = R.INACTIVITY,
@@ -158,10 +168,13 @@ export function computeRatings(
     ratingMultiplier = R.ratingMultiplier,
     expectedScore = R.expectedScore,
     kappa = R.KAPPA,
+    doublesKappa = R.DOUBLES_KAPPA,
+    doublesSplit = R.DOUBLES_SPLIT,
   } = {}
 ) {
-  const players = { men: new Map(), women: new Map() };
-  const calibration = { n: 0, correct: 0, logLoss: 0 };
+  const players = Object.fromEntries(Object.values(POOLS).map((pool) => [pool, new Map()]));
+  // Prediction accuracy per pool
+  const calibration = Object.fromEntries(Object.keys(players).map((pool) => [pool, { n: 0, correct: 0, logLoss: 0 }]));
   // surprise: mean (actual - expected) score. items: [rating before the return, days away, actual - expected]
   const returns = { n: 0, surprise: 0, logLoss: 0, items: [] };
 
@@ -178,12 +191,14 @@ export function computeRatings(
     p.penalizedUntil = day;
   }
 
+  const rdMax = (pool) => (DOUBLES.has(pool) ? R.DOUBLES_RD_MAX : R.RD_MAX);
+
   function getPlayer(pool, side, level, day, source) {
     let p = players[pool].get(side.id);
     if (!p) {
       const start = startRating(level);
       const week = weekStart(day);
-      p = { id: side.id, rating: start, rd: R.RD_MAX, rdDay: day, start, peak: start, matches: 0, wins: 0, draws: 0, losses: 0, firstPlayed: day, firstWeek: week, nextWeek: week, weekly: [], log: [], clubs: [], returning: 0 };
+      p = { id: side.id, rating: start, rd: rdMax(pool), rdDay: day, start, peak: start, matches: 0, wins: 0, draws: 0, losses: 0, firstPlayed: day, firstWeek: week, nextWeek: week, weekly: [], log: [], clubs: [], returning: 0 };
       players[pool].set(side.id, p);
     }
     p.name = side.name;
@@ -213,10 +228,10 @@ export function computeRatings(
   }
 
   function rate(g) {
-    const pa = getPlayer(g.pool, g.a, g.level, g.day, g.source);
-    const pb = getPlayer(g.pool, g.b, g.level, g.day, g.source);
+    const sides = [g.side1, g.side2].map((side) => side.map((player) => getPlayer(g.pool, player, g.level, g.day, g.source)));
+    const all = sides.flat();
     const week = weekStart(g.day);
-    for (const p of [pa, pb]) {
+    for (const p of all) {
       const away = p.lastPlayed ? (toTime(g.day) - toTime(p.lastPlayed)) / DAY_MS : 0;
       if (away >= RETURN_GAP_DAYS) {
         p.returning = RETURN_MATCHES;
@@ -226,70 +241,103 @@ export function computeRatings(
       applyInactivity(p, g.day);
     }
 
-    const ea = expectedScore(pa.rating, pb.rating);
-    onGame?.(g, pa, pb, ea);
+    // A doubles side plays at the sum of its two players' ratings: a pair whose players are each
+    // 100 points better is a 200-point favourite. (The average predicted too cautiously.)
+    const teamRating = (side) => side.reduce((sum, p) => sum + p.rating, 0);
+    const ea = expectedScore(teamRating(sides[0]), teamRating(sides[1]));
+    onGame?.(g, sides[0], sides[1], ea);
     const decisive = g.s !== 0.5;
-    if (g.day >= CALIBRATION_FROM && decisive && pa.matches >= CALIBRATION_MIN_MATCHES && pb.matches >= CALIBRATION_MIN_MATCHES) {
-      calibration.n++;
-      if ((ea > 0.5) === (g.s === 1)) calibration.correct++;
-      calibration.logLoss -= Math.log(g.s === 1 ? ea : 1 - ea);
+    const settled = all.every((p) => p.matches >= CALIBRATION_MIN_MATCHES);
+    if (g.day >= CALIBRATION_FROM && decisive && settled) {
+      const c = calibration[g.pool];
+      c.n++;
+      if ((ea > 0.5) === (g.s === 1)) c.correct++;
+      c.logLoss -= Math.log(g.s === 1 ? ea : 1 - ea);
     }
-    for (const [p, e, s] of [[pa, ea, g.s], [pb, 1 - ea, 1 - g.s]]) {
-      if (!p.returning) continue;
-      p.returning--;
-      returns.n++;
-      returns.surprise += s - e;
-      returns.items.push([...p.returnInfo, s - e]);
-      returns.logLoss -= decisive ? Math.log(s === 1 ? e : 1 - e) : 0;
+    // Per side: its players, expected score, actual score and set scores from its own side.
+    const flip = (sets) => sets.map(([x, y]) => [y, x]);
+    const perSide = [
+      { players: sides[0], opponents: sides[1], e: ea, s: g.s, sets: g.sets },
+      { players: sides[1], opponents: sides[0], e: 1 - ea, s: 1 - g.s, sets: flip(g.sets) },
+    ];
+    for (const { players: side, e, s } of perSide) {
+      for (const p of side) {
+        if (!p.returning) continue;
+        p.returning--;
+        returns.n++;
+        returns.surprise += s - e;
+        returns.items.push([...p.returnInfo, s - e]);
+        returns.logLoss -= decisive ? Math.log(s === 1 ? e : 1 - e) : 0;
+      }
     }
 
+    const doubles = DOUBLES.has(g.pool);
     const crossRegion = g.crossRegion ? R.CROSS_REGION_K : 1;
     const k =
-      kappa * R.TIERS[g.level.tier].weight * R.marginWeight(g.sets, g.s) * R.covidK(g.day) * crossRegion * (kMultiplier?.(g) ?? 1);
+      (doubles ? doublesKappa : kappa) *
+      R.TIERS[g.level.tier].weight * R.marginWeight(g.sets, g.s) * R.covidK(g.day) * crossRegion * (kMultiplier?.(g) ?? 1);
 
-    // Uncertainty: grows with time since the last match, shrinks with this match (from pre-match values).
-    for (const p of [pa, pb]) p.rd = R.rdAfterTime(p.rd, (toTime(g.day) - toTime(p.rdDay)) / DAY_MS);
-    const rdA = R.rdAfterMatch(pa.rating, pa.rd, pb.rating, pb.rd);
-    const rdB = R.rdAfterMatch(pb.rating, pb.rd, pa.rating, pa.rd);
-    [pa.rd, pa.rdDay, pb.rd, pb.rdDay] = [rdA, g.day, rdB, g.day];
-    const da = k * ratingMultiplier(pa.rating) * (playerMultiplier?.(pa, g) ?? 1) * (g.s - ea);
-    const db = k * ratingMultiplier(pb.rating) * (playerMultiplier?.(pb, g) ?? 1) * (1 - g.s - (1 - ea));
+    // Uncertainty: grows with time since the last match, shrinks with this match (from pre-match
+    // values). In doubles each player is measured against the opposing side's summed rating and
+    // the uncertainty of that sum.
+    for (const p of all) p.rd = R.rdAfterTime(p.rd, (toTime(g.day) - toTime(p.rdDay)) / DAY_MS, rdMax(g.pool));
+    const teamRd = (side) => Math.sqrt(side.reduce((sum, p) => sum + p.rd ** 2, 0));
+    const rdAfter = perSide.map(({ players: side, opponents }) =>
+      side.map((p) => R.rdAfterMatch(teamRating(side), p.rd, teamRating(opponents), teamRd(opponents)))
+    );
+
+    // Rating changes: a side's change K·(S − E) is shared between its players, by each one's
+    // uncertainty (RD²) or equally, then scaled by each player's own m(R).
+    for (const side of perSide) {
+      const variance = side.players.reduce((sum, p) => sum + p.rd ** 2, 0);
+      side.changes = side.players.map((p) => {
+        const share = !doubles ? 1 : doublesSplit === "rd" ? p.rd ** 2 / variance : 1 / side.players.length;
+        return k * share * ratingMultiplier(p.rating) * (playerMultiplier?.(p, g) ?? 1) * (side.s - side.e);
+      });
+    }
+    perSide.forEach((side, i) => side.players.forEach((p, j) => ([p.rd, p.rdDay] = [rdAfter[i][j], g.day])));
+
     if (keepWeekly) {
-      // Match log, scores from each player's own side
-      const flip = (sets) => sets.map(([x, y]) => [y, x]);
-      for (const [p, o, d, s, e, sets] of [[pa, pb, da, g.s, ea, g.sets], [pb, pa, db, 1 - g.s, 1 - ea, flip(g.sets)]]) {
-        p.log.push({
-          day: g.day, event: g.event, opponent: { id: o.id, name: o.name, rating: Math.round(o.rating) },
-          rating: Math.round(p.rating), change: Math.round(d * 10) / 10, result: s, winChance: Math.round(e * 1000) / 1000,
-          score: sets.map((x) => x.join("-")).join(", "),
-          // Only matches between players with settled ratings count as biggest wins and losses.
-          settled: pa.matches >= CALIBRATION_MIN_MATCHES && pb.matches >= CALIBRATION_MIN_MATCHES,
-          margin: R.pointMargin(sets),
+      const ref = (p) => ({ id: p.id, name: p.name, rating: Math.round(p.rating) });
+      for (const side of perSide) {
+        side.players.forEach((p, j) => {
+          p.log.push({
+            day: g.day, event: g.event,
+            partner: doubles ? ref(side.players[1 - j]) : null,
+            opponents: side.opponents.map(ref),
+            rating: Math.round(p.rating), change: Math.round(side.changes[j] * 10) / 10, result: side.s, winChance: Math.round(side.e * 1000) / 1000,
+            score: side.sets.map((x) => x.join("-")).join(", "),
+            // Only matches between players with settled ratings count as biggest wins and losses.
+            settled,
+            margin: R.pointMargin(side.sets),
+          });
         });
       }
     }
-    for (const [p, d, s] of [[pa, da, g.s], [pb, db, 1 - g.s]]) {
-      p.rating += d;
-      p.peak = Math.max(p.peak, p.rating);
-      p.matches++;
-      if (s === 1) p.wins++;
-      else if (s === 0) p.losses++;
-      else p.draws++;
-      p.lastPlayed = g.day;
+    for (const side of perSide) {
+      side.players.forEach((p, j) => {
+        p.rating += side.changes[j];
+        p.peak = Math.max(p.peak, p.rating);
+        p.matches++;
+        if (side.s === 1) p.wins++;
+        else if (side.s === 0) p.losses++;
+        else p.draws++;
+        p.lastPlayed = g.day;
+      });
     }
   }
 
   for (const g of games) rate(g);
 
   const today = new Date().toISOString().slice(0, 10);
-  for (const map of Object.values(players)) {
+  for (const [pool, map] of Object.entries(players)) {
     for (const p of map.values()) {
       // Weekly series run to the last played week; after that the rating stays the same.
       // Ratings above the floor keep decaying while inactive, so those run to the current week.
       const decays = inactivity.halfLifeDays && p.rating > inactivity.floor;
       closeWeeks(p, addDays(weekStart(decays ? today : p.lastPlayed), 7));
       applyInactivity(p, today);
-      p.rd = R.rdAfterTime(p.rd, (toTime(today) - toTime(p.rdDay)) / DAY_MS);
+      p.rd = R.rdAfterTime(p.rd, (toTime(today) - toTime(p.rdDay)) / DAY_MS, rdMax(pool));
     }
   }
   return { players, calibration, returns };
@@ -310,6 +358,27 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   );
   const clubOf = (p) => registered.get(p.id) || p.tournamentClub || p.leagueClub || null;
   const genders = new Map(JSON.parse(readFileSync(`${DIR}data/players.json`, "utf8")).map((p) => [p.id, p.gender]));
+  // Players not in the register: the opposite of most of their mixed doubles partners' genders,
+  // else "K" if they have played women's singles or doubles. Marked as inferred.
+  const inferred = new Map();
+  const partnerVotes = new Map();
+  for (const g of games) {
+    if (g.pool !== "mixedDoubles") continue;
+    for (const side of [g.side1, g.side2]) {
+      side.forEach((p, j) => {
+        const partner = genders.get(side[1 - j].id);
+        if (genders.has(p.id) || !partner) return;
+        const votes = partnerVotes.get(p.id) ?? { M: 0, K: 0 };
+        votes[partner === "M" ? "K" : "M"]++;
+        partnerVotes.set(p.id, votes);
+      });
+    }
+  }
+  for (const [id, votes] of partnerVotes) if (votes.M !== votes.K) inferred.set(id, votes.M > votes.K ? "M" : "K");
+  for (const pool of ["women", "womensDoubles"]) {
+    for (const id of players[pool].keys()) if (!genders.has(id) && !inferred.has(id)) inferred.set(id, "K");
+  }
+  const genderOf = (id) => genders.get(id) ?? inferred.get(id) ?? null;
   // Fields only used while rating
   const INTERNAL = new Set(["weekly", "log", "clubs", "nextWeek", "penalizedUntil", "returning", "returnInfo", "rdDay", "tournamentClub", "tournamentDay", "leagueClub"]);
 
@@ -317,54 +386,84 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const activeSince = addDays(today, -R.RANKING_ACTIVE_DAYS);
   for (const [pool, map] of Object.entries(players)) {
     const list = [...map.values()].sort((a, b) => b.rating - a.rating);
-    let rank = 0;
+    // Mixed doubles ranks men and women separately: every side has one of each, so results
+    // can't tell how men's ratings compare to women's. Players of unknown gender get no rank there.
+    const separate = pool === "mixedDoubles";
+    const ranks = {};
     ratings[pool] = list.map((player) => {
       const p = Object.fromEntries(Object.entries(player).filter(([key]) => !INTERNAL.has(key)));
       const active = p.lastPlayed >= activeSince;
-      // gender: "M" or "K" (kvinne) from badmintonportalen's player register, null if not in it.
+      const gender = genderOf(p.id);
+      const rankGroup = separate ? gender : "all";
+      const rank = active && rankGroup ? (ranks[rankGroup] = (ranks[rankGroup] ?? 0) + 1) : null;
+      // gender: "M" or "K" (kvinne) from badmintonportalen's player register, or inferred
+      // (genderInferred) for players not in it; null if unknown.
       // plusMinus: 95% range, rating ± 2·RD
-      return { rank: active ? ++rank : null, ...p, club: clubOf(player), gender: genders.get(p.id) ?? null, active, rating: round(p.rating), rd: Math.round(p.rd), plusMinus: Math.round(2 * p.rd), peak: round(p.peak) };
+      return {
+        rank, ...p, club: clubOf(player), gender, genderInferred: inferred.has(p.id), active,
+        rating: round(p.rating), rd: Math.round(p.rd), plusMinus: Math.round(2 * p.rd), peak: round(p.peak),
+      };
     });
     // clubs: [week index, club] from the week the player started playing for that club
     weekly[pool] = Object.fromEntries(list.map((p) => [p.id, { from: p.firstWeek, ratings: p.weekly, clubs: p.clubs }]));
   }
 
-  // Strongest clubs: average rating of each club's best CLUB_TOP_PLAYERS ranked players.
+  // Strongest clubs: average rating of each club's best ranked players (CLUB_TOP).
   const clubs = {};
   for (const [pool, list] of Object.entries(ratings)) {
-    const byClub = Map.groupBy(list.filter((p) => p.active && p.club), (p) => p.club); // list is best first
+    const byClub = Map.groupBy(list.filter((p) => p.rank !== null && p.club), (p) => p.club); // list is best first
+    const top = CLUB_TOP[pool];
+    // The players counted, or false if the club has too few
+    const pick = (members) =>
+      typeof top === "number"
+        ? members.length >= top && members.slice(0, top)
+        : Object.entries(top).every(([g, n]) => members.filter((p) => p.gender === g).length >= n) &&
+          Object.entries(top).flatMap(([g, n]) => members.filter((p) => p.gender === g).slice(0, n));
     clubs[pool] = [...byClub]
-      .filter(([, members]) => members.length >= CLUB_TOP_PLAYERS)
+      .filter(([, members]) => pick(members))
       .map(([club, members]) => {
-        const top = members.slice(0, CLUB_TOP_PLAYERS);
+        const counted = pick(members);
         return {
           club,
-          strength: round(top.reduce((sum, p) => sum + p.rating, 0) / top.length),
+          strength: round(counted.reduce((sum, p) => sum + p.rating, 0) / counted.length),
           players: members.length,
-          top: top.map(({ id, name, rating }) => ({ id, name, rating })),
+          top: counted.map(({ id, name, rating, gender }) => ({ id, name, rating, gender })),
         };
       })
       .sort((a, b) => b.strength - a.strength)
       .map((c, i) => ({ rank: i + 1, ...c }));
   }
-  // Combined: the average of a club's men's and women's strength, for clubs listed in both.
-  // Each pool counts equally, since ratings in the two pools are separate scales.
-  const women = new Map(clubs.women.map((c) => [c.club, c]));
+  // Combined, for clubs listed in all five pools: the average of a club's standard score in each pool
+  // (its strength minus the mean of those clubs, divided by their standard deviation). Ratings in
+  // different pools are separate scales with different spreads, so each pool counts equally this way.
+  const poolNames = Object.keys(clubs);
+  const byPool = Object.fromEntries(poolNames.map((pool) => [pool, new Map(clubs[pool].map((c) => [c.club, c]))]));
+  const listed = clubs.men.filter((m) => poolNames.every((pool) => byPool[pool].has(m.club))).map((m) => m.club);
+  const zScore = Object.fromEntries(
+    poolNames.map((pool) => {
+      const values = listed.map((club) => byPool[pool].get(club).strength);
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const sd = Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length);
+      return [pool, (strength) => (strength - mean) / sd];
+    })
+  );
   clubs.combined = clubs.men
-    .filter((m) => women.has(m.club))
+    .filter((m) => listed.includes(m.club))
     .map((m) => {
-      const w = women.get(m.club);
+      const entries = poolNames.map((pool) => [pool, byPool[pool].get(m.club)]);
+      // Ranked players across the pools, each counted once
+      const ids = new Set(poolNames.flatMap((pool) => ratings[pool].filter((p) => p.rank !== null && p.club === m.club).map((p) => p.id)));
       return {
         club: m.club,
-        strength: round((m.strength + w.strength) / 2),
-        players: m.players + w.players,
-        pools: Object.fromEntries([["men", m], ["women", w]].map(([pool, c]) => [pool, { rank: c.rank, strength: c.strength, players: c.players }])),
+        score: Math.round((100 * entries.reduce((sum, [pool, c]) => sum + zScore[pool](c.strength), 0)) / entries.length) / 100,
+        players: ids.size,
+        pools: Object.fromEntries(entries.map(([pool, c]) => [pool, { rank: c.rank, strength: c.strength, players: c.players }])),
       };
     })
-    .sort((a, b) => b.strength - a.strength)
+    .sort((a, b) => b.score - a.score)
     .map((c, i) => ({ rank: i + 1, ...c }));
 
-  writeFileSync(`${DIR}data/ratings.json`, JSON.stringify({ generatedAt: new Date().toISOString(), pools: ratings, clubs }, null, 1));
+  writeFileSync(`${DIR}data/ratings.json`, JSON.stringify({ generatedAt: new Date().toISOString(), pools: ratings, clubs, clubTop: CLUB_TOP }, null, 1));
   // Per player: `from` is the Monday of their first week; ratings[i] is the rating at the end
   // of week from + 7*i days.
   writeFileSync(`${DIR}data/ratings-weekly.json`, JSON.stringify({ generatedAt: new Date().toISOString(), weekStartsOn: "Monday", pools: weekly }));
@@ -378,7 +477,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   for (const [id, history] of byPlayer) writeFileSync(`${DIR}data/history/${id}.json`, JSON.stringify(history));
 
   function rivals(p, pool) {
-    const byOpponent = Map.groupBy(p.log.filter((m) => m.margin !== null), (m) => m.opponent.id);
+    // In doubles every opposing player counts as an opponent.
+    const meetings = p.log.filter((m) => m.margin !== null).flatMap((m) => m.opponents.map((o) => ({ ...m, opponent: o })));
+    const byOpponent = Map.groupBy(meetings, (m) => m.opponent.id);
     return [...byOpponent.values()]
       .filter((list) => list.length >= RIVAL_MIN_MATCHES)
       .map((list) => {
@@ -422,31 +523,34 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   mkdirSync(`${DIR}data/matches`, { recursive: true });
   for (const [id, m] of matches) writeFileSync(`${DIR}data/matches/${id}.json`, JSON.stringify(m));
 
-  console.log(`Rated ${games.length} games (${games[0]?.day} to ${games.at(-1)?.day}).`);
-  console.log(`Skipped: ${skipped.walkover} walkovers, ${skipped.bye} byes, ${skipped.unplayed} unplayed, ${skipped.noPlayer} without two identified players.`);
+  const perPool = [...Map.groupBy(games, (g) => g.pool)].map(([pool, list]) => `${list.length} ${pool}`);
+  console.log(`Rated ${games.length} games (${games[0]?.day} to ${games.at(-1)?.day}): ${perPool.join(", ")}.`);
+  console.log(`Skipped: ${skipped.walkover} walkovers, ${skipped.bye} byes, ${skipped.unplayed} unplayed, ${skipped.noPlayer} with a side not fully identified.`);
   console.log(`Draws: ${games.filter((g) => g.s === 0.5).length}, cross-region games: ${games.filter((g) => g.crossRegion).length}`);
-  console.log(
-    `Calibration (from ${CALIBRATION_FROM}, both players ${CALIBRATION_MIN_MATCHES}+ matches): ` +
-      `favourite won ${((100 * calibration.correct) / calibration.n).toFixed(1)}% of ${calibration.n} games, ` +
-      `log loss ${(calibration.logLoss / calibration.n).toFixed(4)} (coin flip: 0.6931)`
-  );
+  console.log(`Calibration (from ${CALIBRATION_FROM}, all players ${CALIBRATION_MIN_MATCHES}+ matches; coin flip log loss 0.6931):`);
+  for (const [pool, c] of Object.entries(calibration)) {
+    console.log(
+      `  ${pool.padEnd(14)} favourite won ${((100 * c.correct) / c.n).toFixed(1)}% of ${c.n} games, log loss ${(c.logLoss / c.n).toFixed(4)}`
+    );
+  }
   console.log(
     `Returning players (first ${RETURN_MATCHES} matches after ${RETURN_GAP_DAYS}+ days away): ` +
       `${returns.n} games, scored ${(returns.surprise / returns.n).toFixed(3)} vs expected`
   );
   for (const [pool, list] of Object.entries(ratings)) {
     const active = list.filter((p) => p.active);
-    console.log(`\n${pool}: ${list.length} players, ${active.length} ranked (active in the last ${R.RANKING_ACTIVE_DAYS} days). Top 15:`);
-    active
-      .slice(0, 15)
-      .forEach((p) => console.log(`${String(p.rank).padStart(3)}. ${String(Math.round(p.rating)).padStart(5)} ±${String(p.plusMinus).padEnd(4)} ${p.name} (${p.club}), ${p.matches} matches`));
-    console.log(`Strongest clubs (average of the best ${CLUB_TOP_PLAYERS} ranked players):`);
+    console.log(`\n${pool}: ${list.length} players, ${active.length} ranked (active in the last ${R.RANKING_ACTIVE_DAYS} days). Top ${pool === "mixedDoubles" ? "8 men and 8 women" : 15}:`);
+    const top = pool === "mixedDoubles" ? ["M", "K"].flatMap((g) => active.filter((p) => p.gender === g).slice(0, 8)) : active.slice(0, 15);
+    top.forEach((p) => console.log(`${String(p.rank).padStart(3)}. ${String(Math.round(p.rating)).padStart(5)} ±${String(p.plusMinus).padEnd(4)} ${p.name} (${p.club}), ${p.matches} matches`));
+    console.log(`Strongest clubs (average of the ${clubTopLabel(CLUB_TOP[pool])}):`);
     clubs[pool]
       .slice(0, 10)
       .forEach((c) => console.log(`${String(c.rank).padStart(3)}. ${String(Math.round(c.strength)).padStart(5)} ${c.club} (${c.players} ranked)`));
   }
-  console.log(`\nStrongest clubs combined (average of men's and women's strength), ${clubs.combined.length} clubs:`);
+  console.log(`\nStrongest clubs combined (average standard score over all five pools), ${clubs.combined.length} clubs:`);
   clubs.combined
     .slice(0, 10)
-    .forEach((c) => console.log(`${String(c.rank).padStart(3)}. ${String(Math.round(c.strength)).padStart(5)} ${c.club} (men ${Math.round(c.pools.men.strength)}, women ${Math.round(c.pools.women.strength)})`));
+    .forEach((c) =>
+      console.log(`${String(c.rank).padStart(3)}. ${c.score.toFixed(2).padStart(5)} ${c.club} (${Object.entries(c.pools).map(([pool, p]) => `${pool} ${Math.round(p.strength)}`).join(", ")})`)
+    );
 }

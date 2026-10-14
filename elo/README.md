@@ -1,13 +1,13 @@
 # Norwegian Badminton Elo
 
-Elo ratings for Norwegian badminton singles players, calculated from match results on [badmintonportalen.no](https://badmintonportalen.no).
+Elo ratings for Norwegian badminton players in singles and doubles, calculated from match results on [badmintonportalen.no](https://badmintonportalen.no).
 
 ## Match data
 
 - **Sources:**
   - Team matches (league play) from September 2013 onwards.
   - Tournament matches from September 2014 onwards. Tournaments in the 2013/2014 season have no results registered.
-- **Disciplines:** men's singles and women's singles, rated as two separate pools.
+- **Disciplines:** men's singles, women's singles, men's doubles, women's doubles and mixed doubles, rated as five separate pools. A player has a separate rating in each discipline they play.
 - **Pool by event:** the event decides the pool, not the player. A woman playing men's singles is rated in the men's pool for that match.
 - **Excluded:** walkovers (including 21-0, 21-0 results), unplayed matches and tournaments without results.
 
@@ -56,16 +56,47 @@ $$
 
 $m(R_A)$ depends on each player's own rating, so the two players in a match can gain and lose different amounts.
 
+### Doubles
+
+Each player has their own doubles rating; pairs have no rating of their own. A side plays at the sum of its two players' ratings, and the expected score compares the sums:
+
+$$
+E_{AB} = \frac{1}{1 + 10^{\left((R_C + R_D) - (R_A + R_B)\right)/300}}
+$$
+
+So a pair whose players are each 100 points better than their opponents is a 200-point favourite. The side's rating change $K \, (S - E_{AB})$ is shared between the partners by their [rating uncertainty](#rating-uncertainty):
+
+$$
+R_A' = R_A + K_A \cdot \frac{RD_A^2}{RD_A^2 + RD_B^2} \, (S - E_{AB})
+$$
+
+with $K_A$ as above. Two equally established partners get half each. A newcomer playing with an established partner takes most of the change, since the result says more about the newcomer's unknown level than about the partner's well-known one.
+
+Tuning used doubles matches before 2023 and was tested on 2023 onwards, counting only games where all four players have 10+ matches in the discipline (log loss, lower is better):
+
+| Side rating                                           | 2023 onwards |
+| ----------------------------------------------------- | -----------: |
+| Sum of the partners' ratings, $\kappa = 54$ (used)    |       0.4519 |
+| Average of the partners' ratings, best $\kappa$ (120) |       0.4560 |
+| Average of the partners' ratings, $\kappa = 54$       |       0.4723 |
+
+- **Average:** averaging the ratings made every doubles match look closer than it was, and a larger K-factor only partly made up for it. The same holds with stricter thresholds of 30 or 60 matches.
+- **K-factor:** with the sum, the best $\kappa$ is the same as in singles.
+- **Split:** sharing the change equally instead of by uncertainty predicted the pre-2023 matches equally well, and later matches slightly worse.
+
+Doubles ratings are their own scale. The top doubles players are around 2100, against about 3000 in singles, so the two can't be compared directly.
+
 ## Parameters
 
-| Parameter                    |    Value |
-| ---------------------------- | -------: |
-| Top level start rating $p_0$ |     1500 |
-| Base K-factor $\kappa$       |       54 |
-| Expected score scale         |      300 |
-| Cross-region weight          |       ×2 |
-| Not playing grace period $g$ | 365 days |
-| Not playing half-life $h$    |  3 years |
+| Parameter                        |    Value |
+| -------------------------------- | -------: |
+| Top level start rating $p_0$     |     1500 |
+| Base K-factor $\kappa$           |       54 |
+| Doubles maximum rating deviation |      130 |
+| Expected score scale             |      300 |
+| Cross-region weight              |       ×2 |
+| Not playing grace period $g$     | 365 days |
+| Not playing half-life $h$        |  3 years |
 
 ## Start rating
 
@@ -146,9 +177,9 @@ The grace period covers the summer break: the season runs from about September t
 
 ## Rating uncertainty
 
-Every rating comes with a $\pm$ range showing how reliable it is, based on the [Glicko](https://en.wikipedia.org/wiki/Glicko_rating_system) rating deviation $RD$. The range is $\pm 2 \cdot RD$, so the player's true level is within it with about 95% probability. The $RD$ is shown alongside the rating; it does not change how ratings move.
+Every rating comes with a $\pm$ range showing how reliable it is, based on the [Glicko](https://en.wikipedia.org/wiki/Glicko_rating_system) rating deviation $RD$. The range is $\pm 2 \cdot RD$, so the player's true level is within it with about 95% probability. The $RD$ is shown alongside the rating. In singles it does not change how ratings move; in doubles it decides how a side's rating change is shared between the partners.
 
-New players start at $RD = 260$ ($\pm 520$). Time without playing increases it:
+New players start at $RD = 260$ ($\pm 520$), or $130$ in doubles (see below). Time without playing increases it:
 
 $$
 RD' = \min\left(260,\ \sqrt{RD^2 + c^2 t}\right)
@@ -164,17 +195,41 @@ where $E$ is the expected score against opponent $B$, adjusted for $B$'s uncerta
 
 The growth rate and the use of all matches (without class level weights) were fitted to the data: with these settings, players' actual results match the uncertainty the ranges predict.
 
+In doubles, a player is measured against the opposing side's summed rating, with $RD_B = \sqrt{RD_C^2 + RD_D^2}$. The doubles maximum, and with it the growth rate, is half the singles one: $RD_{max} = 130$. This was checked by splitting each player's games into blocks of 10. For each block, the rating that best explains its results (given the other players' ratings) differs from the player's rating before the block by the measurement noise of 10 games plus the player's true error. That error should match the $RD$:
+
+| Pool                             | True error / $RD$ |
+| -------------------------------- | ----------------: |
+| Singles                          |               1.1 |
+| Doubles, $RD_{max} = 260$        |              0.78 |
+| Doubles, $RD_{max} = 130$ (used) |              1.05 |
+
+With the singles maximum, doubles ranges were about 30% too wide.
+
 ## Rankings
 
 Ranking lists only include players who have played in the last 12 months. Inactive players keep their rating and history, and reappear in the rankings as soon as they play again. The rankings page can show them too (without a rank) with "Show inactive players".
 
 The club shown for a player is their club registered on badmintonportalen. Players no longer in the register show the club of their last tournament, or otherwise the club of their last league team. League team names such as "Kristiansand 2" are team numbers, not clubs.
 
+### Mixed doubles: men and women ranked separately
+
+Mixed doubles is rated as one pool, but men and women are ranked in separate lists. Nearly every mixed pair is one man and one woman (32,297 of the 32,425 pairs where both genders are known), so results show how men compare with other men and women with other women, but not how men's mixed ratings compare with women's: raising every man's rating by the same amount and lowering every woman's would predict every result the same.
+
+Gender comes from badmintonportalen's player register. For players not in it, it is the opposite of most of their mixed doubles partners' genders, or otherwise female if they have played women's singles or doubles. Players whose gender is still unknown get no mixed doubles rank.
+
 ### Strongest clubs
 
-Clubs are ranked per pool by the average rating of their best 3 ranked players. Clubs with fewer than 3 ranked players are not listed. Averaging the best few players, rather than all of them, keeps big clubs with many beginners from being ranked low and one-star clubs from being ranked high.
+Clubs are ranked per pool by the average rating of their best ranked players:
 
-The combined list ranks clubs by the average of their men's and women's strength, so only clubs listed in both pools are included. The two pools are separate rating scales, so each counts equally rather than mixing men's and women's ratings in one top 3.
+| Pool | Players counted |
+| --- | --- |
+| Men's singles, women's singles | best 3 |
+| Men's doubles, women's doubles | best 4 (two pairs) |
+| Mixed doubles | best 3 men and best 3 women |
+
+Clubs with fewer ranked players than that are not listed. Mixed doubles counts men and women separately because their mixed ratings can't be compared (see above). Averaging the best few players, rather than all of them, keeps big clubs with many beginners from being ranked low and one-star clubs from being ranked high.
+
+The combined list ranks clubs by their average standard score in all five disciplines, so only clubs listed in every discipline are included. In each discipline, a club's score is its strength minus the average strength of the listed clubs, divided by the standard deviation of their strengths: 0 is an average listed club, +1 one standard deviation above it. The pools are separate rating scales with different spreads (doubles ratings span a narrower range at the top), so averaging the strengths themselves would let singles count for more. Standard scores make each discipline count equally.
 
 ### Matches
 

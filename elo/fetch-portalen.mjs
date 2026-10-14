@@ -1,8 +1,9 @@
-// Fetch all singles results from badmintonportalen.no (NBF), with player ids.
+// Fetch all tournament results from badmintonportalen.no (NBF), with player ids: singles and doubles
+// (MensSingles, WomensSingles, MensDoubles, WomensDoubles, MixedDoubles).
 // Usage: node fetch-portalen.mjs [--refetch] [--dry-run] [--season 2024] [--limit 5]
 //
 // Seasons -> tournaments (GetSeasonPlan) -> classes and events (GetTournamentEvents)
-// -> matches of each singles event (SearchTournamentMatches).
+// -> matches of each event (SearchTournamentMatches). Doubles sides have two players.
 // Writes data/portalen/<tournamentId>.json per tournament. Already-fetched and unfinished
 // tournaments are skipped, so it can be stopped and re-run. Failures go to data/portalen-errors.log.
 import { readdir, writeFile, mkdir, appendFile } from "node:fs/promises";
@@ -13,7 +14,6 @@ const OUT = `${DIR}data/portalen`;
 const ERRORS = `${DIR}data/portalen-errors.log`;
 const FIRST_SEASON = 2013; // earliest season on badmintonportalen (2013/2014)
 const CONCURRENCY = 2;
-const SINGLES = new Set(["MensSingles", "WomensSingles"]);
 const today = new Date().toISOString().slice(0, 10);
 
 // Season ids are "200" + start year, e.g. 2002025 for 2025/2026. Seasons start in July.
@@ -129,7 +129,6 @@ async function fetchTournament({ tournamentId, classId, title, season }) {
   for (const cls of classes) {
     const ev = cls.id === classId ? first : await events(cls.id);
     for (const e of ev.Events ?? []) {
-      if (!SINGLES.has(e.discipline)) continue;
       const res = await call("SearchTournamentMatches", {
         tournamentclassid: cls.id,
         tournamenteventid: String(e.tournamentEventID),
@@ -189,7 +188,7 @@ async function worker() {
         continue;
       }
       await writeFile(`${OUT}/${t.tournamentId}.json`, JSON.stringify(result));
-      console.error(`${label}: ${result.startDate}, ${result.matches.length} singles matches`);
+      console.error(`${label}: ${result.startDate}, ${result.matches.length} matches`);
     } catch (err) {
       failed++;
       console.error(`${label}: FAILED ${err.message}`);

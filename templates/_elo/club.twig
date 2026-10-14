@@ -55,7 +55,10 @@
                 {% for player in players %}
                   <tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50">
                     <td class="py-3 px-4 text-right text-gray-600 tabular-nums">{{ player.rank }}</td>
-                    <td class="py-3 px-4"><a href="{{ url('elo/players/' ~ player.id) }}" class="hover:text-blue-600">{{ player.name }}</a></td>
+                    <td class="py-3 px-4">
+                      <a href="{{ url('elo/players/' ~ player.id) }}" class="hover:text-blue-600">{{ player.name }}</a>
+                      {% if handle == 'mixedDoubles' %}<span class="text-sm text-gray-600">{{ player.gender == 'K' ? 'woman' : 'man' }}</span>{% endif %}
+                    </td>
                     <td class="py-3 px-4 text-right tabular-nums whitespace-nowrap">
                       {{ player.rating|round }} <span class="text-sm text-gray-500" title="95% range">±{{ player.plusMinus }}</span>
                     </td>
@@ -65,7 +68,7 @@
               </tbody>
             </table>
           </div>
-          <p class="text-sm text-gray-600 mt-2"># is the national rank in {{ label|lower }}.</p>
+          <p class="text-sm text-gray-600 mt-2"># is the national rank in {{ label|lower }}{% if handle == 'mixedDoubles' %}, among men or among women{% endif %}.</p>
         {% endif %}
       </div>
     </section>

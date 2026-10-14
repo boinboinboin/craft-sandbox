@@ -53,7 +53,7 @@ for (const file of readdirSync(`${DIR}ranking`).sort()) {
     const s = { n: 0, official: 0, elo: 0, disagree: 0, eloRight: 0 };
     for (const g of games) {
       if (g.pool !== pool || g.day <= end || g.day > until || g.s === 0.5) continue;
-      const [pa, pb, ea, eb] = [points.get(g.a.id), points.get(g.b.id), elo.get(g.a.id), elo.get(g.b.id)];
+      const [pa, pb, ea, eb] = [points.get(g.side1[0].id), points.get(g.side2[0].id), elo.get(g.side1[0].id), elo.get(g.side2[0].id)];
       if (pa == null || pb == null || ea == null || eb == null || pa === pb || ea === eb) continue;
       const officialRight = pa > pb === (g.s === 1);
       const eloRight = ea > eb === (g.s === 1);

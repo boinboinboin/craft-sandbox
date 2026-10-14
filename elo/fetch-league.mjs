@@ -1,4 +1,4 @@
-// Fetch singles games from team matches (league play) on badmintonportalen.no.
+// Fetch singles and doubles games from team matches (league play) on badmintonportalen.no.
 // Usage: node fetch-league.mjs [--refetch] [--dry-run] [--season 2024] [--limit 5]
 //
 // GetLeagueStanding is one method with "subpages":
@@ -33,8 +33,8 @@ const AGE_GROUPS = {
   2008: "O35", 2009: "O40", 2010: "O45", 2011: "O50", 2012: "O55", 2013: "O60", 2014: "O65",
   2015: "O70", 2016: "O75", 2018: "O80", 2017: "Åpen",
 };
-// Singles game codes in a tie -> the same discipline names as tournaments use.
-const SINGLES = { HS: "MensSingles", DS: "WomensSingles" };
+// Game codes in a tie -> the same discipline names as tournaments use.
+const DISCIPLINES = { HS: "MensSingles", DS: "WomensSingles", HD: "MensDoubles", DD: "WomensDoubles", MD: "MixedDoubles" };
 
 const currentSeason = () => {
   const now = new Date();
@@ -106,14 +106,18 @@ function parseSide(cell, team) {
 }
 
 // Subpage 5: the tie's games. Set scores have the winning side's points in <b>.
+const unknownCodes = new Set();
 async function fetchGames(g, tie) {
   const html = await standing(5, { ...g, matchId: tie.matchId });
   const schema = html.slice(html.indexOf("matchresultschema"));
   const games = [];
   for (const row of schema.split(/<tr>/).slice(1)) {
     const code = text(row.match(/<td class='discipline'>(.*?)<\/td>/)?.[1] ?? "");
-    const discipline = SINGLES[code.replace(/^\d+\.\s*/, "")];
-    if (!discipline) continue;
+    const discipline = DISCIPLINES[code.replace(/^\d+\.\s*/, "")];
+    if (!discipline) {
+      if (code) unknownCodes.add(code);
+      continue;
+    }
     const cells = [...row.matchAll(/<td class='(player\w*)'>(.*?)<\/td>/gs)];
     if (cells.length !== 2) continue;
     const sets = [...row.matchAll(/<td class='result'>(.*?)<\/td>/g)]
@@ -188,7 +192,7 @@ async function worker() {
       }
       await writeFile(`${OUT}/${fileKey(g)}.json`, JSON.stringify(result));
       const games = result.ties.reduce((n, t) => n + t.games.length, 0);
-      console.error(`${label}: ${result.ties.length} ties, ${games} singles games`);
+      console.error(`${label}: ${result.ties.length} ties, ${games} games`);
     } catch (err) {
       failed++;
       console.error(`${label}: FAILED ${err.message}`);
@@ -197,4 +201,5 @@ async function worker() {
   }
 }
 await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+if (unknownCodes.size) console.error(`Skipped unknown game codes: ${[...unknownCodes].join(", ")}`);
 console.error(`Done. ${todo.length - failed - unfinished} saved, ${unfinished} not finished, ${failed} failed`);

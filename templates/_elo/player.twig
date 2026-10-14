@@ -24,11 +24,18 @@
           {% endif %}
         </p>
       {% endif %}
+      {% if player.pools|length > 1 %}
+        <nav class="flex flex-wrap gap-2 mt-6" aria-label="Disciplines played">
+          {% for handle, p in player.pools %}
+            <a href="#{{ handle }}" class="px-4 py-2 border border-black hover:bg-black hover:text-white transition-colors duration-200">{{ p.label }}</a>
+          {% endfor %}
+        </nav>
+      {% endif %}
     </div>
   </section>
 
   {% for handle, p in player.pools %}
-    <section class="base-section">
+    <section class="base-section scroll-mt-4" id="{{ handle }}">
       <div class="base-container px-4">
         <h2 class="text-3xl mb-6">{{ p.label }}</h2>
 
@@ -40,7 +47,9 @@
           <div class="bg-white p-4">
             <dt class="text-sm text-gray-600">Rank</dt>
             {% if p.rank %}
-              <dd class="text-3xl font-semibold"><a href="{{ url('elo', { pool: handle }) }}" class="hover:text-blue-600">#{{ p.rank }}</a></dd>
+              {% set mixed = handle == 'mixedDoubles' %}
+              <dd class="text-3xl font-semibold"><a href="{{ url('elo', { pool: handle }|merge(mixed ? { gender: p.gender } : {})) }}" class="hover:text-blue-600">#{{ p.rank }}</a></dd>
+              {% if mixed %}<dd class="text-sm text-gray-600">among {{ p.gender == 'K' ? 'women' : 'men' }}</dd>{% endif %}
             {% else %}
               <dd class="text-xl pt-2">Not ranked <span class="block text-sm text-gray-600">No matches in the last 12 months</span></dd>
             {% endif %}

@@ -16,7 +16,22 @@ use yii\base\Component;
  */
 class EloService extends Component
 {
-    public const POOLS = ['men' => "Men's singles", 'women' => "Women's singles"];
+    public const POOLS = [
+        'men' => "Men's singles",
+        'women' => "Women's singles",
+        'mensDoubles' => "Men's doubles",
+        'womensDoubles' => "Women's doubles",
+        'mixedDoubles' => 'Mixed doubles',
+    ];
+
+    /**
+     * Order of a player's pools on their page: their own gender's disciplines first, so women's
+     * singles leads for women even if they have also played men's singles.
+     */
+    private const POOL_ORDER = [
+        'M' => ['men', 'mensDoubles', 'mixedDoubles', 'women', 'womensDoubles'],
+        'K' => ['women', 'womensDoubles', 'mixedDoubles', 'men', 'mensDoubles'],
+    ];
 
     private ?array $ratings = null;
 
@@ -48,12 +63,17 @@ class EloService extends Component
     /**
      * Ranked (active) players in a pool, best first. With $includeInactive, also players who
      * haven't played in the last 12 months (rank null), in rating order among the ranked ones.
+     * With $gender ("M" or "K"), only players of that gender: mixed doubles ranks men and women
+     * separately.
      *
      * @return array<int, array>
      */
-    public function getRankings(string $pool, bool $includeInactive = false): array
+    public function getRankings(string $pool, bool $includeInactive = false, ?string $gender = null): array
     {
         $players = $this->ratings()['pools'][$pool] ?? [];
+        if ($gender !== null) {
+            $players = array_values(array_filter($players, fn(array $p) => ($p['gender'] ?? null) === $gender));
+        }
         if ($includeInactive) {
             return $players;
         }
@@ -69,6 +89,15 @@ class EloService extends Component
     public function getClubs(string $pool): array
     {
         return $this->ratings()['clubs'][$pool] ?? [];
+    }
+
+    /**
+     * How many of a club's best players count for its strength in a pool: a number, or per
+     * gender (["M" => 3, "K" => 3]) in mixed doubles.
+     */
+    public function getClubTop(string $pool): int|array|null
+    {
+        return $this->ratings()['clubTop'][$pool] ?? null;
     }
 
     /**
@@ -96,10 +125,7 @@ class EloService extends Component
                 if ($p['id'] !== $id) {
                     continue;
                 }
-                // Keep the name and club from the pool played most recently.
-                if ($player === null || $p['lastPlayed'] > $player['lastPlayed']) {
-                    $player = ['id' => $id, 'name' => $p['name'], 'club' => $p['club'], 'lastPlayed' => $p['lastPlayed'], 'pools' => $player['pools'] ?? []];
-                }
+                $player ??= ['id' => $id, 'pools' => []];
                 $player['pools'][$pool] = $p + [
                     'label' => self::POOLS[$pool],
                     'history' => $history[$pool] ?? null,
@@ -109,12 +135,13 @@ class EloService extends Component
             }
         }
 
-        // Women's singles first for women (gender from the player register), even if they have
-        // also played men's singles.
-        if (isset($player['pools']['women']) && ($player['pools']['women']['gender'] ?? null) === 'K') {
-            $player['pools'] = ['women' => $player['pools']['women']] + $player['pools'];
-            $player['name'] = $player['pools']['women']['name'];
-            $player['club'] = $player['pools']['women']['club'];
+        if ($player !== null) {
+            $gender = current($player['pools'])['gender'] ?? 'M';
+            $order = array_flip(self::POOL_ORDER[$gender] ?? self::POOL_ORDER['M']);
+            uksort($player['pools'], fn(string $a, string $b) => $order[$a] <=> $order[$b]);
+            // Name and club from the first pool shown
+            $player['name'] = current($player['pools'])['name'];
+            $player['club'] = current($player['pools'])['club'];
         }
 
         return $player;

@@ -15,14 +15,19 @@ class EloVariable
         return EloService::POOLS;
     }
 
-    public function rankings(string $pool, bool $includeInactive = false): array
+    public function rankings(string $pool, bool $includeInactive = false, ?string $gender = null): array
     {
-        return Module::getInstance()->elo->getRankings($pool, $includeInactive);
+        return Module::getInstance()->elo->getRankings($pool, $includeInactive, $gender);
     }
 
     public function clubs(string $pool): array
     {
         return Module::getInstance()->elo->getClubs($pool);
+    }
+
+    public function clubTop(string $pool): int|array|null
+    {
+        return Module::getInstance()->elo->getClubTop($pool);
     }
 
     public function clubPlayers(string $club, string $pool): array

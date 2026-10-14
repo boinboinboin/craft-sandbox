@@ -3,6 +3,11 @@
 
 export const P0 = 1500; // top level start rating, reference point of m(r) and the not playing penalty
 export const KAPPA = 54; // base K-factor
+// Doubles: base K-factor for a side, and how its rating change is shared between the partners:
+// "rd" by each partner's uncertainty (RD²), so a new player takes most of it; "equal" half each.
+// Tuned on doubles games before 2023: best at the singles κ; "rd" and "equal" tied, "rd" better on 2023+.
+export const DOUBLES_KAPPA = 54;
+export const DOUBLES_SPLIT = "rd";
 // Rating difference scale of the expected score: a difference of SCALE points means a 91% win chance.
 export const SCALE = 300;
 
@@ -109,17 +114,20 @@ export const ratingMultiplier = (r) => 1 + 2 / (1 + 2 ** ((r - P0) / 90));
 
 export const expectedScore = (ra, rb) => 1 / (1 + 10 ** ((rb - ra) / SCALE));
 
-// Rating uncertainty (Glicko-1 rating deviation, RD). Shown as rating ± 2·RD; it doesn't
-// affect how ratings change. New players start at RD_MAX; matches shrink RD, time without
+// Rating uncertainty (Glicko-1 rating deviation, RD). Shown as rating ± 2·RD; in singles it doesn't
+// affect how ratings change (in doubles it splits a side's change). New players start at RD_MAX; matches shrink RD, time without
 // playing grows it back to RD_MAX over about RD_RETURN_DAYS (from an RD of 40).
 // Fitted on the data: with these values, predictions widened by RD fit best unscaled.
 export const RD_MAX = 260;
+export const DOUBLES_RD_MAX = 130; // calibrated on doubles (block performance check, see README)
 const RD_RETURN_DAYS = 10 * 365;
 const RD_GROWTH = Math.sqrt((RD_MAX ** 2 - 40 ** 2) / RD_RETURN_DAYS); // c in Glicko, per day
 const Q = Math.LN10 / SCALE;
 const glickoG = (rd) => 1 / Math.sqrt(1 + (3 * Q ** 2 * rd ** 2) / Math.PI ** 2);
 
-export const rdAfterTime = (rd, days) => Math.min(RD_MAX, Math.sqrt(rd ** 2 + RD_GROWTH ** 2 * days));
+// max: the pool's RD_MAX (doubles may use a smaller one); growth scales with it.
+export const rdAfterTime = (rd, days, max = RD_MAX) =>
+  Math.min(max, Math.sqrt(rd ** 2 + (RD_GROWTH * max / RD_MAX) ** 2 * days));
 
 // RD after one match against an opponent with rating rb and deviation rdb.
 export function rdAfterMatch(ra, rd, rb, rdb) {

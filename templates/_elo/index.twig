@@ -6,7 +6,11 @@
 {% set pool = craft.app.request.getQueryParam('pool') %}
 {% set pool = pool in pools|keys ? pool : 'men' %}
 {% set showInactive = craft.app.request.getQueryParam('inactive') == '1' %}
-{% set players = craft.elo.rankings(pool, showInactive) %}
+{# Mixed doubles ranks men and women separately #}
+{% set genders = { M: 'Men', K: 'Women' } %}
+{% set gender = pool == 'mixedDoubles' ? craft.app.request.getQueryParam('gender') : null %}
+{% set gender = pool == 'mixedDoubles' ? (gender in genders|keys ? gender : 'M') : null %}
+{% set players = craft.elo.rankings(pool, showInactive, gender) %}
 {% set generatedAt = craft.elo.generatedAt() %}
 {# Club entry URLs by short name #}
 {% set clubUrls = craft.entries.section('clubs').collect().mapWithKeys(e => { (e.title): e.url }) %}
@@ -15,7 +19,7 @@
   <section class="base-section">
     <div class="base-container px-4">
       <h1 class="h1">Badminton Elo</h1>
-      <p class="text-2xl max-w-3xl">Singles ratings for Norwegian badminton, calculated from every tournament and league result on badmintonportalen.no since 2013.</p>
+      <p class="text-2xl max-w-3xl">Singles and doubles ratings for Norwegian badminton, calculated from every tournament and league result on badmintonportalen.no since 2013.</p>
       {% if generatedAt %}
         <p class="text-gray-600 mt-2">Updated {{ generatedAt|date('j F Y') }}</p>
       {% endif %}
@@ -26,7 +30,7 @@
   <section class="base-section" data-controller="table-filter">
     <div class="base-container px-4">
       <div class="flex flex-wrap items-end justify-between gap-6 mb-6">
-        <nav class="flex gap-2" aria-label="Discipline">
+        <nav class="flex flex-wrap gap-2" aria-label="Discipline">
           {% for handle, label in pools %}
             <a href="{{ url('elo', { pool: handle }|merge(showInactive ? { inactive: 1 } : {})) }}"
                class="px-4 py-2 border border-black transition-colors duration-200 {{ handle == pool ? 'bg-black text-white' : 'hover:bg-black hover:text-white' }}"
@@ -35,6 +39,7 @@
         </nav>
         <form method="get" action="{{ url('elo') }}" class="flex items-center">
           <input type="hidden" name="pool" value="{{ pool }}">
+          {% if gender %}<input type="hidden" name="gender" value="{{ gender }}">{% endif %}
           <label class="flex items-center gap-2 cursor-pointer select-none">
             <input type="checkbox" name="inactive" value="1" class="w-4 h-4 accent-black" {% if showInactive %}checked{% endif %}
                    onchange="this.form.submit()">
@@ -49,6 +54,19 @@
                  data-table-filter-target="input" data-action="input->table-filter#filter">
         </label>
       </div>
+
+      {% if gender %}
+        <div class="mb-6">
+          <nav class="flex flex-wrap gap-2" aria-label="Mixed doubles ranking">
+            {% for code, label in genders %}
+              <a href="{{ url('elo', { pool: pool, gender: code }|merge(showInactive ? { inactive: 1 } : {})) }}"
+                 class="px-3 py-1 text-sm border border-gray-400 transition-colors duration-200 {{ code == gender ? 'bg-gray-800 border-gray-800 text-white' : 'hover:border-black' }}"
+                 {% if code == gender %}aria-current="page"{% endif %}>{{ label }}</a>
+            {% endfor %}
+          </nav>
+          <p class="text-gray-600 mt-2 max-w-3xl">Men and women are ranked separately in mixed doubles. Every pair has one of each, so results show how men compare with men and women with women, but not how men's and women's ratings compare.</p>
+        </div>
+      {% endif %}
 
       {% if players is empty %}
         <p class="base">No ratings yet. Run <code>node elo/rate.mjs</code> to calculate them.</p>

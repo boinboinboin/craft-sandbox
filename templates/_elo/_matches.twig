@@ -1,4 +1,4 @@
-{# A table of one player's matches. Expects `matches` (records from elo/data/matches/<id>.json) and `title`. #}
+{# A table of one player's matches (singles or doubles: opponents, and the partner in doubles). Expects `matches` (records from elo/data/matches/<id>.json) and `title`. #}
 <div class="bg-white p-4 md:p-6">
   <h3 class="text-xl mb-4">{{ title }}</h3>
   <div class="overflow-x-auto">
@@ -6,7 +6,7 @@
       <thead class="text-sm text-gray-600 border-b border-gray-200">
         <tr>
           <th scope="col" class="py-2 pr-4 font-normal">Date</th>
-          <th scope="col" class="py-2 pr-4 font-normal">Opponent</th>
+          <th scope="col" class="py-2 pr-4 font-normal">{{ (matches|first).partner ?? false ? 'Opponents' : 'Opponent' }}</th>
           <th scope="col" class="py-2 pr-4 font-normal">Result</th>
           <th scope="col" class="py-2 pr-4 font-normal text-right" title="Chance of winning before the match">Win chance</th>
           <th scope="col" class="py-2 font-normal text-right" title="Rating after the match">Rating</th>
@@ -17,8 +17,16 @@
           <tr class="border-b border-gray-100 last:border-0 align-top">
             <td class="py-2 pr-4 whitespace-nowrap tabular-nums">{{ m.day|date('j M Y') }}</td>
             <td class="py-2 pr-4">
-              <a href="{{ url('elo/players/' ~ m.opponent.id) }}" class="hover:text-blue-600">{{ m.opponent.name }}</a>
-              <span class="text-sm text-gray-500 tabular-nums">{{ m.opponent.rating }}</span>
+              {% for o in m.opponents %}
+                <a href="{{ url('elo/players/' ~ o.id) }}" class="hover:text-blue-600">{{ o.name }}</a>
+                <span class="text-sm text-gray-500 tabular-nums">{{ o.rating }}</span>{% if not loop.last %} <span class="text-gray-500">/</span>{% endif %}
+              {% endfor %}
+              {% if m.partner %}
+                <span class="block text-sm text-gray-600">
+                  with <a href="{{ url('elo/players/' ~ m.partner.id) }}" class="hover:text-blue-600">{{ m.partner.name }}</a>
+                  <span class="text-gray-500 tabular-nums">{{ m.partner.rating }}</span>
+                </span>
+              {% endif %}
               <span class="block text-sm text-gray-600">{{ m.event }}</span>
             </td>
             <td class="py-2 pr-4 whitespace-nowrap">
