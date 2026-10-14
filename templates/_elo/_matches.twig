@@ -1,0 +1,45 @@
+{# A table of one player's matches. Expects `matches` (records from elo/data/matches/<id>.json) and `title`. #}
+<div class="bg-white p-4 md:p-6">
+  <h3 class="text-xl mb-4">{{ title }}</h3>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left">
+      <thead class="text-sm text-gray-600 border-b border-gray-200">
+        <tr>
+          <th scope="col" class="py-2 pr-4 font-normal">Date</th>
+          <th scope="col" class="py-2 pr-4 font-normal">Opponent</th>
+          <th scope="col" class="py-2 pr-4 font-normal">Result</th>
+          <th scope="col" class="py-2 pr-4 font-normal text-right" title="Chance of winning before the match">Win chance</th>
+          <th scope="col" class="py-2 font-normal text-right" title="Rating after the match">Rating</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in matches %}
+          <tr class="border-b border-gray-100 last:border-0 align-top">
+            <td class="py-2 pr-4 whitespace-nowrap tabular-nums">{{ m.day|date('j M Y') }}</td>
+            <td class="py-2 pr-4">
+              <a href="{{ url('elo/players/' ~ m.opponent.id) }}" class="hover:text-blue-600">{{ m.opponent.name }}</a>
+              <span class="text-sm text-gray-500 tabular-nums">{{ m.opponent.rating }}</span>
+              <span class="block text-sm text-gray-600">{{ m.event }}</span>
+            </td>
+            <td class="py-2 pr-4 whitespace-nowrap">
+              {% if m.result == 1 %}
+                <span class="font-semibold text-green-700">Won</span>
+              {% elseif m.result == 0 %}
+                <span class="font-semibold text-red-700">Lost</span>
+              {% else %}
+                <span class="font-semibold">Draw</span>
+              {% endif %}
+              <span class="block text-sm text-gray-600 tabular-nums">{{ m.score }}</span>
+            </td>
+            {% set chance = (m.winChance * 100)|round %}
+            <td class="py-2 pr-4 text-right tabular-nums">{{ chance > 99 ? '>99' : (chance < 1 ? '<1' : chance) }}%</td>
+            <td class="py-2 text-right tabular-nums whitespace-nowrap">
+              {{ (m.rating + m.change)|round }}
+              <span class="block text-sm {{ m.change >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ m.change >= 0 ? '+' : '−' }}{{ m.change|abs|number_format(1) }}</span>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>

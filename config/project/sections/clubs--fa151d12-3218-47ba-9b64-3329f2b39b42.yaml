@@ -1,0 +1,25 @@
+defaultPlacement: end
+enableVersioning: true
+entryTypes:
+  -
+    uid: c466fa7b-fb45-4c31-a62a-79585c22216f # Club
+handle: clubs
+maxAuthors: 1
+name: Clubs
+previewTargets:
+  -
+    __assoc__:
+      -
+        - label
+        - 'Primary entry page'
+      -
+        - urlFormat
+        - '{url}'
+propagationMethod: all
+siteSettings:
+  b43bcddf-8cc3-4971-b8ef-c4efe4bce91e: # Default
+    enabledByDefault: true
+    hasUrls: true
+    template: _elo/club.twig
+    uriFormat: 'elo/clubs/{slug}'
+type: channel

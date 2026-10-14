@@ -2,9 +2,14 @@ import { Controller } from '@hotwired/stimulus'
 
 // Line chart of a player's weekly rating history, drawn as SVG.
 // `from` is the Monday of the first week; ratings[i] is the rating at the end of week i.
+// `clubs` is [[week index, club], ...]: the line is coloured by the club played for at the time.
 const DAY = 86_400_000
 const SVG_NS = 'http://www.w3.org/2000/svg'
-const COLORS = { series: '#2a78d6', grid: '#e7e5e4', axis: '#6b7280', text: '#111827', crosshair: '#9ca3af', surface: '#ffffff' }
+// Club colours: categorical palette in fixed order, by first club played for. Clubs past the
+// eighth share a neutral "other" colour.
+const CLUB_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948']
+const OTHER_CLUB_COLOR = '#8a8984'
+const COLORS = { series: CLUB_COLORS[0], grid: '#e7e5e4', axis: '#6b7280', text: '#111827', crosshair: '#9ca3af', surface: '#ffffff' }
 const MARGIN = { top: 12, right: 52, bottom: 28, left: 48 }
 const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -21,11 +26,22 @@ function niceStep(range, max = 5) {
 }
 
 export default class extends Controller {
-  static values = { from: String, ratings: Array }
+  static values = { from: String, ratings: Array, clubs: Array }
 
   connect() {
     const start = Date.parse(`${this.fromValue}T00:00:00Z`)
-    this.points = this.ratingsValue.map((rating, i) => ({ time: start + (i * 7 + 6) * DAY, rating }))
+    const colors = new Map()
+    for (const [, club] of this.clubsValue) {
+      if (!colors.has(club)) colors.set(club, CLUB_COLORS[colors.size] ?? OTHER_CLUB_COLOR)
+    }
+    this.clubColors = colors
+    let period = -1
+    this.points = this.ratingsValue.map((rating, i) => {
+      while (this.clubsValue[period + 1]?.[0] <= i) period++
+      const club = this.clubsValue[Math.max(period, 0)]?.[1] ?? null
+      return { time: start + (i * 7 + 6) * DAY, rating, club, color: colors.get(club) ?? COLORS.series }
+    })
+    this.renderLegend()
     this.active = null
 
     this.tooltip = document.createElement('div')
@@ -39,6 +55,7 @@ export default class extends Controller {
 
   disconnect() {
     this.observer?.disconnect()
+    this.legend?.remove()
   }
 
   render() {
@@ -91,12 +108,20 @@ export default class extends Controller {
       svg.append(label)
     }
 
-    // The line
-    const d = points.map((p, i) => `${i ? 'L' : 'M'}${this.x(p.time).toFixed(1)},${this.y(p.rating).toFixed(1)}`).join('')
-    svg.append(el('path', { d, fill: 'none', stroke: COLORS.series, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }))
+    // The line, one segment per club period. Each segment starts at the last point of the previous
+    // one so the line stays connected.
+    const segments = []
+    points.forEach((p, i) => {
+      if (!i || p.club !== points[i - 1].club) segments.push({ color: p.color, points: i ? [points[i - 1]] : [] })
+      segments.at(-1).points.push(p)
+    })
+    for (const segment of segments) {
+      const d = segment.points.map((p, i) => `${i ? 'L' : 'M'}${this.x(p.time).toFixed(1)},${this.y(p.rating).toFixed(1)}`).join('')
+      svg.append(el('path', { d, fill: 'none', stroke: segment.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }))
+    }
 
     // End marker with the current value as a direct label
-    svg.append(el('circle', { cx: this.x(last.time), cy: this.y(last.rating), r: 4, fill: COLORS.series, stroke: COLORS.surface, 'stroke-width': 2 }))
+    svg.append(el('circle', { cx: this.x(last.time), cy: this.y(last.rating), r: 4, fill: last.color, stroke: COLORS.surface, 'stroke-width': 2 }))
     const endLabel = el('text', { x: this.x(last.time) + 8, y: this.y(last.rating), 'dominant-baseline': 'middle', fill: COLORS.text, 'font-size': 12, 'font-weight': 600, style: 'font-variant-numeric: tabular-nums' })
     endLabel.textContent = last.rating.toLocaleString('en-GB')
     svg.append(endLabel)
@@ -139,6 +164,7 @@ export default class extends Controller {
     this.crosshair.setAttribute('x1', x)
     this.crosshair.setAttribute('x2', x)
     this.crosshair.setAttribute('visibility', 'visible')
+    this.marker.setAttribute('fill', p.color)
     this.marker.setAttribute('cx', x)
     this.marker.setAttribute('cy', y)
     this.marker.setAttribute('visibility', 'visible')
@@ -149,7 +175,14 @@ export default class extends Controller {
     const date = document.createElement('span')
     date.className = 'text-gray-600'
     date.textContent = `Week ending ${dateFormat.format(p.time)}`
-    this.tooltip.replaceChildren(value, date)
+    const lines = [value, date]
+    if (p.club) {
+      const club = document.createElement('span')
+      club.className = 'flex items-center gap-1.5 text-gray-600'
+      club.append(this.swatch(p.color), p.club)
+      lines.splice(1, 0, club)
+    }
+    this.tooltip.replaceChildren(...lines)
     this.tooltip.hidden = false
 
     // Keep the tooltip inside the chart: flip to the left of the crosshair near the right edge
@@ -157,6 +190,30 @@ export default class extends Controller {
     const left = x + 12 + width > this.element.clientWidth ? x - 12 - width : x + 12
     this.tooltip.style.left = `${Math.max(0, left)}px`
     this.tooltip.style.top = `${Math.max(0, Math.min(y - 24, this.element.clientHeight - this.tooltip.offsetHeight))}px`
+  }
+
+  swatch(color) {
+    const swatch = document.createElement('span')
+    swatch.className = 'inline-block w-3 h-1 rounded-full'
+    swatch.style.background = color
+    return swatch
+  }
+
+  // Legend of the clubs below the chart, in the order the player played for them. A single club
+  // has no legend; the page names the club.
+  renderLegend() {
+    if (this.clubColors.size < 2) return
+    const legend = document.createElement('ul')
+    legend.className = 'flex flex-wrap gap-x-5 gap-y-1 mt-3 text-sm text-gray-700'
+    legend.setAttribute('aria-label', 'Clubs')
+    for (const [club, color] of this.clubColors) {
+      const item = document.createElement('li')
+      item.className = 'flex items-center gap-1.5'
+      item.append(this.swatch(color), club)
+      legend.append(item)
+    }
+    this.element.after(legend)
+    this.legend = legend
   }
 
   hide() {

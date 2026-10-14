@@ -1,0 +1,136 @@
+color: null
+fieldLayouts:
+  72985d9a-03b3-4c24-98e8-9ca380603d44:
+    tabs:
+      -
+        elementCondition: null
+        elements:
+          -
+            autocapitalize: true
+            autocomplete: false
+            autocorrect: true
+            class: null
+            dateAdded: null
+            disabled: false
+            elementCondition: null
+            id: null
+            includeInCards: false
+            inputType: null
+            instructions: 'The club name as shown on badmintonportalen.no, e.g. "Kristiansand". Must match exactly.'
+            label: 'Short name'
+            max: null
+            min: null
+            name: null
+            orientation: null
+            placeholder: null
+            providesThumbs: false
+            readonly: false
+            required: true
+            size: null
+            step: null
+            tip: null
+            title: null
+            type: craft\fieldlayoutelements\entries\EntryTitleField
+            uid: 112fad81-54aa-4678-aea3-be064c4e5be7
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: null
+            editCondition: null
+            elementCondition: null
+            fieldUid: eedf6a61-eba4-4b1d-8139-7305f5779405 # Club logo
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: a2d01395-eb95-4556-87e9-89e639604412
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: null
+            editCondition: null
+            elementCondition: null
+            fieldUid: a93b900d-fad1-4971-9f5e-478581e97a75 # Club website
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: ea8456da-c2b7-472b-8d71-a83658b7dc20
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: null
+            editCondition: null
+            elementCondition: null
+            fieldUid: af4cf0e5-36d1-418b-a780-1d5116a438c5 # Club full name
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: af3ced16-8999-41e2-ac35-97c420bd3ed2
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: null
+            editCondition: null
+            elementCondition: null
+            fieldUid: 072a8a6a-3d63-4dbc-aeb8-0a387c6e926d # Club region
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: bfc03eaf-a377-466d-b756-84e99f4ba03c
+            userCondition: null
+            warning: null
+            width: 100
+          -
+            dateAdded: null
+            editCondition: null
+            elementCondition: null
+            fieldUid: 8c3e5306-5966-45b4-a462-a35b35c16e5c # NBF club ID
+            handle: null
+            includeInCards: false
+            instructions: null
+            label: null
+            providesThumbs: false
+            required: false
+            tip: null
+            type: craft\fieldlayoutelements\CustomField
+            uid: 1eca6b25-41ef-49b4-9efb-ac38b02ec7c2
+            userCondition: null
+            warning: null
+            width: 100
+        name: Content
+        uid: 9ed67ade-437e-4820-8b87-1e7b83ee6fc1
+        userCondition: null
+handle: club
+hasTitleField: true
+icon: shuttlecock
+name: Club
+showSlugField: true
+showStatusField: true
+slugTranslationKeyFormat: null
+slugTranslationMethod: site
+titleFormat: null
+titleTranslationKeyFormat: null
+titleTranslationMethod: site

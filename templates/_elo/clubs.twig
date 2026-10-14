@@ -1,0 +1,102 @@
+{% extends "_base.twig" %}
+
+{# Strongest clubs per pool: average rating of each club's best ranked players (elo/rate.mjs). #}
+
+{% set pools = craft.elo.pools() %}
+{% set tabs = pools|merge({ combined: 'Combined' }) %}
+{% set pool = craft.app.request.getQueryParam('pool') %}
+{% set pool = pool in tabs|keys ? pool : 'men' %}
+{% set combined = pool == 'combined' %}
+{% set clubs = craft.elo.clubs(pool) %}
+{# Club entries (Clubs section) by short name, for links and logos #}
+{% set clubEntries = craft.entries.section('clubs').with(['clubLogo']).collect().keyBy('title') %}
+{% set topCount = craft.elo.clubs('men') is not empty ? (craft.elo.clubs('men')|first).top|length : 3 %}
+
+{% block body %}
+  <section class="base-section">
+    <div class="base-container px-4">
+      <a href="{{ url('elo', combined ? {} : { pool: pool }) }}" class="text-gray-600 hover:text-black">&larr; Rankings</a>
+      <h1 class="h1 mt-4">Strongest clubs</h1>
+      <p class="text-2xl max-w-3xl">
+        {% if combined %}
+          Clubs ranked by the average of their men's and women's singles strength, so both count equally. Clubs need to be listed in both.
+        {% else %}
+          Clubs ranked by the average rating of their best {{ topCount }} ranked players. Clubs need at least {{ topCount }} players who have played in the last 12 months.
+        {% endif %}
+      </p>
+    </div>
+  </section>
+
+  <section class="base-section">
+    <div class="base-container px-4">
+      <nav class="flex gap-2 mb-6" aria-label="Discipline">
+        {% for handle, label in tabs %}
+          <a href="{{ url('elo/clubs', { pool: handle }) }}"
+             class="px-4 py-2 border border-black transition-colors duration-200 {{ handle == pool ? 'bg-black text-white' : 'hover:bg-black hover:text-white' }}"
+             {% if handle == pool %}aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      </nav>
+
+      {% if clubs is empty %}
+        <p class="base">No clubs yet. Run <code>node elo/rate.mjs</code> to calculate them.</p>
+      {% else %}
+        <div class="bg-white overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="text-sm text-gray-600 border-b border-gray-200">
+              <tr>
+                <th scope="col" class="py-3 px-4 font-normal text-right w-16">#</th>
+                <th scope="col" class="py-3 px-4 font-normal">Club</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right">Strength</th>
+                {% if combined %}
+                  {% for handle, label in pools %}
+                    <th scope="col" class="py-3 px-4 font-normal text-right hidden md:table-cell">{{ label }}</th>
+                  {% endfor %}
+                {% else %}
+                  <th scope="col" class="py-3 px-4 font-normal hidden md:table-cell">Best players</th>
+                {% endif %}
+                <th scope="col" class="py-3 px-4 font-normal text-right hidden sm:table-cell">Ranked players</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for club in clubs %}
+                <tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50 align-top">
+                  <td class="py-3 px-4 text-right text-gray-600 tabular-nums">{{ club.rank }}</td>
+                  {% set clubEntry = clubEntries.get(club.club) %}
+                  {% set logo = clubEntry ? clubEntry.clubLogo|first : null %}
+                  <td class="py-3 px-4">
+                    <span class="flex items-center gap-3">
+                      {% if logo %}<img src="{{ logo.url }}" alt="" class="w-8 h-8 object-contain shrink-0">{% endif %}
+                      {% if clubEntry %}
+                        <a href="{{ clubEntry.url }}" class="hover:text-blue-600">{{ club.club }}</a>
+                      {% else %}
+                        {{ club.club }}
+                      {% endif %}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 text-right tabular-nums">{{ club.strength|round }}</td>
+                  {% if combined %}
+                    {% for handle, label in pools %}
+                      {% set c = club.pools[handle] %}
+                      <td class="py-3 px-4 text-right tabular-nums hidden md:table-cell">
+                        {{ c.strength|round }}
+                        <a href="{{ url('elo/clubs', { pool: handle }) }}" class="block text-sm text-gray-600 hover:text-blue-600">#{{ c.rank }}</a>
+                      </td>
+                    {% endfor %}
+                  {% else %}
+                    <td class="py-3 px-4 hidden md:table-cell">
+                      {% for p in club.top %}
+                        <a href="{{ url('elo/players/' ~ p.id) }}" class="hover:text-blue-600">{{ p.name }}</a>
+                        <span class="text-sm text-gray-500 tabular-nums">{{ p.rating|round }}</span>{% if not loop.last %}<br>{% endif %}
+                      {% endfor %}
+                    </td>
+                  {% endif %}
+                  <td class="py-3 px-4 text-right text-gray-700 tabular-nums hidden sm:table-cell">{{ club.players }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

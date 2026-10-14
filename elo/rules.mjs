@@ -93,10 +93,15 @@ export function result(match, sets) {
 // A typical margin (d = 0.2, e.g. 21-15, 21-13) keeps K; close matches count less, blowouts more.
 const MARGIN = { reference: 0.2, min: 0.02, cap: 3 };
 export function marginWeight(sets, s) {
-  if (s === 0.5 || !sets.length) return 1;
-  const [a, b] = sets.reduce(([x, y], [p, q]) => [x + p, y + q], [0, 0]);
-  const d = Math.abs(a - b) / (a + b);
+  const d = pointMargin(sets);
+  if (s === 0.5 || d === null) return 1;
   return Math.min(MARGIN.cap, Math.max(MARGIN.min, d) / MARGIN.reference);
+}
+
+// d = |points A - points B| / total points, or null without a score.
+export function pointMargin(sets) {
+  const [a, b] = sets.reduce(([x, y], [p, q]) => [x + p, y + q], [0, 0]);
+  return a + b ? Math.abs(a - b) / (a + b) : null;
 }
 
 // m(r): bigger rating changes below P0, smaller above.

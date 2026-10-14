@@ -5,8 +5,11 @@
 {% set pools = craft.elo.pools() %}
 {% set pool = craft.app.request.getQueryParam('pool') %}
 {% set pool = pool in pools|keys ? pool : 'men' %}
-{% set players = craft.elo.rankings(pool) %}
+{% set showInactive = craft.app.request.getQueryParam('inactive') == '1' %}
+{% set players = craft.elo.rankings(pool, showInactive) %}
 {% set generatedAt = craft.elo.generatedAt() %}
+{# Club entry URLs by short name #}
+{% set clubUrls = craft.entries.section('clubs').collect().mapWithKeys(e => { (e.title): e.url }) %}
 
 {% block body %}
   <section class="base-section">
@@ -16,6 +19,7 @@
       {% if generatedAt %}
         <p class="text-gray-600 mt-2">Updated {{ generatedAt|date('j F Y') }}</p>
       {% endif %}
+      <p class="mt-4"><a href="{{ url('elo/clubs', { pool: pool }) }}" class="underline hover:text-blue-600">Strongest clubs &rarr;</a></p>
     </div>
   </section>
 
@@ -24,11 +28,20 @@
       <div class="flex flex-wrap items-end justify-between gap-6 mb-6">
         <nav class="flex gap-2" aria-label="Discipline">
           {% for handle, label in pools %}
-            <a href="{{ url('elo', { pool: handle }) }}"
+            <a href="{{ url('elo', { pool: handle }|merge(showInactive ? { inactive: 1 } : {})) }}"
                class="px-4 py-2 border border-black transition-colors duration-200 {{ handle == pool ? 'bg-black text-white' : 'hover:bg-black hover:text-white' }}"
                {% if handle == pool %}aria-current="page"{% endif %}>{{ label }}</a>
           {% endfor %}
         </nav>
+        <form method="get" action="{{ url('elo') }}" class="flex items-center">
+          <input type="hidden" name="pool" value="{{ pool }}">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" name="inactive" value="1" class="w-4 h-4 accent-black" {% if showInactive %}checked{% endif %}
+                   onchange="this.form.submit()">
+            Show inactive players
+          </label>
+          <noscript><button type="submit" class="ml-2 underline">Apply</button></noscript>
+        </form>
         <label class="flex items-center gap-2 border-b border-gray-300 focus-within:border-black transition-colors w-full sm:w-80">
           <span class="sr-only">Search player or club</span>
           {{ svg(include('_svg/icons/search.svg'))|attr({ class: 'w-5 h-5 text-gray-400 shrink-0', 'aria-hidden': 'true' }) }}
@@ -41,7 +54,11 @@
         <p class="base">No ratings yet. Run <code>node elo/rate.mjs</code> to calculate them.</p>
       {% else %}
         <p class="text-gray-600 mb-4" data-table-filter-target="count">
-          {{ players|length|number }} ranked players: everyone who has played in the last 12 months.
+          {% if showInactive %}
+            {{ players|length|number }} players, including those who haven't played in the last 12 months (no rank).
+          {% else %}
+            {{ players|length|number }} ranked players: everyone who has played in the last 12 months.
+          {% endif %}
         </p>
 
         <div class="bg-white overflow-x-auto">
@@ -57,14 +74,23 @@
             </thead>
             <tbody>
               {% for player in players %}
-                <tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50"
+                <tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50 {{ player.rank ? '' : 'text-gray-500' }}"
                     data-table-filter-target="row" data-search="{{ (player.name ~ ' ' ~ player.club)|lower }}">
-                  <td class="py-3 px-4 text-right text-gray-600 tabular-nums">{{ player.rank }}</td>
+                  <td class="py-3 px-4 text-right text-gray-600 tabular-nums">{{ player.rank ?? '–' }}</td>
                   <td class="py-3 px-4">
                     <a href="{{ url('elo/players/' ~ player.id) }}" class="hover:text-blue-600">{{ player.name }}</a>
                     <span class="block text-sm text-gray-600 sm:hidden">{{ player.club }}</span>
+                    {% if not player.rank %}
+                      <span class="block text-sm text-gray-500">Last played {{ player.lastPlayed|date('F Y') }}</span>
+                    {% endif %}
                   </td>
-                  <td class="py-3 px-4 text-gray-700 hidden sm:table-cell">{{ player.club }}</td>
+                  <td class="py-3 px-4 text-gray-700 hidden sm:table-cell">
+                    {% if clubUrls.has(player.club) %}
+                      <a href="{{ clubUrls.get(player.club) }}" class="hover:text-blue-600">{{ player.club }}</a>
+                    {% else %}
+                      {{ player.club }}
+                    {% endif %}
+                  </td>
                   <td class="py-3 px-4 text-right tabular-nums whitespace-nowrap">
                     {{ player.rating|round }}
                     <span class="text-sm text-gray-500" title="95% range">±{{ player.plusMinus }}</span>

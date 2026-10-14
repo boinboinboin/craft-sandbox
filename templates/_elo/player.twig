@@ -12,7 +12,18 @@
     <div class="base-container px-4">
       <a href="{{ url('elo') }}" class="text-gray-600 hover:text-black">&larr; Rankings</a>
       <h1 class="h1 mt-4">{{ player.name }}</h1>
-      {% if player.club %}<p class="text-2xl text-gray-700">{{ player.club }}</p>{% endif %}
+      {% if player.club %}
+        {% set clubEntry = craft.entries.section('clubs').title(player.club).with(['clubLogo']).one() %}
+        {% set logo = clubEntry ? clubEntry.clubLogo|first : null %}
+        <p class="flex items-center gap-3 text-2xl text-gray-700">
+          {% if logo %}<img src="{{ logo.url }}" alt="" class="w-10 h-10 object-contain shrink-0">{% endif %}
+          {% if clubEntry %}
+            <a href="{{ clubEntry.url }}" class="hover:text-blue-600">{{ player.club }}</a>
+          {% else %}
+            {{ player.club }}
+          {% endif %}
+        </p>
+      {% endif %}
     </div>
   </section>
 
@@ -53,29 +64,74 @@
             <div class="relative h-72"
                  data-controller="rating-chart"
                  data-rating-chart-from-value="{{ history.from }}"
-                 data-rating-chart-ratings-value="{{ history.ratings|json_encode }}"></div>
+                 data-rating-chart-ratings-value="{{ history.ratings|json_encode }}"
+                 data-rating-chart-clubs-value="{{ (history.clubs ?? [])|json_encode }}"></div>
 
             {# Table view of the chart: rating at the end of each season (July to June) #}
             {% set seasons = {} %}
+            {% set clubs = history.clubs ?? [] %}
+            {% set clubIndex = 0 %}
             {% for rating in history.ratings %}
+              {% if clubs[clubIndex + 1] is defined and clubs[clubIndex + 1][0] <= loop.index0 %}
+                {% set clubIndex = clubIndex + 1 %}
+              {% endif %}
               {% set weekEnd = history.from|date_modify('+' ~ ((loop.index0 * 7) + 6) ~ ' days') %}
               {% set year = weekEnd|date('Y') %}
               {% set season = weekEnd|date('n') >= 7 ? year : year - 1 %}
-              {% set seasons = seasons|merge({ ('s' ~ season): { label: season ~ '/' ~ (season + 1), rating: rating } }) %}
+              {% set seasons = seasons|merge({ ('s' ~ season): { label: season ~ '/' ~ (season + 1), rating: rating, club: clubs[clubIndex][1] ?? null } }) %}
             {% endfor %}
             <details class="mt-4">
               <summary class="cursor-pointer text-gray-700 hover:text-black">Rating by season</summary>
               <table class="mt-2 text-left">
                 <thead class="text-sm text-gray-600">
-                  <tr><th scope="col" class="py-1 pr-8 font-normal">Season</th><th scope="col" class="py-1 font-normal text-right">Rating at end</th></tr>
+                  <tr><th scope="col" class="py-1 pr-8 font-normal">Season</th><th scope="col" class="py-1 pr-8 font-normal">Club</th><th scope="col" class="py-1 font-normal text-right">Rating at end</th></tr>
                 </thead>
                 <tbody>
                   {% for s in seasons %}
-                    <tr><td class="py-1 pr-8">{{ s.label }}</td><td class="py-1 text-right tabular-nums">{{ s.rating }}</td></tr>
+                    <tr><td class="py-1 pr-8">{{ s.label }}</td><td class="py-1 pr-8">{{ s.club }}</td><td class="py-1 text-right tabular-nums">{{ s.rating }}</td></tr>
                   {% endfor %}
                 </tbody>
               </table>
             </details>
+          </div>
+        {% endif %}
+
+        {% set matches = p.matchLog %}
+        {% if matches and matches.recent is not empty %}
+          <div class="grid gap-6 mt-6">
+            {% if matches.rivals is not empty %}
+              {% set rival = matches.rivals|first %}
+              <div class="bg-white p-4 md:p-6">
+                <h3 class="text-xl mb-1">Biggest rival</h3>
+                <p class="text-sm text-gray-600 mb-4">The opponent with the closest matches, from at least 3 meetings</p>
+                <p class="text-2xl">
+                  <a href="{{ url('elo/players/' ~ rival.opponent.id) }}" class="hover:text-blue-600">{{ rival.opponent.name }}</a>
+                  <span class="text-base text-gray-500 tabular-nums">{{ rival.opponent.rating }}</span>
+                </p>
+                <p class="text-gray-700 mt-1">
+                  {{ rival.matches }} matches: {{ rival.wins }} won{% if rival.draws %}, {{ rival.draws }} drawn{% endif %}, {{ rival.losses }} lost ·
+                  average margin {{ (rival.margin * 100)|round(1) }}% of points · last met {{ rival.lastPlayed|date('j M Y') }}
+                </p>
+                {% if matches.rivals|length > 1 %}
+                  <p class="text-sm text-gray-600 mt-4">Also close:</p>
+                  <ul class="mt-1">
+                    {% for r in matches.rivals|slice(1) %}
+                      <li>
+                        <a href="{{ url('elo/players/' ~ r.opponent.id) }}" class="hover:text-blue-600">{{ r.opponent.name }}</a>
+                        <span class="text-sm text-gray-600">{{ r.matches }} matches, {{ r.wins }}–{{ r.losses }}{% if r.draws %}–{{ r.draws }}{% endif %}, margin {{ (r.margin * 100)|round(1) }}%</span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+              </div>
+            {% endif %}
+            {% include '_elo/_matches' with { title: 'Last matches', matches: matches.recent } only %}
+            {% if matches.biggestWins is not empty %}
+              {% include '_elo/_matches' with { title: 'Biggest wins', matches: matches.biggestWins } only %}
+            {% endif %}
+            {% if matches.biggestLosses is not empty %}
+              {% include '_elo/_matches' with { title: 'Biggest losses', matches: matches.biggestLosses } only %}
+            {% endif %}
           </div>
         {% endif %}
       </div>

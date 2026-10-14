@@ -166,9 +166,52 @@ The growth rate and the use of all matches (without class level weights) were fi
 
 ## Rankings
 
-Ranking lists only include players who have played in the last 12 months. Inactive players keep their rating and history, and reappear in the rankings as soon as they play again.
+Ranking lists only include players who have played in the last 12 months. Inactive players keep their rating and history, and reappear in the rankings as soon as they play again. The rankings page can show them too (without a rank) with "Show inactive players".
 
 The club shown for a player is their club registered on badmintonportalen. Players no longer in the register show the club of their last tournament, or otherwise the club of their last league team. League team names such as "Kristiansand 2" are team numbers, not clubs.
+
+### Strongest clubs
+
+Clubs are ranked per pool by the average rating of their best 3 ranked players. Clubs with fewer than 3 ranked players are not listed. Averaging the best few players, rather than all of them, keeps big clubs with many beginners from being ranked low and one-star clubs from being ranked high.
+
+The combined list ranks clubs by the average of their men's and women's strength, so only clubs listed in both pools are included. The two pools are separate rating scales, so each counts equally rather than mixing men's and women's ratings in one top 3.
+
+### Matches
+
+Each player's page lists their last 20 matches and their 5 biggest wins and losses. Biggest wins are the wins with the lowest win chance before the match ($E_A$); biggest losses are the losses with the highest. Only matches where both players already had 10 rated matches count, since start ratings are too uncertain to make an upset meaningful.
+
+### Rivals
+
+A player's biggest rival is the opponent they have had the closest matches against, measured by the average point margin $d$ (as in the [margin of victory weight](#margin-of-victory-weight)) over at least 3 matches. To favour many close matches over a few, the average is pulled towards a typical margin of 0.2 as if there were 2 more matches: $(\sum d + 2 \cdot 0.2) / (n + 2)$. The player page shows the closest 3.
+
+### Club history
+
+The rating graph is coloured by the club the player played for at the time: the club of their last tournament, if it was within the last 12 months, otherwise the club of their last league team.
+
+### Women's singles first
+
+On the page of a woman (by gender in badmintonportalen's player register) who has also played men's singles, women's singles is shown first.
+
+### Clubs in Craft
+
+Clubs are entries in the Clubs section (`elo/clubs/<slug>`), created and updated from `data/clubs.json` with `ddev craft elo/clubs/sync`. The sync only writes the short name, full name, region and NBF club ID; logos and websites are added by hand in the control panel and kept. Players are matched to a club entry by its short name (the entry title).
+
+## Tested and not used
+
+### Repeated opponents
+
+Making repeated matches against the same opponent count less (to reward playing a wider range of opponents) was tested with several weights: $a^n$ for $n$ earlier meetings in the last one or two years ($a$ from 0.6 to 0.9), $1/\sqrt{1+n}$ and $1/(1+n)$. Every variant predicted results worse, both on the tuning seasons and the held-out seasons (2023 onwards), and the stronger the reduction the worse. Counting repeated matches more did not help either. Repeated matches carry as much information about the players as any other match, so all matches count the same.
+
+## Comparison with the official ranking
+
+The official NBF ranking lists (badmintonportalen.no/NBF/Ranglister/) rank seniors by points collected in tournaments over the last 12 months. For each season from 2014/2015, the season's final official list and these ratings on the same date were both used to pick the favourite in every game played in the following 12 months between two players on the list (`fetch-ranking.mjs`, `compare-ranking.mjs`):
+
+| | Games | Favourite won |
+| --- | ---: | ---: |
+| Official ranking (more points) | 40,655 | 64.3% |
+| Elo (higher rating) | 40,655 | 76.3% |
+
+Elo predicted better in every season and both pools. When the two disagreed on the favourite (14,181 games), the Elo favourite won 67.3% of the time. The rank correlation between official points and Elo is only about 0.4–0.6: official points reward playing many tournaments, Elo only rewards results.
 
 ## Covid-19 period adjustment
 

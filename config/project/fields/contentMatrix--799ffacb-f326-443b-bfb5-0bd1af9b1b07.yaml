@@ -5,11 +5,29 @@ name: Content
 searchable: false
 settings:
   createButtonLabel: null
+  defaultIndexViewMode: cards
+  enableVersioning: false
   entryTypes:
-    - 2603e5fe-3c82-4b96-a5a3-7c692af109e7 # Image
-    - 36cdd5ae-647b-4390-ac1e-2cffd4d1b206 # Rich text
-    - 6875af28-74ab-47c6-bc24-74252024703e # Page cards
-    - b8533f63-9755-4dec-9adf-717eaeaf72f1 # Accordion
+    -
+      __assoc__:
+        -
+          - uid
+          - 2603e5fe-3c82-4b96-a5a3-7c692af109e7 # Image
+    -
+      __assoc__:
+        -
+          - uid
+          - 36cdd5ae-647b-4390-ac1e-2cffd4d1b206 # Rich text
+    -
+      __assoc__:
+        -
+          - uid
+          - 6875af28-74ab-47c6-bc24-74252024703e # Page cards
+    -
+      __assoc__:
+        -
+          - uid
+          - b8533f63-9755-4dec-9adf-717eaeaf72f1 # Accordion
   includeTableView: false
   maxEntries: null
   minEntries: null

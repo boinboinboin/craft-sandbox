@@ -23,6 +23,11 @@ class Module extends BaseModule
     {
         Craft::setAlias('@modules/elo', __DIR__);
 
+        // Console commands: `craft elo/clubs/sync`
+        if (Craft::$app->request->isConsoleRequest) {
+            $this->controllerNamespace = 'modules\\elo\\console\\controllers';
+        }
+
         $this->setComponents([
             'elo' => EloService::class,
         ]);

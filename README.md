@@ -105,7 +105,7 @@ to style p, define a base style
 
 open docker desktop
 
-ddev run start
+ddev start
 
 ddev npm run dev
 

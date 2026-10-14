@@ -5,8 +5,14 @@ name: 'Accordion blocks'
 searchable: false
 settings:
   createButtonLabel: null
+  defaultIndexViewMode: cards
+  enableVersioning: false
   entryTypes:
-    - 1b8e1298-21e1-4747-ac15-890cf7319601 # Accordion block
+    -
+      __assoc__:
+        -
+          - uid
+          - 1b8e1298-21e1-4747-ac15-890cf7319601 # Accordion block
   includeTableView: false
   maxEntries: null
   minEntries: 1

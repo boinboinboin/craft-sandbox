@@ -1,4 +1,4 @@
-dateModified: 1790324135
+dateModified: 1791997515
 email:
   fromEmail: johannes@seeds.no
   fromName: 'Craft Boilerplate'
@@ -25,11 +25,13 @@ meta:
     5e5bd584-c914-4f06-86c3-61bfe988a8b8: 'Gift ideas' # Gift ideas
     7a1d1c73-c4f4-4ce8-a011-e1fb3c07a8b0: Members # Members
     7c80f4dd-0ff7-401e-b0df-a7f8206bd6f1: 'SEO Title' # SEO Title
+    8c3e5306-5966-45b4-a462-a35b35c16e5c: 'NBF club ID' # NBF club ID
     8fba1319-bc8c-4d5d-93b0-6fb2092c7963: 'Main Image' # Main Image
     20afde05-3960-4d67-9d7e-b9c1bf81e641: 'Twitter title' # Twitter title
     029f9285-7999-4728-8cd1-106627aac9c8: Assets # Assets
     36cdd5ae-647b-4390-ac1e-2cffd4d1b206: 'Rich text' # Rich text
     63fcea28-a867-4cfa-b68f-5982694c2d06: Vinyl # Vinyl
+    072a8a6a-3d63-4dbc-aeb8-0a387c6e926d: 'Club region' # Club region
     75e61f0a-b17f-4cc8-911a-2d881af87a05: Pages # Pages
     79db34d0-53e2-480e-b239-efe941831a2c: 'Vinyl tracklist' # Vinyl tracklist
     97cc39c2-672a-4b19-b8b4-20c45afd1477: Birthday # Birthday
@@ -42,8 +44,10 @@ meta:
     13820824-cb63-4a98-bf78-8b24cc7fd1d0: 'Accordion blocks' # Accordion blocks
     78654068-eb99-4249-b350-a5ba78a2ffb8: 'Birth date' # Birth date
     a9b95943-04d9-4a99-bd95-fb35c1b79ac6: Entries # Entries
+    a93b900d-fad1-4971-9f5e-478581e97a75: 'Club website' # Club website
     a716da50-3c3f-4a5d-b06f-1e92c7eab81e: 'Single line text' # Single line text
     ade0ba61-fbf6-458f-baee-9e0c78cdfd6d: Simple # Simple
+    af4cf0e5-36d1-418b-a780-1d5116a438c5: 'Club full name' # Club full name
     afe9de2c-abb1-46e5-99e9-4d3dfd9ed33a: 'Open Graph Description' # Open Graph Description
     b2dd055a-589f-4c39-a6d4-cb708dd6e7e7: home # home
     b43bcddf-8cc3-4971-b8ef-c4efe4bce91e: Default # Default
@@ -51,6 +55,7 @@ meta:
     b8533f63-9755-4dec-9adf-717eaeaf72f1: Accordion # Accordion
     bcb248a7-aad7-4e0f-b728-96180cd12460: Page # Page
     bfb6dd1e-9068-42ec-946b-f49b2c699667: 'Vinyl artist' # Vinyl artist
+    c466fa7b-fb45-4c31-a62a-79585c22216f: Club # Club
     d2a8f44c-4470-4014-8157-787329adccc9: 'Open Graph Title' # Open Graph Title
     d8dfd673-dce1-4fd4-b7d7-6ed8fd18c66e: Home # Home
     d50169e8-ebc6-41f0-a5e5-23fa7957086c: 'Vinyl Collection' # Vinyl Collection
@@ -59,7 +64,9 @@ meta:
     e6d5ce9a-038f-4ca5-9708-d1a6087e92bd: 'Craft Boilerplate' # Craft Boilerplate
     e902a893-dd5f-4961-b967-3fa2d49aae4a: Image # Image
     e9315311-6ed3-4da5-a8df-4f913356c56b: 'Plain text' # Plain text
+    eedf6a61-eba4-4b1d-8139-7305f5779405: 'Club logo' # Club logo
     f3133035-d94a-443c-8d18-f3f8a0d4e2c5: 'Birthday Overview' # Birthday Overview
+    fa151d12-3218-47ba-9b64-3329f2b39b42: Clubs # Clubs
     fff9e1fe-da4c-4b03-8607-3aad0f33a168: 'Rich text' # Rich text
 plugins:
   ckeditor:

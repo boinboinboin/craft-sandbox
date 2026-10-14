@@ -13,4 +13,5 @@ return [
     // Badminton Elo ratings (modules/elo, data from elo/rate.mjs)
     'elo' => ['template' => '_elo/index'],
     'elo/players/<playerId:\d+>' => ['template' => '_elo/player'],
+    'elo/clubs' => ['template' => '_elo/clubs'],
 ];

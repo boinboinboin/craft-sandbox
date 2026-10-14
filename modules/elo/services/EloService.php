@@ -8,8 +8,9 @@ use yii\base\Component;
 /**
  * Reads the rating files written by elo/rate.mjs:
  *
- * - elo/data/ratings.json: every player's current rating per pool ("men", "women")
+ * - elo/data/ratings.json: every player's current rating and the strongest clubs per pool ("men", "women")
  * - elo/data/history/<id>.json: one player's rating at the end of every week, per pool
+ * - elo/data/matches/<id>.json: one player's last matches and biggest wins and losses, per pool
  *
  * ratings.json is decoded once per request and kept in memory.
  */
@@ -45,19 +46,43 @@ class EloService extends Component
     }
 
     /**
-     * Ranked (active) players in a pool, best first.
+     * Ranked (active) players in a pool, best first. With $includeInactive, also players who
+     * haven't played in the last 12 months (rank null), in rating order among the ranked ones.
      *
      * @return array<int, array>
      */
-    public function getRankings(string $pool): array
+    public function getRankings(string $pool, bool $includeInactive = false): array
     {
         $players = $this->ratings()['pools'][$pool] ?? [];
+        if ($includeInactive) {
+            return $players;
+        }
 
         return array_values(array_filter($players, fn(array $p) => $p['rank'] !== null));
     }
 
     /**
-     * One player across the pools they have played in, with their weekly rating history.
+     * Clubs in a pool by the average rating of their best ranked players, strongest first.
+     *
+     * @return array<int, array>
+     */
+    public function getClubs(string $pool): array
+    {
+        return $this->ratings()['clubs'][$pool] ?? [];
+    }
+
+    /**
+     * A club's ranked players in a pool (by the club shown for each player), best first.
+     *
+     * @return array<int, array>
+     */
+    public function getClubPlayers(string $club, string $pool): array
+    {
+        return array_values(array_filter($this->getRankings($pool), fn(array $p) => $p['club'] === $club));
+    }
+
+    /**
+     * One player across the pools they have played in, with their weekly rating history and matches.
      *
      * @return array{id: int, name: string, club: ?string, pools: array<string, array>}|null
      */
@@ -65,6 +90,7 @@ class EloService extends Component
     {
         $player = null;
         $history = $this->read("history/$id.json");
+        $matches = $this->read("matches/$id.json");
         foreach (array_keys(self::POOLS) as $pool) {
             foreach ($this->ratings()['pools'][$pool] ?? [] as $p) {
                 if ($p['id'] !== $id) {
@@ -77,9 +103,18 @@ class EloService extends Component
                 $player['pools'][$pool] = $p + [
                     'label' => self::POOLS[$pool],
                     'history' => $history[$pool] ?? null,
+                    'matchLog' => $matches[$pool] ?? null,
                 ];
                 break;
             }
+        }
+
+        // Women's singles first for women (gender from the player register), even if they have
+        // also played men's singles.
+        if (isset($player['pools']['women']) && ($player['pools']['women']['gender'] ?? null) === 'K') {
+            $player['pools'] = ['women' => $player['pools']['women']] + $player['pools'];
+            $player['name'] = $player['pools']['women']['name'];
+            $player['club'] = $player['pools']['women']['club'];
         }
 
         return $player;

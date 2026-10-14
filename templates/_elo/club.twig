@@ -1,0 +1,73 @@
+{% extends "_base.twig" %}
+
+{# A club (Clubs section entry, synced by `craft elo/clubs/sync`) with its ranked players per pool. #}
+
+{% set logo = entry.clubLogo.one() %}
+{% set website = entry.clubWebsite %}
+
+{% block body %}
+  <section class="base-section">
+    <div class="base-container px-4">
+      <a href="{{ url('elo/clubs') }}" class="text-gray-600 hover:text-black">&larr; Strongest clubs</a>
+      <div class="flex items-center gap-6 mt-4">
+        {% if logo %}
+          <img src="{{ logo.url }}" alt="" class="w-20 h-20 object-contain shrink-0">
+        {% endif %}
+        <div>
+          <h1 class="h1">{{ entry.title }}</h1>
+          {% if entry.clubFullName and entry.clubFullName != entry.title %}
+            <p class="text-2xl text-gray-700">{{ entry.clubFullName }}</p>
+          {% endif %}
+        </div>
+      </div>
+      <p class="text-gray-600 mt-4">
+        {{ entry.clubRegion }}
+        {% set combinedStanding = craft.elo.clubs('combined')|filter(c => c.club == entry.title)|first %}
+        {% if combinedStanding %} · <a href="{{ url('elo/clubs', { pool: 'combined' }) }}" class="underline hover:text-blue-600">#{{ combinedStanding.rank }} of the strongest clubs combined</a>{% endif %}
+        {% if website and website.url %} · <a href="{{ website.url }}" class="underline hover:text-blue-600" rel="noopener">{{ website.label ?: website.url|replace({'https://': '', 'http://': ''})|trim('/') }}</a>{% endif %}
+      </p>
+    </div>
+  </section>
+
+  {% for handle, label in craft.elo.pools() %}
+    {% set players = craft.elo.clubPlayers(entry.title, handle) %}
+    {% set standing = craft.elo.clubs(handle)|filter(c => c.club == entry.title)|first %}
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-2">{{ label }}</h2>
+        {% if players is empty %}
+          <p class="text-gray-600">No ranked players: nobody from {{ entry.title }} has played {{ label|lower }} in the last 12 months.</p>
+        {% else %}
+          <p class="text-gray-600 mb-6">
+            {{ players|length|number }} ranked {{ players|length == 1 ? 'player' : 'players' }}{% if standing %} · <a href="{{ url('elo/clubs', { pool: handle }) }}" class="underline hover:text-blue-600">#{{ standing.rank }} of the strongest clubs</a> (strength {{ standing.strength|round }}){% endif %}
+          </p>
+          <div class="bg-white overflow-x-auto">
+            <table class="w-full text-left">
+              <thead class="text-sm text-gray-600 border-b border-gray-200">
+                <tr>
+                  <th scope="col" class="py-3 px-4 font-normal text-right w-16">#</th>
+                  <th scope="col" class="py-3 px-4 font-normal">Player</th>
+                  <th scope="col" class="py-3 px-4 font-normal text-right">Rating</th>
+                  <th scope="col" class="py-3 px-4 font-normal text-right hidden sm:table-cell">Matches</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for player in players %}
+                  <tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                    <td class="py-3 px-4 text-right text-gray-600 tabular-nums">{{ player.rank }}</td>
+                    <td class="py-3 px-4"><a href="{{ url('elo/players/' ~ player.id) }}" class="hover:text-blue-600">{{ player.name }}</a></td>
+                    <td class="py-3 px-4 text-right tabular-nums whitespace-nowrap">
+                      {{ player.rating|round }} <span class="text-sm text-gray-500" title="95% range">±{{ player.plusMinus }}</span>
+                    </td>
+                    <td class="py-3 px-4 text-right text-gray-700 tabular-nums hidden sm:table-cell">{{ player.matches|number }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="text-sm text-gray-600 mt-2"># is the national rank in {{ label|lower }}.</p>
+        {% endif %}
+      </div>
+    </section>
+  {% endfor %}
+{% endblock %}

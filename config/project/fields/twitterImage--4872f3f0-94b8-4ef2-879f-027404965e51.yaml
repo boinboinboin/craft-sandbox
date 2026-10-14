@@ -10,6 +10,7 @@ settings:
   allowedKinds:
     - image
   branchLimit: null
+  defaultPlacement: end
   defaultUploadLocationSource: 'volume:029f9285-7999-4728-8cd1-106627aac9c8' # Assets
   defaultUploadLocationSubpath: null
   maintainHierarchy: false
