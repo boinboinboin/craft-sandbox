@@ -3,9 +3,9 @@
 {# Strongest clubs per pool: average rating of each club's best ranked players (elo/rate.mjs). #}
 
 {% set pools = craft.elo.pools() %}
-{% set tabs = pools|merge({ combined: 'Combined' }) %}
+{% set tabs = { combined: 'Combined' }|merge(pools) %}
 {% set pool = craft.app.request.getQueryParam('pool') %}
-{% set pool = pool in tabs|keys ? pool : 'men' %}
+{% set pool = pool in tabs|keys ? pool : 'combined' %}
 {% set combined = pool == 'combined' %}
 {% set clubs = craft.elo.clubs(pool) %}
 {# Club entries (Clubs section) by short name, for links and logos #}
