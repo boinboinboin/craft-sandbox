@@ -84,15 +84,15 @@ After the start, ratings only change through results. Juniors who improve quickl
 
 $w_c$ depends on the tournament class or team league the match is played in. The same levels set a new player's [start rating](#start-rating):
 
-| Tournament class       | Team league                                                                       | $w_c$ | Start rating |
-| ---------------------- | --------------------------------------------------------------------------------- | ----: | -----------: |
-| SEN X, SEN E, SEN A    | Eliteserien (incl. qualification); 1. HS and 1. DS in 1st div                     |  100% |         1500 |
-| U19A/X, SEN B, O35–O45 | 2. and 3. HS and 2. DS in 1st div; Junior NM for lag (U19)                        |   85% |         1425 |
-| U17A/X, SEN C, O50–O55 | 2nd div; 1st div qualification; U17 leagues, Landsfinale U17; U17/U19 singles series |   60% |         1350 |
-| U15A/X, SEN D, O60+    | 3rd div (incl. combined 2nd/3rd div); U15 leagues, Landsfinalen U15               |   40% |         1275 |
-| U13A/X, U19B, U17B     | U13 leagues, Landsfinalen U13; U13/U15 singles series                             |   25% |         1200 |
+| Tournament class       | Team league                                                                                                            | $w_c$ | Start rating |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- | ----: | -----------: |
+| SEN X, SEN E, SEN A    | Eliteserien (incl. qualification); 1. HS and 1. DS in 1st div                                                          |  100% |         1500 |
+| U19A/X, SEN B, O35–O45 | 2. and 3. HS and 2. DS in 1st div; Junior NM for lag (U19)                                                             |   85% |         1425 |
+| U17A/X, SEN C, O50–O55 | 2nd div; 1st div qualification; U17 leagues, Landsfinale U17; U17/U19 singles series                                   |   60% |         1350 |
+| U15A/X, SEN D, O60+    | 3rd div (incl. combined 2nd/3rd div); U15 leagues, Landsfinalen U15                                                    |   40% |         1275 |
+| U13A/X, U19B, U17B     | U13 leagues, Landsfinalen U13; U13/U15 singles series                                                                  |   25% |         1200 |
 | U11A, U15B, U13B       | 4th div; other senior series (Oslofjordserien, Klubbserie, Trimliga, Pizzaliga, Herreserien, adult beginner series, …) |   10% |         1125 |
-| Other (incl. Åpen HC)  | Junior beginner series (Nybegynnerserie); internal club events                    |    5% |         1050 |
+| Other (incl. Åpen HC)  | Junior beginner series (Nybegynnerserie); internal club events                                                         |    5% |         1050 |
 
 League names vary by region and season ("1. divisjon Østlandet", "1. Div Oslofjorden 18/19", "2.div. Sør", …), so they are matched by pattern.
 
@@ -167,6 +167,8 @@ The growth rate and the use of all matches (without class level weights) were fi
 ## Rankings
 
 Ranking lists only include players who have played in the last 12 months. Inactive players keep their rating and history, and reappear in the rankings as soon as they play again.
+
+The club shown for a player is their club registered on badmintonportalen. Players no longer in the register show the club of their last tournament, or otherwise the club of their last league team. League team names such as "Kristiansand 2" are team numbers, not clubs.
 
 ## Covid-19 period adjustment
 

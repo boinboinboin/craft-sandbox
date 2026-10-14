@@ -163,7 +163,7 @@ export function computeRatings(
     p.penalizedUntil = day;
   }
 
-  function getPlayer(pool, side, level, day) {
+  function getPlayer(pool, side, level, day, source) {
     let p = players[pool].get(side.id);
     if (!p) {
       const start = startRating(level);
@@ -172,7 +172,10 @@ export function computeRatings(
       players[pool].set(side.id, p);
     }
     p.name = side.name;
-    p.club = side.club;
+    // Tournament entries use the membership club; league teams can belong to another club
+    // ("Kristiansand 2", or combined teams like "Tromsø/Bygdø").
+    if (source.startsWith("T")) p.tournamentClub = side.club;
+    else if (!side.club.includes("/")) p.leagueClub = clubName(side.club);
     return p;
   }
 
@@ -186,8 +189,8 @@ export function computeRatings(
   }
 
   function rate(g) {
-    const pa = getPlayer(g.pool, g.a, g.level, g.day);
-    const pb = getPlayer(g.pool, g.b, g.level, g.day);
+    const pa = getPlayer(g.pool, g.a, g.level, g.day, g.source);
+    const pb = getPlayer(g.pool, g.b, g.level, g.day, g.source);
     const week = weekStart(g.day);
     for (const p of [pa, pb]) {
       const away = p.lastPlayed ? (toTime(g.day) - toTime(p.lastPlayed)) / DAY_MS : 0;
@@ -262,15 +265,23 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const round = (x) => Math.round(x * 10) / 10;
   const ratings = {};
   const weekly = {};
+  // Club shown for each player: the club registered on badmintonportalen (current as of the last
+  // fetch-players.mjs run), else the last tournament club, else the last league team's club.
+  const registered = new Map(
+    JSON.parse(readFileSync(`${DIR}data/players.json`, "utf8")).map((p) => [p.id, p.club.trim()])
+  );
+  const clubOf = (p) => registered.get(p.id) || p.tournamentClub || p.leagueClub || null;
+
   // Rankings only include players active within RANKING_ACTIVE_DAYS; others get rank null.
   const activeSince = addDays(today, -R.RANKING_ACTIVE_DAYS);
   for (const [pool, map] of Object.entries(players)) {
     const list = [...map.values()].sort((a, b) => b.rating - a.rating);
     let rank = 0;
-    ratings[pool] = list.map(({ weekly: _, nextWeek: __, penalizedUntil: ___, returning: ____, returnInfo: _____, rdDay: ______, ...p }) => {
+    ratings[pool] = list.map((player) => {
+      const { weekly: _, nextWeek: __, penalizedUntil: ___, returning: ____, returnInfo: _____, rdDay: ______, tournamentClub: _______, leagueClub: ________, ...p } = player;
       const active = p.lastPlayed >= activeSince;
       // plusMinus: 95% range, rating ± 2·RD
-      return { rank: active ? ++rank : null, ...p, active, rating: round(p.rating), rd: Math.round(p.rd), plusMinus: Math.round(2 * p.rd), peak: round(p.peak) };
+      return { rank: active ? ++rank : null, ...p, club: clubOf(player), active, rating: round(p.rating), rd: Math.round(p.rd), plusMinus: Math.round(2 * p.rd), peak: round(p.peak) };
     });
     weekly[pool] = Object.fromEntries(list.map((p) => [p.id, { from: p.firstWeek, ratings: p.weekly }]));
   }
