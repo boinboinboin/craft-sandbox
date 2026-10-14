@@ -3,9 +3,9 @@
 // Also importable: collectGames() and computeRatings(games, inactivity) for tuning.
 //
 // Reads data/portalen/*.json and data/league/*.json.
-// Writes data/ratings.json (current ratings per pool) and data/ratings-weekly.json
+// Writes data/ratings.json (current ratings per pool), data/ratings-weekly.json and data/history/<id>.json
 // (each player's rating at the end of every week, for history graphs).
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import * as R from "./rules.mjs";
 
 const DIR = new URL(".", import.meta.url).pathname;
@@ -290,6 +290,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   // Per player: `from` is the Monday of their first week; ratings[i] is the rating at the end
   // of week from + 7*i days.
   writeFileSync(`${DIR}data/ratings-weekly.json`, JSON.stringify({ generatedAt: new Date().toISOString(), weekStartsOn: "Monday", pools: weekly }));
+  // The same weekly history split per player ({ men: {from, ratings}, women: ... }), so the
+  // website can load one player's history without reading the whole file.
+  const byPlayer = new Map();
+  for (const [pool, series] of Object.entries(weekly)) {
+    for (const [id, history] of Object.entries(series)) byPlayer.set(id, { ...byPlayer.get(id), [pool]: history });
+  }
+  mkdirSync(`${DIR}data/history`, { recursive: true });
+  for (const [id, history] of byPlayer) writeFileSync(`${DIR}data/history/${id}.json`, JSON.stringify(history));
 
   console.log(`Rated ${games.length} games (${games[0]?.day} to ${games.at(-1)?.day}).`);
   console.log(`Skipped: ${skipped.walkover} walkovers, ${skipped.bye} byes, ${skipped.unplayed} unplayed, ${skipped.noPlayer} without two identified players.`);

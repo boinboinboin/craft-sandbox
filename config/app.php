@@ -26,8 +26,10 @@ return [
     'id' => App::env('CRAFT_APP_ID') ?: 'CraftCMS',
     'modules' => [
         'discogs' => \modules\discogs\Module::class,
+        'elo' => \modules\elo\Module::class,
     ],
     'bootstrap' => [
         'discogs',
+        'elo',
     ],
 ];

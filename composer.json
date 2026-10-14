@@ -34,7 +34,8 @@
   },
   "autoload": {
     "psr-4": {
-      "modules\\discogs\\": "modules/discogs/"
+      "modules\\discogs\\": "modules/discogs/",
+      "modules\\elo\\": "modules/elo/"
     }
   },
   "config": {

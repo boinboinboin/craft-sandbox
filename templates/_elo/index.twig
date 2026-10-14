@@ -1,0 +1,82 @@
+{% extends "_base.twig" %}
+
+{# Badminton Elo rankings, from the ratings calculated by elo/rate.mjs (see elo/README.md). #}
+
+{% set pools = craft.elo.pools() %}
+{% set pool = craft.app.request.getQueryParam('pool') %}
+{% set pool = pool in pools|keys ? pool : 'men' %}
+{% set players = craft.elo.rankings(pool) %}
+{% set generatedAt = craft.elo.generatedAt() %}
+
+{% block body %}
+  <section class="base-section">
+    <div class="base-container px-4">
+      <h1 class="h1">Badminton Elo</h1>
+      <p class="text-2xl max-w-3xl">Singles ratings for Norwegian badminton, calculated from every tournament and league result on badmintonportalen.no since 2013.</p>
+      {% if generatedAt %}
+        <p class="text-gray-600 mt-2">Updated {{ generatedAt|date('j F Y') }}</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="base-section" data-controller="table-filter">
+    <div class="base-container px-4">
+      <div class="flex flex-wrap items-end justify-between gap-6 mb-6">
+        <nav class="flex gap-2" aria-label="Discipline">
+          {% for handle, label in pools %}
+            <a href="{{ url('elo', { pool: handle }) }}"
+               class="px-4 py-2 border border-black transition-colors duration-200 {{ handle == pool ? 'bg-black text-white' : 'hover:bg-black hover:text-white' }}"
+               {% if handle == pool %}aria-current="page"{% endif %}>{{ label }}</a>
+          {% endfor %}
+        </nav>
+        <label class="flex items-center gap-2 border-b border-gray-300 focus-within:border-black transition-colors w-full sm:w-80">
+          <span class="sr-only">Search player or club</span>
+          {{ svg(include('_svg/icons/search.svg'))|attr({ class: 'w-5 h-5 text-gray-400 shrink-0', 'aria-hidden': 'true' }) }}
+          <input type="search" placeholder="Search player or club" class="flex-1 py-2 bg-transparent outline-none"
+                 data-table-filter-target="input" data-action="input->table-filter#filter">
+        </label>
+      </div>
+
+      {% if players is empty %}
+        <p class="base">No ratings yet. Run <code>node elo/rate.mjs</code> to calculate them.</p>
+      {% else %}
+        <p class="text-gray-600 mb-4" data-table-filter-target="count">
+          {{ players|length|number }} ranked players: everyone who has played in the last 12 months.
+        </p>
+
+        <div class="bg-white overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="text-sm text-gray-600 border-b border-gray-200">
+              <tr>
+                <th scope="col" class="py-3 px-4 font-normal text-right w-16">#</th>
+                <th scope="col" class="py-3 px-4 font-normal">Player</th>
+                <th scope="col" class="py-3 px-4 font-normal hidden sm:table-cell">Club</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right">Rating</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right hidden md:table-cell">Matches</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for player in players %}
+                <tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50"
+                    data-table-filter-target="row" data-search="{{ (player.name ~ ' ' ~ player.club)|lower }}">
+                  <td class="py-3 px-4 text-right text-gray-600 tabular-nums">{{ player.rank }}</td>
+                  <td class="py-3 px-4">
+                    <a href="{{ url('elo/players/' ~ player.id) }}" class="hover:text-blue-600">{{ player.name }}</a>
+                    <span class="block text-sm text-gray-600 sm:hidden">{{ player.club }}</span>
+                  </td>
+                  <td class="py-3 px-4 text-gray-700 hidden sm:table-cell">{{ player.club }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums whitespace-nowrap">
+                    {{ player.rating|round }}
+                    <span class="text-sm text-gray-500" title="95% range">±{{ player.plusMinus }}</span>
+                  </td>
+                  <td class="py-3 px-4 text-right text-gray-700 tabular-nums hidden md:table-cell">{{ player.matches|number }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-gray-600 mt-4" hidden data-table-filter-target="empty">No players match your search.</p>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

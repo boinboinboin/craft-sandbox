@@ -1,0 +1,84 @@
+{% extends "_base.twig" %}
+
+{# One player's ratings and rating history. `playerId` comes from the route in config/routes.php. #}
+
+{% set player = craft.elo.player(playerId) %}
+{% if not player %}
+  {% exit 404 %}
+{% endif %}
+
+{% block body %}
+  <section class="base-section">
+    <div class="base-container px-4">
+      <a href="{{ url('elo') }}" class="text-gray-600 hover:text-black">&larr; Rankings</a>
+      <h1 class="h1 mt-4">{{ player.name }}</h1>
+      {% if player.club %}<p class="text-2xl text-gray-700">{{ player.club }}</p>{% endif %}
+    </div>
+  </section>
+
+  {% for handle, p in player.pools %}
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-6">{{ p.label }}</h2>
+
+        <dl class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div class="bg-white p-4">
+            <dt class="text-sm text-gray-600">Rating</dt>
+            <dd class="text-3xl font-semibold">{{ p.rating|round }} <span class="text-base font-normal text-gray-500" title="95% range">±{{ p.plusMinus }}</span></dd>
+          </div>
+          <div class="bg-white p-4">
+            <dt class="text-sm text-gray-600">Rank</dt>
+            {% if p.rank %}
+              <dd class="text-3xl font-semibold"><a href="{{ url('elo', { pool: handle }) }}" class="hover:text-blue-600">#{{ p.rank }}</a></dd>
+            {% else %}
+              <dd class="text-xl pt-2">Not ranked <span class="block text-sm text-gray-600">No matches in the last 12 months</span></dd>
+            {% endif %}
+          </div>
+          <div class="bg-white p-4">
+            <dt class="text-sm text-gray-600">Peak</dt>
+            <dd class="text-3xl font-semibold">{{ p.peak|round }}</dd>
+          </div>
+          <div class="bg-white p-4">
+            <dt class="text-sm text-gray-600">Matches</dt>
+            <dd class="text-3xl font-semibold">{{ p.matches|number }}</dd>
+            <dd class="text-sm text-gray-600">{{ p.wins }} won · {% if p.draws %}{{ p.draws }} drawn · {% endif %}{{ p.losses }} lost</dd>
+          </div>
+        </dl>
+
+        {% set history = p.history %}
+        {% if history and history.ratings|length > 1 %}
+          <div class="bg-white p-4 md:p-6">
+            <h3 class="text-xl mb-1">Rating history</h3>
+            <p class="text-sm text-gray-600 mb-4">Rating at the end of each week, {{ p.firstPlayed|date('F Y') }} to {{ p.lastPlayed|date('F Y') }}</p>
+            <div class="relative h-72"
+                 data-controller="rating-chart"
+                 data-rating-chart-from-value="{{ history.from }}"
+                 data-rating-chart-ratings-value="{{ history.ratings|json_encode }}"></div>
+
+            {# Table view of the chart: rating at the end of each season (July to June) #}
+            {% set seasons = {} %}
+            {% for rating in history.ratings %}
+              {% set weekEnd = history.from|date_modify('+' ~ ((loop.index0 * 7) + 6) ~ ' days') %}
+              {% set year = weekEnd|date('Y') %}
+              {% set season = weekEnd|date('n') >= 7 ? year : year - 1 %}
+              {% set seasons = seasons|merge({ ('s' ~ season): { label: season ~ '/' ~ (season + 1), rating: rating } }) %}
+            {% endfor %}
+            <details class="mt-4">
+              <summary class="cursor-pointer text-gray-700 hover:text-black">Rating by season</summary>
+              <table class="mt-2 text-left">
+                <thead class="text-sm text-gray-600">
+                  <tr><th scope="col" class="py-1 pr-8 font-normal">Season</th><th scope="col" class="py-1 font-normal text-right">Rating at end</th></tr>
+                </thead>
+                <tbody>
+                  {% for s in seasons %}
+                    <tr><td class="py-1 pr-8">{{ s.label }}</td><td class="py-1 text-right tabular-nums">{{ s.rating }}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </details>
+          </div>
+        {% endif %}
+      </div>
+    </section>
+  {% endfor %}
+{% endblock %}

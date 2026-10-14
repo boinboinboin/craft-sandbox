@@ -9,4 +9,8 @@
  * https://craftcms.com/docs/4.x/routing.html
  */
 
-return [];
+return [
+    // Badminton Elo ratings (modules/elo, data from elo/rate.mjs)
+    'elo' => ['template' => '_elo/index'],
+    'elo/players/<playerId:\d+>' => ['template' => '_elo/player'],
+];
