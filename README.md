@@ -11,7 +11,7 @@ we can generate a new one that can be comitted
 
 run `ddev composer run-script setup-dev` to set up .gitignore correctly, and set up .env to work with ddev
 
-*Check: Can we add this to .gitignore, or will this cause havoc?*
+_Check: Can we add this to .gitignore, or will this cause havoc?_
 
 `ddev composer install`
 
@@ -22,6 +22,7 @@ run `ddev composer run-script setup-dev` to set up .gitignore correctly, and set
 If server is Nginx, remove web/.htaccess
 
 ## Packages
+
 - DDEV
 - Craft CMS
 - Vite
@@ -32,6 +33,7 @@ If server is Nginx, remove web/.htaccess
 [Stimulus resolver documentation](https://github.com/danieldiekmeier/stimulus-controller-resolver)
 
 ## Assets
+
 Using Vite to manage assets
 main file is `assets/js/app.js`, this is also responsible to compile tailwind css.
 
@@ -49,12 +51,14 @@ build before release. this will not auto update assets, so you need to run `ddev
 `ddev npm run kill-dev` if you close terminal when running vite, use this to stop dev server.
 
 ### Tailwind
+
 Tailwind is used for css, Tailwind is a utility first framework
 [Tailwind documentation](https://tailwindcss.com/docs/utility-first)
 
 Tailwind config `tailwind.config.js`
 
 ### Stimulus
+
 Stimulus is used to handle javascript. Stimulus has some advantages compared to vanilla Javascript.
 
 It uses controllers that are connected to spesific parts of the code. The controllers are loaded
@@ -65,15 +69,19 @@ This means that we don't load uneccesary javascript on the page and we don't nee
 new elements are loaded on the page. [Stimulus handbook](https://stimulus.hotwired.dev/handbook/introduction)
 
 ## Styling rules
+
 Never style tags or ID's only classes, except for when styling rich text fields, here it is possible to
 wrap the rich text content in a class and style tags inside this class.
+
 ```
 <div class="richtext">
   <h2>sub title</h2>
   <p>text</p>
 </div>
 ```
+
 with the css
+
 ```
 .richtext {
   h2 {
@@ -84,9 +92,25 @@ with the css
   }
 }
 ```
+
 example:
+
 <h1>title</h1> does not have any styles with tailwind, so we need to add a class to it.
 either use tailwinds utility classes like `text-3xl font-bold` or use a predefined class like .h1
 <h1 class="h1">title</h1>
 use html tags only for semantics not for styling.
 to style p, define a base style
+
+# Start up
+
+open docker desktop
+
+ddev run start
+
+ddev npm run dev
+
+# Stop
+
+Ctrl + C
+
+ddev poweroff
