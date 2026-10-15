@@ -8,6 +8,12 @@ export const KAPPA = 54; // base K-factor
 // Tuned on doubles games before 2023: best at the singles κ; "rd" and "equal" tied, "rd" better on 2023+.
 export const DOUBLES_KAPPA = 54;
 export const DOUBLES_SPLIT = "rd";
+// A doubles player's start rating comes from their singles rating when they have played singles:
+// P0 + DOUBLES_SINGLES_SEED · (singles rating − P0). Doubles ratings spread over a narrower range.
+export const DOUBLES_SINGLES_SEED = 0.6;
+// K-factor multiplier for matches in junior classes and leagues, in every discipline: juniors
+// improve faster than the junior class weights let their ratings follow.
+export const JUNIOR_K = 1.5;
 // Rating difference scale of the expected score: a difference of SCALE points means a 91% win chance.
 export const SCALE = 300;
 

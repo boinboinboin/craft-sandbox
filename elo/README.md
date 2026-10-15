@@ -42,13 +42,14 @@ Draws happen in some junior and lower senior leagues that play at most two sets:
 The K-factor scales the base factor $\kappa$ by the adjustments described below:
 
 $$
-K_A = \kappa \cdot w_c \cdot w_m \cdot w_r \cdot m(R_A) \cdot c_t
+K_A = \kappa \cdot w_c \cdot w_j \cdot w_m \cdot w_r \cdot m(R_A) \cdot c_t
 $$
 
 | Symbol   | Meaning                                                     |
 | -------- | ----------------------------------------------------------- |
 | $\kappa$ | Base K-factor                                               |
 | $w_c$    | [Class level weight](#class-level-weight)                   |
+| $w_j$    | [Junior weight](#junior-weight)                             |
 | $w_m$    | [Margin of victory weight](#margin-of-victory-weight)       |
 | $w_r$    | [Cross-region weight](#cross-region-weight)                 |
 | $m(R_A)$ | [Current rating multiplier](#current-rating-multiplier)     |
@@ -86,12 +87,35 @@ Tuning used doubles matches before 2023 and was tested on 2023 onwards, counting
 
 Doubles ratings are their own scale. The top doubles players are around 2100, against about 3000 in singles, so the two can't be compared directly.
 
+#### Start rating from singles
+
+A player who has played singles before their first doubles match starts doubles from their singles rating at that moment, instead of the class start rating:
+
+$$
+R_{\text{doubles}} = p_0 + 0.6 \cdot (R_{\text{singles}} - p_0)
+$$
+
+A 2400 singles player starts doubles at 1940. The factor 0.6 brings the singles rating onto the narrower doubles scale. Mixed doubles uses the singles discipline the player has played most. Players without singles keep the class start rating.
+
+This and the [junior weight](#junior-weight) were inspired by table tennis rating systems (such as Germany's TTR, which raises the K-factor for juniors) and tuned on doubles matches before 2023, then tested on 2023 onwards. Here all doubles games count, including those with newcomers, where the start rating matters most (log loss, lower is better):
+
+| 2023 onwards, doubles                  | Before | With both | Change |
+| -------------------------------------- | -----: | --------: | -----: |
+| All doubles games                      | 0.5304 |    0.5066 |  −4.5% |
+| Games with a newcomer (<10 matches)    | 0.6302 |    0.5877 |  −6.7% |
+| Games between settled players          | 0.4515 |    0.4425 |  −2.0% |
+| Favourite wins                         |  73.0% |     74.7% |        |
+
+The pre-2023 matches improved as much. Seeding from singles is most of the gain: just compressing the class start ratings towards 1500 helped far less. Factors from 0.55 to 0.65 did about equally well.
+
 ## Parameters
 
 | Parameter                        |    Value |
 | -------------------------------- | -------: |
 | Top level start rating $p_0$     |     1500 |
 | Base K-factor $\kappa$           |       54 |
+| Doubles start from singles       |     ×0.6 |
+| Junior weight $w_j$              |     ×1.5 |
 | Doubles maximum rating deviation |      130 |
 | Expected score scale             |      300 |
 | Cross-region weight              |       ×2 |
@@ -104,7 +128,9 @@ A player's start rating is set by the level of their first rated match, for juni
 
 Starting every senior at 1500 regardless of level was tested and predicted results clearly worse: adult beginners started several hundred points too high, and the extra points ended up with the players who beat them.
 
-After the start, ratings only change through results. Juniors who improve quickly catch up through $m(r)$, which gives players below $p_0$ larger rating changes.
+In doubles, players who have played singles start from their singles rating instead (see [start rating from singles](#start-rating-from-singles)).
+
+After the start, ratings only change through results. Juniors who improve quickly catch up through $m(r)$, which gives players below $p_0$ larger rating changes, and the [junior weight](#junior-weight), which counts junior matches ×1.5.
 
 > [!NOTE]
 > The 2013/2014 and 2014/2015 seasons are a warm-up. 2013/2014 only has team matches (senior, U15 and U13 leagues), and most players get their first rated match in 2014/2015 when tournament data starts, so ratings need until about the end of 2014/2015 to settle.
@@ -126,6 +152,23 @@ $w_c$ depends on the tournament class or team league the match is played in. The
 | Other (incl. Åpen HC)  | Junior beginner series (Nybegynnerserie); internal club events                                                         |    5% |         1050 |
 
 League names vary by region and season ("1. divisjon Østlandet", "1. Div Oslofjorden 18/19", "2.div. Sør", …), so they are matched by pattern.
+
+### Junior weight
+
+$w_j = 1.5$ for matches in junior classes and leagues (U9–U19), in every discipline, otherwise 1. The class level weights above lower the K-factor in junior classes on purpose, since junior results say less about a player's level on the senior scale. But juniors improve faster than that lets their ratings follow, so their ratings lagged behind their results. The idea comes from table tennis: Germany's TTR system raises the K-factor for young players.
+
+Tuned on matches before 2023 and tested on 2023 onwards, all games counted (log loss, lower is better; change in thousandths):
+
+| Junior weight | Singles before 2023 | Singles 2023 onwards | Doubles before 2023 | Doubles 2023 onwards |
+| ------------- | ------------------: | -------------------: | ------------------: | -------------------: |
+| ×1 (none)     |              0.5129 |               0.5153 |              0.5208 |               0.5304 |
+| ×1.25         |                −2.9 |                 −3.1 |                −3.5 |                 −3.2 |
+| **×1.5**      |            **−3.9** |             **−4.5** |            **−5.0** |             **−4.7** |
+| ×1.75         |                −3.6 |                 −4.4 |                −5.0 |                 −4.8 |
+| ×2            |                −2.2 |                 −3.2 |                −3.7 |                 −3.8 |
+| ×2.5          |                     |                      |                +2.0 |                 +0.8 |
+
+×1.5 was best or as good as the best in every column, for newcomers and settled players alike, and ratings did not drift. In singles the favourite now wins 74.0% of these games (73.4% without it). The doubles figures are without the [start rating from singles](#start-rating-from-singles), which was added together with it.
 
 ### Margin of victory weight
 
@@ -283,6 +326,10 @@ Clubs are entries in the Clubs section (`elo/clubs/<slug>`), created and updated
 ### Repeated opponents
 
 Making repeated matches against the same opponent count less (to reward playing a wider range of opponents) was tested with several weights: $a^n$ for $n$ earlier meetings in the last one or two years ($a$ from 0.6 to 0.9), $1/\sqrt{1+n}$ and $1/(1+n)$. Every variant predicted results worse, both on the tuning seasons and the held-out seasons (2023 onwards), and the stronger the reduction the worse. Counting repeated matches more did not help either. Repeated matches carry as much information about the players as any other match, so all matches count the same.
+
+### Higher K-factor for newcomers
+
+Table tennis systems such as TTR raise the K-factor for a player's first matches. A higher K-factor for a player's first 10, 20 or 30 doubles matches (×1.5 or ×2) predicted results worse on both the tuning and the held-out seasons, and made ratings drift down, since newcomers then lose more points than their opponents win. The same held for singles. Doubles newcomers already move fast, since they take most of their side's rating change (see [doubles](#doubles)).
 
 ## Comparison with the official ranking
 

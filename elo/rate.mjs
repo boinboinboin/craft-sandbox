@@ -294,7 +294,7 @@ const RETURN_MATCHES = 5;
 
 // onGame(game, side1, side2, expected1) is called before each rating update, for analysis; sides are
 // arrays of player states. Experiment hooks (defaults follow the README): startRating(level),
-// kMultiplier(game), playerMultiplier(player, game), ratingMultiplier(r), expectedScore(ra, rb),
+// seedRating(pool, side, level, players), kMultiplier(game), playerMultiplier(player, game), ratingMultiplier(r), expectedScore(ra, rb),
 // kappa, doublesKappa (base K-factor for doubles) and doublesSplit ("rd" or "equal": how a doubles
 // side's rating change is shared between the partners).
 export function computeRatings(
@@ -304,6 +304,7 @@ export function computeRatings(
     weekly: keepWeekly = true,
     onGame,
     startRating = R.startRating,
+    seedRating,
     kMultiplier,
     playerMultiplier,
     ratingMultiplier = R.ratingMultiplier,
@@ -334,10 +335,19 @@ export function computeRatings(
 
   const rdMax = (pool) => (DOUBLES.has(pool) ? R.DOUBLES_RD_MAX : R.RD_MAX);
 
+  // A new doubles player's start rating from their singles rating, if they have played singles
+  // (mixed doubles: the singles discipline they have played most); otherwise null.
+  const SINGLES_OF = { mensDoubles: ["men"], womensDoubles: ["women"], mixedDoubles: ["men", "women"] };
+  function singlesSeed(pool, side) {
+    const singles = (SINGLES_OF[pool] ?? []).map((sp) => players[sp].get(side.id)).filter(Boolean).sort((a, b) => b.matches - a.matches)[0];
+    return singles ? R.P0 + R.DOUBLES_SINGLES_SEED * (singles.rating - R.P0) : null;
+  }
+
   function getPlayer(pool, side, level, day, source) {
     let p = players[pool].get(side.id);
     if (!p) {
-      const start = startRating(level);
+      // seedRating(pool, side, level, players) can override the start rating (experiments)
+      const start = seedRating?.(pool, side, level, players) ?? singlesSeed(pool, side) ?? startRating(level);
       const week = weekStart(day);
       p = { id: side.id, rating: start, rd: rdMax(pool), rdDay: day, start, peak: start, matches: 0, wins: 0, draws: 0, losses: 0, firstPlayed: day, firstWeek: week, nextWeek: week, weekly: [], log: [], clubs: [], returning: 0 };
       players[pool].set(side.id, p);
@@ -414,8 +424,9 @@ export function computeRatings(
 
     const doubles = DOUBLES.has(g.pool);
     const crossRegion = g.crossRegion ? R.CROSS_REGION_K : 1;
+    const junior = g.level.junior ? R.JUNIOR_K : 1;
     const k =
-      (doubles ? doublesKappa : kappa) *
+      (doubles ? doublesKappa : kappa) * junior *
       R.TIERS[g.level.tier].weight * R.marginWeight(g.sets, g.s) * R.covidK(g.day) * crossRegion * (kMultiplier?.(g) ?? 1);
 
     // Uncertainty: grows with time since the last match, shrinks with this match (from pre-match
