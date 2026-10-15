@@ -27,12 +27,50 @@ const TYPICAL_MARGIN = 0.2;
 const RIVALS = 3;
 // Club history: a tournament club counts for this long; otherwise the league team's club is used.
 const TOURNAMENT_CLUB_DAYS = 365;
-// Club strength per pool: average rating of a club's best ranked players, and clubs need at least
-// this many. Doubles: the best 4 players (two pairs). Mixed doubles: the best 3 men and the best 3
-// women, counted per gender since men's and women's mixed ratings can't be compared.
-const CLUB_TOP = { men: 3, women: 3, mensDoubles: 4, womensDoubles: 4, mixedDoubles: { M: 3, K: 3 } };
-const clubTopLabel = (top) =>
-  typeof top === "number" ? `best ${top} ranked players` : `best ${top.M} ranked men and best ${top.K} ranked women`;
+// Club strength per pool: a weighted average of the club's best ranked players (singles) or pairs
+// (doubles), the best counting most. `slots`: players or pairs counted; `pairs`: "doubles" pairs the
+// 1st and 2nd best players, the 3rd and 4th, ...; "mixed" pairs the k-th best man with the k-th
+// best woman. A pair counts at the average of its two players. Weights fall linearly (4-3-2-1).
+const CLUB_STRENGTH = {
+  men: { slots: 4 },
+  women: { slots: 4 },
+  mensDoubles: { slots: 3, pairs: "doubles" },
+  womensDoubles: { slots: 3, pairs: "doubles" },
+  mixedDoubles: { slots: 4, pairs: "mixed" },
+};
+const slotWeights = (slots) => Array.from({ length: slots }, (_, i) => (slots - i) / ((slots * (slots + 1)) / 2));
+const clubStrengthLabel = ({ slots, pairs }) =>
+  `${pairs ? `best ${slots} pairs` : `best ${slots} players`}, weighted ${slotWeights(slots).map((w) => Math.round(w * 100) + "%").join("/")}`;
+
+// A club's strength in a pool from its ranked members (best first; { rating, gender }). Places the
+// club can't fill count at `replacement`: the lowest rating among ranked players in the pool
+// (in mixed doubles { M, K }), so a club with fewer players ranks lower but is still listed, and an
+// extra real player never makes a club weaker. Returns the strength and the slots filled (each a
+// list of members), or null without any members.
+function clubStrength(pool, members, replacement) {
+  if (!members.length) return null;
+  const { slots, pairs } = CLUB_STRENGTH[pool];
+  const weights = slotWeights(slots);
+  const filled = [];
+  let strength = 0;
+  for (let i = 0; i < slots; i++) {
+    let slot;
+    if (!pairs) slot = [members[i]];
+    else if (pairs === "doubles") slot = [members[2 * i], members[2 * i + 1]];
+    else slot = [members.filter((m) => m.gender === "M")[i], members.filter((m) => m.gender === "K")[i]];
+    const fallback = (j) => (pairs === "mixed" ? replacement[j === 0 ? "M" : "K"] : replacement);
+    const value = slot.reduce((sum, m, j) => sum + (m ? m.rating : fallback(j)), 0) / slot.length;
+    strength += weights[i] * value;
+    if (slot.some(Boolean)) filled.push(slot.filter(Boolean));
+  }
+  return { strength, filled };
+}
+// The lowest rating among ranked players ({ rating, gender }), per gender in mixed doubles
+function replacementRating(pool, ranked) {
+  const lowest = (list) => Math.min(...list.map((p) => p.rating), Infinity);
+  if (pool !== "mixedDoubles") return lowest(ranked);
+  return { M: lowest(ranked.filter((p) => p.gender === "M")), K: lowest(ranked.filter((p) => p.gender === "K")) };
+}
 
 const readDir = (sub) =>
   readdirSync(`${DIR}data/${sub}`).map((f) => JSON.parse(readFileSync(`${DIR}data/${sub}/${f}`, "utf8")));
@@ -558,26 +596,21 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     weekly[pool] = Object.fromEntries(list.map((p) => [p.id, { from: p.firstWeek, ratings: p.weekly, clubs: p.clubs }]));
   }
 
-  // Strongest clubs: average rating of each club's best ranked players (CLUB_TOP).
+  // Strongest clubs: weighted average of each club's best ranked players or pairs (CLUB_STRENGTH).
   const clubs = {};
   for (const [pool, list] of Object.entries(ratings)) {
-    const byClub = Map.groupBy(list.filter((p) => p.rank !== null && p.club), (p) => p.club); // list is best first
-    const top = CLUB_TOP[pool];
-    // The players counted, or false if the club has too few
-    const pick = (members) =>
-      typeof top === "number"
-        ? members.length >= top && members.slice(0, top)
-        : Object.entries(top).every(([g, n]) => members.filter((p) => p.gender === g).length >= n) &&
-          Object.entries(top).flatMap(([g, n]) => members.filter((p) => p.gender === g).slice(0, n));
+    const ranked = list.filter((p) => p.rank !== null);
+    const byClub = Map.groupBy(ranked.filter((p) => p.club), (p) => p.club); // list is best first
+    const replacement = replacementRating(pool, ranked);
     clubs[pool] = [...byClub]
-      .filter(([, members]) => pick(members))
       .map(([club, members]) => {
-        const counted = pick(members);
+        const { strength, filled } = clubStrength(pool, members, replacement);
         return {
           club,
-          strength: round(counted.reduce((sum, p) => sum + p.rating, 0) / counted.length),
+          strength: round(strength),
           players: members.length,
-          top: counted.map(({ id, name, rating, gender }) => ({ id, name, rating, gender })),
+          // The players or pairs counted, best first
+          top: filled.map((slot) => slot.map(({ id, name, rating, gender }) => ({ id, name, rating, gender }))),
         };
       })
       .sort((a, b) => b.strength - a.strength)
@@ -621,9 +654,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const ownFormat = new Set([...impossible].filter(([source, list]) => list.length > 0.2 * checked.get(source)).map(([source]) => source));
   const review = suspicious.filter((r) => !(r.reason.startsWith("impossible") && ownFormat.has(sourceOf(r)))).sort((a, b) => b.day.localeCompare(a.day));
   writeFileSync(`${DIR}data/suspicious-scores.txt`, suspiciousReport(review));
-  writeFileSync(`${DIR}data/ratings.json`, JSON.stringify({ generatedAt: new Date().toISOString(), pools: ratings, clubs, clubTop: CLUB_TOP }, null, 1));
+  writeFileSync(`${DIR}data/ratings.json`, JSON.stringify({ generatedAt: new Date().toISOString(), pools: ratings, clubs, clubStrength: Object.fromEntries(Object.entries(CLUB_STRENGTH).map(([pool, c]) => [pool, { ...c, weights: slotWeights(c.slots) }])) }, null, 1));
 
-  // Club history: each club's strength (the same CLUB_TOP average as the club ranking) at the end
+  // Club history: each club's strength (the same CLUB_STRENGTH as the club ranking) at the end
   // of every week, from the ranked players who played for it at the time. A player counts for a
   // club in a week if they were active at its end (R.isActive, Covid-adjusted), under the club of
   // their club history for that week. Written per club (NBF club id) to data/club-history/<id>.json.
@@ -645,7 +678,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const clubCounts = {}; // pool -> clubs with a strength per week
   const rankCounts = {}; // pool -> ranked players per week (mixed doubles: per gender)
   for (const [pool, map] of Object.entries(players)) {
-    const top = CLUB_TOP[pool];
     // week -> club -> [{ rating, gender }]
     const byWeek = Array.from({ length: weekCount }, () => new Map());
     // week -> every active player, for the weekly national ranks
@@ -704,14 +736,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     clubCounts[pool] = [];
     byWeek.forEach((byClub, w) => {
       const strengths = [];
+      const replacement = replacementRating(pool, activeByWeek[w]);
       for (const [name, members] of byClub) {
         members.sort((a, b) => b.rating - a.rating);
-        const counted =
-          typeof top === "number"
-            ? members.length >= top && members.slice(0, top)
-            : Object.entries(top).every(([g, n]) => members.filter((m) => m.gender === g).length >= n) &&
-              Object.entries(top).flatMap(([g, n]) => members.filter((m) => m.gender === g).slice(0, n));
-        if (counted) strengths.push([name, Math.round(counted.reduce((sum, m) => sum + m.rating, 0) / counted.length)]);
+        const result = clubStrength(pool, members, replacement);
+        if (result) strengths.push([name, Math.round(result.strength)]);
       }
       strengths.sort((a, b) => b[1] - a[1]);
       clubCounts[pool][w] = strengths.length;
@@ -918,7 +947,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     console.log(`\n${pool}: ${list.length} players, ${active.length} ranked (active in the last ${R.RANKING_ACTIVE_DAYS} days). Top ${pool === "mixedDoubles" ? "8 men and 8 women" : 15}:`);
     const top = pool === "mixedDoubles" ? ["M", "K"].flatMap((g) => active.filter((p) => p.gender === g).slice(0, 8)) : active.slice(0, 15);
     top.forEach((p) => console.log(`${String(p.rank).padStart(3)}. ${String(Math.round(p.rating)).padStart(5)} ±${String(p.plusMinus).padEnd(4)} ${p.name} (${p.club}), ${p.matches} matches`));
-    console.log(`Strongest clubs (average of the ${clubTopLabel(CLUB_TOP[pool])}):`);
+    console.log(`Strongest clubs (${clubStrengthLabel(CLUB_STRENGTH[pool])}):`);
     clubs[pool]
       .slice(0, 10)
       .forEach((c) => console.log(`${String(c.rank).padStart(3)}. ${String(Math.round(c.strength)).padStart(5)} ${c.club} (${c.players} ranked)`));

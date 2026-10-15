@@ -142,12 +142,12 @@
         <h2 class="text-3xl mb-2">{{ label }}</h2>
         {% set strengthHistory = history[handle] ?? null %}
         {% if strengthHistory and strengthHistory.strength|length > 1 %}
-          {% set top = craft.elo.clubTop(handle) %}
+          {% set rule = craft.elo.clubStrengthRule(handle) %}
           <div class="bg-white p-4 md:p-6 my-6">
             <h3 class="text-xl mb-1">Strength history</h3>
             <p class="text-sm text-gray-600 mb-4">
-              Average rating of the club's {{ top is iterable ? 'best ' ~ top.M ~ ' ranked men and best ' ~ top.K ~ ' ranked women' : 'best ' ~ top ~ ' ranked players' }}
-              at the end of each week, counting players who played for the club at the time. Gaps are weeks with too few ranked players.
+              The club's strength at the end of each week: {% include '_elo/_clubRule' with { rule: rule } only %},
+              counting players who played for the club at the time. Places it couldn't fill count at the lowest rating among ranked players. Gaps are weeks without any ranked player.
             </p>
             <div class="relative h-72"
                  data-controller="rating-chart"

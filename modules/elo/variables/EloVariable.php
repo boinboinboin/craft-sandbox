@@ -25,9 +25,9 @@ class EloVariable
         return Module::getInstance()->elo->getClubs($pool);
     }
 
-    public function clubTop(string $pool): int|array|null
+    public function clubStrengthRule(string $pool): ?array
     {
-        return Module::getInstance()->elo->getClubTop($pool);
+        return Module::getInstance()->elo->getClubStrengthRule($pool);
     }
 
     public function clubPlayers(string $club, string $pool): array

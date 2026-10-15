@@ -10,7 +10,7 @@
 {% set clubs = craft.elo.clubs(pool) %}
 {# Club entries (Clubs section) by short name, for links and logos #}
 {% set clubEntries = craft.entries.section('clubs').with(['clubLogo']).collect().keyBy('title') %}
-{% set clubTop = combined ? null : craft.elo.clubTop(pool) %}
+{% set rule = combined ? null : craft.elo.clubStrengthRule(pool) %}
 
 {% block body %}
   <section class="base-section">
@@ -20,10 +20,9 @@
       <p class="text-2xl max-w-3xl">
         {% if combined %}
           Clubs ranked by their average standing in all five disciplines, each counting equally. In each discipline, a club's strength is compared with the other clubs listed here: 0 is average, +1 is one standard deviation above it. Clubs need to be listed in every discipline.
-        {% elseif clubTop is iterable %}
-          Clubs ranked by the average rating of their best {{ clubTop.M }} ranked men and best {{ clubTop.K }} ranked women, so neither counts more. Clubs need at least {{ clubTop.M }} men and {{ clubTop.K }} women who have played in the last 12 months.
-        {% elseif clubTop %}
-          Clubs ranked by the average rating of their best {{ clubTop }} ranked players{{ pool in ['mensDoubles', 'womensDoubles'] ? ' (two pairs)' }}. Clubs need at least {{ clubTop }} players who have played in the last 12 months.
+        {% elseif rule %}
+          Clubs ranked by {% include '_elo/_clubRule' with { rule: rule } only %}. A pair counts at the average of its two players.
+          Places a club can't fill count at the lowest rating among ranked players, so smaller clubs are listed but rank lower.
         {% endif %}
       </p>
     </div>
@@ -54,7 +53,7 @@
                     <th scope="col" class="py-3 px-4 font-normal text-right hidden lg:table-cell">{{ label }}</th>
                   {% endfor %}
                 {% else %}
-                  <th scope="col" class="py-3 px-4 font-normal hidden md:table-cell">Best players</th>
+                  <th scope="col" class="py-3 px-4 font-normal hidden md:table-cell">{{ rule.pairs ?? false ? 'Best pairs' : 'Best players' }}</th>
                 {% endif %}
                 <th scope="col" class="py-3 px-4 font-normal text-right hidden sm:table-cell">Ranked players</th>
               </tr>
@@ -86,9 +85,13 @@
                     {% endfor %}
                   {% else %}
                     <td class="py-3 px-4 hidden md:table-cell">
-                      {% for p in club.top %}
-                        <a href="{{ url('elo/players/' ~ p.id) }}" class="hover:text-blue-600">{{ p.name }}</a>
-                        <span class="text-sm text-gray-500 tabular-nums">{{ p.rating|round }}</span>{% if not loop.last %}<br>{% endif %}
+                      {# The players or pairs counted, best first #}
+                      {% for slot in club.top %}
+                        {% for p in slot %}
+                          <a href="{{ url('elo/players/' ~ p.id) }}" class="hover:text-blue-600">{{ p.name }}</a>
+                          <span class="text-sm text-gray-500 tabular-nums">{{ p.rating|round }}</span>{% if not loop.last %} <span class="text-gray-500">+</span>{% endif %}
+                        {% endfor %}
+                        {% if not loop.last %}<br>{% endif %}
                       {% endfor %}
                     </td>
                   {% endif %}

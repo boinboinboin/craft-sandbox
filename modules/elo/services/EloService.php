@@ -95,12 +95,14 @@ class EloService extends Component
     }
 
     /**
-     * How many of a club's best players count for its strength in a pool: a number, or per
-     * gender (["M" => 3, "K" => 3]) in mixed doubles.
+     * How a club's strength in a pool is calculated: `slots` (players or pairs counted), `pairs`
+     * (null, "doubles" or "mixed") and the `weights` of the slots, best first.
+     *
+     * @return array{slots: int, pairs: ?string, weights: float[]}|null
      */
-    public function getClubTop(string $pool): int|array|null
+    public function getClubStrengthRule(string $pool): ?array
     {
-        return $this->ratings()['clubTop'][$pool] ?? null;
+        return $this->ratings()['clubStrength'][$pool] ?? null;
     }
 
     /**

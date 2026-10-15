@@ -287,21 +287,23 @@ Gender comes from badmintonportalen's player register. For players not in it, it
 
 ### Strongest clubs
 
-Clubs are ranked per pool by the average rating of their best ranked players:
+Clubs are ranked per pool by a weighted average of their best ranked players (singles) or pairs (doubles), the best counting most:
 
-| Pool                           | Players counted             |
-| ------------------------------ | --------------------------- |
-| Men's singles, women's singles | best 3                      |
-| Men's doubles, women's doubles | best 4 (two pairs)          |
-| Mixed doubles                  | best 3 men and best 3 women |
+| Pool                           | Counted                                                                  | Weights, best first |
+| ------------------------------ | ------------------------------------------------------------------------ | ------------------- |
+| Men's singles, women's singles | best 4 players                                                           | 40% · 30% · 20% · 10% |
+| Men's doubles, women's doubles | best 3 pairs: the club's two best players, the next two, the next two    | 50% · 33% · 17%     |
+| Mixed doubles                  | best 4 pairs: its best man with its best woman, the second best of each, … | 40% · 30% · 20% · 10% |
 
-Clubs with fewer ranked players than that are not listed. Mixed doubles counts men and women separately because their mixed ratings can't be compared (see above). Averaging the best few players, rather than all of them, keeps big clubs with many beginners from being ranked low and one-star clubs from being ranked high.
+A pair counts at the average of its two players' ratings, which keeps doubles strengths on the same scale as the players' doubles ratings. Pairs are formed from the club's ranked players by rating, not from who actually plays together. In mixed doubles each pair has a man and a woman, since men's and women's mixed ratings can't be compared (see above).
+
+Places a club can't fill (a missing player, or a missing partner) count at the lowest rating among ranked players in the pool (in mixed doubles, among men or among women). So every club with at least one ranked player is listed, and smaller clubs rank lower, as they should; adding a real player can never make a club weaker. Counting the best few, rather than all players, keeps big clubs with many beginners from being ranked low, and the falling weights keep one-star clubs from being ranked high.
 
 The combined list ranks clubs by their average standard score in all five disciplines, so only clubs listed in every discipline are included. In each discipline, a club's score is its strength minus the average strength of the listed clubs, divided by the standard deviation of their strengths: 0 is an average listed club, +1 one standard deviation above it. The pools are separate rating scales with different spreads (doubles ratings span a narrower range at the top), so averaging the strengths themselves would let singles count for more. Standard scores make each discipline count equally.
 
 ### Club strength history
 
-Each club page shows the club's strength per pool at the end of every week since 2013, with its rank among clubs that week. It is the same average of the best ranked players as above, using the ratings at the time. A player counts for a week if they were active then (played in the 12 months before it, Covid-adjusted as for the rankings), for the club they played for at the time (as in a player's [club history](#club-history)). Weeks where the club had too few ranked players leave a gap.
+Each club page shows the club's strength per pool at the end of every week since 2013, with its rank among clubs that week. It is the same weighted average of the best ranked players or pairs as above, using the ratings at the time, with the lowest rating among players active that week for places a club can't fill. A player counts for a week if they were active then (played in the 12 months before it, Covid-adjusted as for the rankings), for the club they played for at the time (as in a player's [club history](#club-history)). Weeks where the club had no ranked player leave a gap.
 
 The current week is the club ranking itself, so the graph ends on the strength and rank shown next to it. That ranking uses players' registered clubs, so a player who has just changed clubs (and not yet played for the new one) shows up as a step in the last week. The history is written per club to `data/club-history/<NBF club id>.json`, only for clubs in badmintonportalen's club list, with each discipline's strength, rank and number of clubs at the end of each season precomputed (`seasons`) for the tables. On the club page each discipline is a tab, as on the player page, below the graphs of all disciplines together.
 
