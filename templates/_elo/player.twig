@@ -27,61 +27,101 @@
     </div>
   </section>
 
-  {# All disciplines in one chart, with a table of the rating at the end of each season #}
-  {% set series = [] %}
+  {# Rating and ranking of all disciplines together, from the history files (seasons are precomputed by rate.mjs) #}
+  {% set ratingSeries = [] %}
+  {% set rankSeries = [] %}
+  {% set seasonRows = {} %}
   {% for handle, p in player.pools %}
-    {% if p.history and p.history.ratings|length > 1 %}
-      {# slot: fixed colour per discipline, in the order of craft.elo.pools() as on the club pages #}
-      {% set series = series|merge([{ handle: handle, label: p.label, from: p.history.from, values: p.history.ratings, slot: craft.elo.pools()|keys|indexOf(handle) }]) %}
+    {% set h = p.history %}
+    {# slot: fixed colour per discipline, in the order of craft.elo.pools() as on the club pages #}
+    {% set slot = craft.elo.pools()|keys|indexOf(handle) %}
+    {% if h and h.ratings|length > 1 %}
+      {% set ratingSeries = ratingSeries|merge([{ handle: handle, label: p.label, from: h.from, values: h.ratings, slot: slot }]) %}
     {% endif %}
+    {% if h and (h.ranks ?? [])|filter(r => r is not null) is not empty %}
+      {% set among = handle == 'mixedDoubles' ? (p.gender == 'K' ? ' (among women)' : ' (among men)') : '' %}
+      {% set rankSeries = rankSeries|merge([{ handle: handle, label: p.label ~ among, from: h.from, values: h.ranks, counts: h.rankCounts ?? [], slot: slot }]) %}
+    {% endif %}
+    {% for row in h.seasons ?? [] %}
+      {% set key = 's' ~ row.season %}
+      {% set seasonRows = seasonRows|merge({ (key): (seasonRows[key] ?? { season: row.season, label: row.season ~ '/' ~ (row.season + 1) })|merge({ (handle): row }) }) %}
+    {% endfor %}
   {% endfor %}
-  {% if series|length > 1 %}
-    <section class="base-section">
-      <div class="base-container px-4">
-        <div class="bg-white p-4 md:p-6">
-          <h2 class="text-xl mb-1">Rating history</h2>
-          <p class="text-sm text-gray-600 mb-4">
-            Rating in each discipline at the end of each week. Doubles ratings spread over a narrower range than singles,
-            so compare how each line moves rather than the levels between singles and doubles.
-          </p>
-          <div class="relative h-80" data-controller="discipline-chart" data-discipline-chart-label-value="Rating"
-               data-discipline-chart-series-value="{{ series|json_encode }}"></div>
+  {% set seasonRows = seasonRows|sort((a, b) => a.season <=> b.season) %}
 
-          {% set seasons = {} %}
-          {% for column in series %}
-            {% for value in column.values %}
-              {% set weekEnd = column.from|date_modify('+' ~ ((loop.index0 * 7) + 6) ~ ' days') %}
-              {% set year = weekEnd|date('Y') %}
-              {% set season = weekEnd|date('n') >= 7 ? year : year - 1 %}
-              {% set row = (seasons['s' ~ season] ?? { season: season, label: season ~ '/' ~ (season + 1) })|merge({ (column.handle): value }) %}
-              {% set seasons = seasons|merge({ ('s' ~ season): row }) %}
-            {% endfor %}
-          {% endfor %}
-          <details class="mt-4">
-            <summary class="cursor-pointer text-gray-700 hover:text-black">Rating by season</summary>
-            <div class="overflow-x-auto">
-              <table class="mt-2 text-left">
-                <thead class="text-sm text-gray-600">
-                  <tr>
-                    <th scope="col" class="py-1 pr-6 font-normal">Season</th>
-                    {% for column in series %}<th scope="col" class="py-1 pr-6 font-normal text-right">{{ column.label }}</th>{% endfor %}
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for row in seasons|sort((a, b) => a.season <=> b.season) %}
+  {% if ratingSeries|length > 1 or rankSeries is not empty %}
+    <section class="base-section">
+      <div class="base-container px-4 grid gap-6">
+        {% if ratingSeries|length > 1 %}
+          <div class="bg-white p-4 md:p-6">
+            <h2 class="text-xl mb-1">Rating history</h2>
+            <p class="text-sm text-gray-600 mb-4">
+              Rating in each discipline at the end of each week. Doubles ratings spread over a narrower range than singles,
+              so compare how each line moves rather than the levels between singles and doubles.
+            </p>
+            <div class="relative h-80" data-controller="discipline-chart" data-discipline-chart-label-value="Rating"
+                 data-discipline-chart-series-value="{{ ratingSeries|json_encode }}"></div>
+            <details class="mt-4">
+              <summary class="cursor-pointer text-gray-700 hover:text-black">Rating by season</summary>
+              <div class="overflow-x-auto">
+                <table class="mt-2 text-left">
+                  <thead class="text-sm text-gray-600">
                     <tr>
-                      <td class="py-1 pr-6">{{ row.label }}</td>
-                      {% for column in series %}
-                        <td class="py-1 pr-6 text-right tabular-nums">{{ row[column.handle] ?? '–' }}</td>
-                      {% endfor %}
+                      <th scope="col" class="py-1 pr-6 font-normal">Season</th>
+                      {% for column in ratingSeries %}<th scope="col" class="py-1 pr-6 font-normal text-right">{{ column.label }}</th>{% endfor %}
                     </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            <p class="text-sm text-gray-600 mt-2">Rating at the end of each season (or the latest week for the current one).</p>
-          </details>
-        </div>
+                  </thead>
+                  <tbody>
+                    {% for row in seasonRows %}
+                      <tr>
+                        <td class="py-1 pr-6">{{ row.label }}</td>
+                        {% for column in ratingSeries %}<td class="py-1 pr-6 text-right tabular-nums">{{ row[column.handle].rating ?? '–' }}</td>{% endfor %}
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <p class="text-sm text-gray-600 mt-2">Rating at the end of each season (or the latest week for the current one).</p>
+            </details>
+          </div>
+        {% endif %}
+
+        {% if rankSeries is not empty %}
+          <div class="bg-white p-4 md:p-6">
+            <h2 class="text-xl mb-1">Ranking history</h2>
+            <p class="text-sm text-gray-600 mb-4">
+              National rank at the end of each week, among players who had played in the last 12 months; mixed doubles ranks men and women separately.
+              Gaps are periods without a rank. The scale is logarithmic, so moving from #100 to #50 looks as big as from #20 to #10.
+            </p>
+            <div class="relative h-80" data-controller="discipline-chart" data-discipline-chart-label-value="Rank" data-discipline-chart-rank-value="true"
+                 data-discipline-chart-series-value="{{ rankSeries|json_encode }}"></div>
+            <details class="mt-4">
+              <summary class="cursor-pointer text-gray-700 hover:text-black">Rank by season</summary>
+              <div class="overflow-x-auto">
+                <table class="mt-2 text-left">
+                  <thead class="text-sm text-gray-600">
+                    <tr>
+                      <th scope="col" class="py-1 pr-6 font-normal">Season</th>
+                      {% for column in rankSeries %}<th scope="col" class="py-1 pr-6 font-normal text-right">{{ column.label }}</th>{% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in seasonRows %}
+                      <tr>
+                        <td class="py-1 pr-6">{{ row.label }}</td>
+                        {% for column in rankSeries %}
+                          {% set cell = row[column.handle] ?? null %}
+                          <td class="py-1 pr-6 text-right tabular-nums whitespace-nowrap">{{ cell and cell.rank ? '#' ~ cell.rank ~ (cell.ranked ? ' of ' ~ cell.ranked|number : '') : '–' }}</td>
+                        {% endfor %}
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <p class="text-sm text-gray-600 mt-2">Rank at the end of each season (or the latest week for the current one).</p>
+            </details>
+          </div>
+        {% endif %}
       </div>
     </section>
   {% endif %}
@@ -141,19 +181,7 @@
                  data-rating-chart-ratings-value="{{ history.ratings|json_encode }}"
                  data-rating-chart-clubs-value="{{ (history.clubs ?? [])|json_encode }}"></div>
 
-            {# Table view of the chart: rating at the end of each season (July to June) #}
-            {% set seasons = {} %}
-            {% set clubs = history.clubs ?? [] %}
-            {% set clubIndex = 0 %}
-            {% for rating in history.ratings %}
-              {% if clubs[clubIndex + 1] is defined and clubs[clubIndex + 1][0] <= loop.index0 %}
-                {% set clubIndex = clubIndex + 1 %}
-              {% endif %}
-              {% set weekEnd = history.from|date_modify('+' ~ ((loop.index0 * 7) + 6) ~ ' days') %}
-              {% set year = weekEnd|date('Y') %}
-              {% set season = weekEnd|date('n') >= 7 ? year : year - 1 %}
-              {% set seasons = seasons|merge({ ('s' ~ season): { label: season ~ '/' ~ (season + 1), rating: rating, club: clubs[clubIndex][1] ?? null } }) %}
-            {% endfor %}
+            {# Table view of the chart: rating at the end of each season (July to June), precomputed by rate.mjs #}
             <details class="mt-4">
               <summary class="cursor-pointer text-gray-700 hover:text-black">Rating by season</summary>
               <table class="mt-2 text-left">
@@ -161,8 +189,8 @@
                   <tr><th scope="col" class="py-1 pr-8 font-normal">Season</th><th scope="col" class="py-1 pr-8 font-normal">Club</th><th scope="col" class="py-1 font-normal text-right">Rating at end</th></tr>
                 </thead>
                 <tbody>
-                  {% for s in seasons %}
-                    <tr><td class="py-1 pr-8">{{ s.label }}</td><td class="py-1 pr-8">{{ s.club }}</td><td class="py-1 text-right tabular-nums">{{ s.rating }}</td></tr>
+                  {% for s in history.seasons ?? [] %}
+                    <tr><td class="py-1 pr-8">{{ s.season }}/{{ s.season + 1 }}</td><td class="py-1 pr-8">{{ s.club }}</td><td class="py-1 text-right tabular-nums">{{ s.rating }}</td></tr>
                   {% endfor %}
                 </tbody>
               </table>

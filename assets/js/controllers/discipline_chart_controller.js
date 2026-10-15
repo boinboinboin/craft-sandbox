@@ -1,15 +1,17 @@
 import { Controller } from '@hotwired/stimulus'
-import { COLORS, DAY, MARGIN, PALETTE, createTooltip, dateFormat, drawGrid, drawYearAxis, el, formatNumber, placeTooltip, swatch, yDomain } from '../lib/chart.js'
+import { COLORS, DAY, MARGIN, PALETTE, createTooltip, dateFormat, drawGrid, drawGridAt, drawYearAxis, el, formatNumber, logDomain, placeTooltip, swatch, yDomain } from '../lib/chart.js'
 
 // Several weekly series on one chart, e.g. a club's strength in every discipline.
 // `series` is [{ label, from, values, slot?, ranks?, counts? }, ...]; `slot` is the series' fixed
 // palette position, so a discipline has the same colour on every page (default: its position in
 // the list). `from` is the Monday of the series' first week and values[i] the value at the end of
 // week i (null breaks the line). Ranks show in the tooltip as "#3 of 89".
+// `rank`: the values are ranks themselves: shown as "#12" on a log scale with #1 at the top, with
+// `counts` (ranked that week) in the tooltip as "of 1,950".
 const WEEK = 7 * DAY
 
 export default class extends Controller {
-  static values = { series: Array, label: { type: String, default: 'Strength' } }
+  static values = { series: Array, label: { type: String, default: 'Strength' }, rank: Boolean }
 
   connect() {
     const starts = this.seriesValue.map((s) => Date.parse(`${s.from}T00:00:00Z`))
@@ -48,12 +50,14 @@ export default class extends Controller {
     this.svg?.remove()
 
     const values = this.series.flatMap((s) => s.values).filter((v) => v !== null)
-    const domain = yDomain(Math.min(...values), Math.max(...values))
+    const domain = this.rankValue ? logDomain(Math.min(...values), Math.max(...values)) : yDomain(Math.min(...values), Math.max(...values))
     const t0 = this.time(0)
     const t1 = this.time(this.weeks - 1)
     const plot = { left: MARGIN.left, right: width - MARGIN.right, top: MARGIN.top, bottom: height - MARGIN.bottom }
     this.x = (t) => plot.left + ((t - t0) / (t1 - t0)) * (plot.right - plot.left)
-    this.y = (v) => plot.bottom - ((v - domain.yMin) / (domain.yMax - domain.yMin)) * (plot.bottom - plot.top)
+    this.y = this.rankValue
+      ? (v) => plot.top + ((Math.log(v) - Math.log(domain.yMin)) / (Math.log(domain.yMax) - Math.log(domain.yMin) || 1)) * (plot.bottom - plot.top)
+      : (v) => plot.bottom - ((v - domain.yMin) / (domain.yMax - domain.yMin)) * (plot.bottom - plot.top)
     this.plot = plot
 
     const svg = el('svg', {
@@ -64,7 +68,8 @@ export default class extends Controller {
       class: 'block outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
       'aria-label': `${this.labelValue} history in ${this.series.map((s) => s.label).join(', ')}, from ${dateFormat.format(t0)} to ${dateFormat.format(t1)}. Use the arrow keys to read values.`,
     })
-    drawGrid(svg, plot, this.y, domain)
+    if (this.rankValue) drawGridAt(svg, plot, this.y, domain.ticks, (v) => `#${formatNumber(v)}`)
+    else drawGrid(svg, plot, this.y, domain)
     drawYearAxis(svg, plot, this.x, t0, t1)
 
     // One line per series, broken where it has no value; an end marker on each
@@ -143,11 +148,13 @@ export default class extends Controller {
       row.className = 'flex items-center gap-1.5'
       const value = document.createElement('strong')
       value.className = 'tabular-nums'
-      value.textContent = formatNumber(v)
+      value.textContent = this.rankValue ? `#${formatNumber(v)}` : formatNumber(v)
       const label = document.createElement('span')
       label.className = 'text-gray-600'
       const rank = s.ranks?.[week - s.offset]
-      label.textContent = rank ? `${s.label} · #${rank} of ${s.counts?.[week - s.offset] ?? '?'}` : s.label
+      const count = s.counts?.[week - s.offset]
+      if (this.rankValue) label.textContent = count ? `${s.label} · of ${formatNumber(count)}` : s.label
+      else label.textContent = rank ? `${s.label} · #${rank} of ${count ?? '?'}` : s.label
       row.append(swatch(s.color), value, label)
       rows.push(row)
     })
@@ -156,8 +163,9 @@ export default class extends Controller {
     placeTooltip(this.tooltip, this.element, x, top)
   }
 
-  // Legend above the chart, in the series order (always shown: there are several series)
+  // Legend above the chart, in the series order. A single series has none: the title names it.
   renderLegend() {
+    if (this.series.length < 2) return
     const legend = document.createElement('ul')
     legend.className = 'flex flex-wrap gap-x-5 gap-y-1 mb-3 text-sm text-gray-700'
     legend.setAttribute('aria-label', 'Disciplines')

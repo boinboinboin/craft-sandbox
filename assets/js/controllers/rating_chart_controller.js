@@ -1,5 +1,5 @@
 import { Controller } from '@hotwired/stimulus'
-import { COLORS, DAY, MARGIN, PALETTE, createTooltip, dateFormat, drawGrid, drawYearAxis, el, formatNumber, placeTooltip, swatch, yDomain } from '../lib/chart.js'
+import { COLORS, DAY, MARGIN, PALETTE, createTooltip, dateFormat, drawGrid, drawGridAt, drawYearAxis, el, formatNumber, logDomain, placeTooltip, swatch, yDomain } from '../lib/chart.js'
 
 // Line chart of a weekly rating history, drawn as SVG: a player's rating or a club's strength.
 // `from` is the Monday of the first week; ratings[i] is the value at the end of week i, or null for
@@ -8,6 +8,8 @@ import { COLORS, DAY, MARGIN, PALETTE, createTooltip, dateFormat, drawGrid, draw
 // `ranks` and `counts` (optional): rank that week out of `counts[i]`, shown in the tooltip as
 // "#3 of 89 clubs" (`rankOf` names what is ranked). `label` names the value for screen readers.
 // `decimals` and `signed` format the values, e.g. a combined score "+1.23".
+// `rank`: the values are ranks: shown as "#12" on a log scale with #1 at the top; `counts[i]`
+// (players ranked that week) shows in the tooltip as "of 1,950 players" (`rankOf` names them).
 
 // Clubs past the eighth share a neutral "other" colour.
 const OTHER_CLUB_COLOR = '#8a8984'
@@ -23,6 +25,7 @@ export default class extends Controller {
     label: { type: String, default: 'Rating' },
     decimals: { type: Number, default: 0 },
     signed: Boolean,
+    rank: Boolean,
   }
 
   connect() {
@@ -53,7 +56,7 @@ export default class extends Controller {
   }
 
   format(value) {
-    return formatNumber(value, this.decimalsValue, this.signedValue)
+    return this.rankValue ? `#${formatNumber(value)}` : formatNumber(value, this.decimalsValue, this.signedValue)
   }
 
   render() {
@@ -64,12 +67,14 @@ export default class extends Controller {
 
     const points = this.points
     const ratings = points.map((p) => p.rating).filter((r) => r !== null)
-    const domain = yDomain(Math.min(...ratings), Math.max(...ratings))
+    const domain = this.rankValue ? logDomain(Math.min(...ratings), Math.max(...ratings)) : yDomain(Math.min(...ratings), Math.max(...ratings))
     const t0 = points[0].time
     const t1 = points.at(-1).time
     const plot = { left: MARGIN.left, right: width - MARGIN.right, top: MARGIN.top, bottom: height - MARGIN.bottom }
     this.x = (t) => plot.left + ((t - t0) / (t1 - t0)) * (plot.right - plot.left)
-    this.y = (r) => plot.bottom - ((r - domain.yMin) / (domain.yMax - domain.yMin)) * (plot.bottom - plot.top)
+    this.y = this.rankValue
+      ? (r) => plot.top + ((Math.log(r) - Math.log(domain.yMin)) / (Math.log(domain.yMax) - Math.log(domain.yMin) || 1)) * (plot.bottom - plot.top)
+      : (r) => plot.bottom - ((r - domain.yMin) / (domain.yMax - domain.yMin)) * (plot.bottom - plot.top)
     this.plot = plot
 
     const last = points.findLast((p) => p.rating !== null)
@@ -82,7 +87,8 @@ export default class extends Controller {
       class: 'block outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
       'aria-label': `${this.labelValue} history from ${dateFormat.format(t0)} to ${dateFormat.format(t1)}, from ${this.format(first.rating)} to ${this.format(last.rating)}. Use the arrow keys to read values.`,
     })
-    drawGrid(svg, plot, this.y, domain, this.signedValue)
+    if (this.rankValue) drawGridAt(svg, plot, this.y, domain.ticks, (v) => this.format(v))
+    else drawGrid(svg, plot, this.y, domain, this.signedValue)
     drawYearAxis(svg, plot, this.x, t0, t1)
 
     // The line, one segment per club period. Each segment starts at the last point of the previous
@@ -168,11 +174,12 @@ export default class extends Controller {
     date.className = 'text-gray-600'
     date.textContent = `Week ending ${dateFormat.format(p.time)}`
     const lines = [value, date]
-    const rank = this.ranksValue[i]
-    if (rank) {
+    const rank = this.rankValue ? null : this.ranksValue[i]
+    const count = this.countsValue[i]
+    if (rank || (this.rankValue && count)) {
       const standing = document.createElement('span')
       standing.className = 'block text-gray-600'
-      standing.textContent = `#${rank} of ${this.countsValue[i] ?? '?'} ${this.rankOfValue}`
+      standing.textContent = rank ? `#${rank} of ${formatNumber(count ?? 0)} ${this.rankOfValue}` : `of ${formatNumber(count)} ${this.rankOfValue}`
       lines.splice(1, 0, standing)
     }
     if (p.club) {

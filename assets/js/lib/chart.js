@@ -49,6 +49,28 @@ export function drawGrid(svg, plot, y, { yMin, yMax, step }, signed = false) {
   }
 }
 
+// Log scale for ranks: from a round number at or above the best rank to one at or below the worst,
+// with ticks at 1, 2, 5, 10, 20, ... (only the powers of ten when that would be too many)
+export function logDomain(min, max) {
+  const steps = []
+  for (let power = 1; power <= 1e6; power *= 10) for (const m of [1, 2, 5]) steps.push(m * power)
+  const yMin = steps.findLast((s) => s <= min) ?? 1
+  const yMax = steps.find((s) => s >= max && s > yMin) ?? max
+  let ticks = steps.filter((s) => s >= yMin && s <= yMax)
+  if (ticks.length > 7) ticks = ticks.filter((s) => String(s).startsWith('1') || s === yMin || s === yMax)
+  return { yMin, yMax, ticks }
+}
+
+// Horizontal gridlines with labels at the given values
+export function drawGridAt(svg, plot, y, ticks, format) {
+  for (const value of ticks) {
+    svg.append(el('line', { x1: plot.left, x2: plot.right, y1: y(value), y2: y(value), stroke: COLORS.grid, 'stroke-width': 1 }))
+    const label = el('text', { x: plot.left - 8, y: y(value), 'text-anchor': 'end', 'dominant-baseline': 'middle', fill: COLORS.axis, 'font-size': 12, style: 'font-variant-numeric: tabular-nums' })
+    label.textContent = format(value)
+    svg.append(label)
+  }
+}
+
 // One label per year along the bottom, thinned so labels don't collide
 export function drawYearAxis(svg, plot, x, t0, t1) {
   const firstYear = new Date(t0).getUTCFullYear() + 1

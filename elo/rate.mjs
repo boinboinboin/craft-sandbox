@@ -531,7 +531,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   const genderOf = (id) => genders.get(id) ?? inferred.get(id) ?? null;
   // Fields only used while rating
-  const INTERNAL = new Set(["weekly", "log", "clubs", "nextWeek", "penalizedUntil", "returning", "returnInfo", "rdDay", "tournamentClub", "tournamentDay", "leagueClub"]);
+  const INTERNAL = new Set(["weekly", "log", "clubs", "nextWeek", "penalizedUntil", "returning", "returnInfo", "rdDay", "tournamentClub", "tournamentDay", "leagueClub", "ranks"]);
 
   // Rankings only include active players (R.isActive); others get rank null.
   for (const [pool, map] of Object.entries(players)) {
@@ -622,17 +622,6 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const review = suspicious.filter((r) => !(r.reason.startsWith("impossible") && ownFormat.has(sourceOf(r)))).sort((a, b) => b.day.localeCompare(a.day));
   writeFileSync(`${DIR}data/suspicious-scores.txt`, suspiciousReport(review));
   writeFileSync(`${DIR}data/ratings.json`, JSON.stringify({ generatedAt: new Date().toISOString(), pools: ratings, clubs, clubTop: CLUB_TOP }, null, 1));
-  // Per player: `from` is the Monday of their first week; ratings[i] is the rating at the end
-  // of week from + 7*i days.
-  writeFileSync(`${DIR}data/ratings-weekly.json`, JSON.stringify({ generatedAt: new Date().toISOString(), weekStartsOn: "Monday", pools: weekly }));
-  // The same weekly history split per player ({ men: {from, ratings}, women: ... }), so the
-  // website can load one player's history without reading the whole file.
-  const byPlayer = new Map();
-  for (const [pool, series] of Object.entries(weekly)) {
-    for (const [id, history] of Object.entries(series)) byPlayer.set(id, { ...byPlayer.get(id), [pool]: history });
-  }
-  mkdirSync(`${DIR}data/history`, { recursive: true });
-  for (const [id, history] of byPlayer) writeFileSync(`${DIR}data/history/${id}.json`, JSON.stringify(history));
 
   // Club history: each club's strength (the same CLUB_TOP average as the club ranking) at the end
   // of every week, from the ranked players who played for it at the time. A player counts for a
@@ -654,10 +643,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const activityClock = Array.from({ length: weekCount }, (_, w) => R.inactiveDays(firstWeek, addDays(firstWeek, (w + 1) * 7)));
   const clubHistory = new Map(); // club -> { pool: { strength: [], rank: [] } }
   const clubCounts = {}; // pool -> clubs with a strength per week
+  const rankCounts = {}; // pool -> ranked players per week (mixed doubles: per gender)
   for (const [pool, map] of Object.entries(players)) {
     const top = CLUB_TOP[pool];
     // week -> club -> [{ rating, gender }]
     const byWeek = Array.from({ length: weekCount }, () => new Map());
+    // week -> every active player, for the weekly national ranks
+    const activeByWeek = Array.from({ length: weekCount }, () => []);
     for (const p of map.values()) {
       const offset = weekIndex(p.firstWeek);
       const playedWeeks = [...new Set(p.log.map((m) => weekIndex(m.day)))].sort((a, b) => a - b);
@@ -671,16 +663,44 @@ if (import.meta.url === `file://${process.argv[1]}`) {
           if (played === playedWeeks.length - 1) break;
           continue;
         }
+        // After the last recorded week the rating stays the same within the active window.
+        const rating = p.weekly[w - offset] ?? p.weekly.at(-1) ?? p.rating;
+        activeByWeek[w].push({ p, rating, gender });
         while (p.clubs[club + 1]?.[0] <= w - offset) club++;
         const name = p.clubs[club]?.[1];
         if (!name) continue;
-        // After the last recorded week the rating stays the same within the active window.
-        const rating = p.weekly[w - offset] ?? p.weekly.at(-1) ?? p.rating;
         const members = byWeek[w].get(name) ?? [];
         members.push({ rating, gender });
         byWeek[w].set(name, members);
       }
     }
+    // Weekly national rank: active players by their rating at the end of the week, as the rankings
+    // (mixed doubles: men and women separately). The current week is the ranking itself.
+    const separate = pool === "mixedDoubles";
+    rankCounts[pool] = separate ? { M: Array(weekCount).fill(0), K: Array(weekCount).fill(0) } : Array(weekCount).fill(0);
+    const currentRank = new Map(ratings[pool].map((r) => [r.id, r]));
+    activeByWeek.forEach((list, w) => {
+      if (w === weekCount - 1) return;
+      const groups = separate ? Object.entries(Object.groupBy(list.filter((x) => x.gender), (x) => x.gender)) : [[null, list]];
+      for (const [gender, members] of groups) {
+        members.sort((a, b) => b.rating - a.rating);
+        members.forEach(({ p }, i) => ((p.ranks ??= [])[w - weekIndex(p.firstWeek)] = i + 1));
+        if (gender) rankCounts[pool][gender][w] = members.length;
+        else rankCounts[pool][w] = members.length;
+      }
+    });
+    for (const p of map.values()) {
+      const now = currentRank.get(p.id);
+      if (now?.rank) (p.ranks ??= [])[weekCount - 1 - weekIndex(p.firstWeek)] = now.rank;
+      else if (p.ranks) p.ranks.length = Math.min(p.ranks.length, weekCount - 1 - weekIndex(p.firstWeek));
+      if (now?.rank) {
+        if (separate) rankCounts[pool][now.gender][weekCount - 1]++;
+        else rankCounts[pool][weekCount - 1]++;
+      }
+      // ranks[i]: rank at the end of week from + 7*i days, null while not ranked
+      if (p.ranks) weekly[pool][p.id].ranks = Array.from(p.ranks, (r) => r ?? null);
+    }
+
     clubCounts[pool] = [];
     byWeek.forEach((byClub, w) => {
       const strengths = [];
@@ -777,6 +797,45 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     writeFileSync(`${DIR}data/club-history/${c.id}.json`, JSON.stringify({ club: c.name, pools }));
   }
+
+  // Per player: `from` is the Monday of their first week; ratings[i] is the rating at the end
+  // of week from + 7*i days, ranks[i] the national rank then (null while not ranked).
+  writeFileSync(`${DIR}data/ratings-weekly.json`, JSON.stringify({ generatedAt: new Date().toISOString(), weekStartsOn: "Monday", pools: weekly }));
+  // The same weekly history split per player ({ men: {from, ratings, ranks, clubs}, women: ... }),
+  // so the website can load one player's history without reading the whole file.
+  // Each history also gets `seasons`: rating, club, rank and number of ranked players at the end of
+  // each season (July to June), for the tables on the player page.
+  const seasonOf = (day) => (+day.slice(5, 7) >= 7 ? +day.slice(0, 4) : +day.slice(0, 4) - 1);
+  function seasonTable(pool, id, history) {
+    const offset = weekIndex(history.from);
+    const counts = pool === "mixedDoubles" ? rankCounts[pool][genderOf(+id)] ?? [] : rankCounts[pool];
+    const length = Math.max(history.ratings.length, history.ranks?.length ?? 0);
+    const seasons = new Map();
+    let club = 0;
+    for (let i = 0; i < length; i++) {
+      while (history.clubs[club + 1]?.[0] <= i) club++;
+      const season = seasonOf(addDays(history.from, i * 7 + 6));
+      const rank = history.ranks?.[i] ?? null;
+      seasons.set(season, {
+        season,
+        rating: history.ratings[i] ?? history.ratings.at(-1),
+        club: history.clubs[club]?.[1] ?? null,
+        rank,
+        ranked: rank ? counts[offset + i] ?? null : null,
+      });
+    }
+    return [...seasons.values()];
+  }
+  const byPlayer = new Map();
+  for (const [pool, series] of Object.entries(weekly)) {
+    for (const [id, history] of Object.entries(series)) {
+      byPlayer.set(id, { ...byPlayer.get(id), [pool]: { ...history, seasons: seasonTable(pool, id, history) } });
+    }
+  }
+  mkdirSync(`${DIR}data/history`, { recursive: true });
+  for (const [id, history] of byPlayer) writeFileSync(`${DIR}data/history/${id}.json`, JSON.stringify(history));
+  // Number of ranked players per week (mixed doubles: { M, K }), from the Monday `from`
+  writeFileSync(`${DIR}data/rank-counts.json`, JSON.stringify({ from: firstWeek, pools: rankCounts }));
 
   function rivals(p, pool) {
     // In doubles every opposing player counts as an opponent.

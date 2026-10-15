@@ -273,6 +273,12 @@ Ranking lists only include players who have played in the last 12 months, with t
 
 The club shown for a player is their club registered on badmintonportalen. Players no longer in the register show the club of their last tournament, or otherwise the club of their last league team. League team names such as "Kristiansand 2" are team numbers, not clubs.
 
+### Ranking history
+
+At the top of a player's page, one chart shows their national rank at the end of every week since they started, with a line per discipline, and a table of their rank at the end of each season. The weekly rank uses the same rules as the ranking lists: players are ranked by their rating at the end of the week, among players active then (Covid-adjusted), and in mixed doubles among men or among women. The current week is the ranking itself. The chart has a logarithmic scale with #1 at the top, so a climb from #100 to #50 looks as big as one from #20 to #10.
+
+The ranks are in `data/history/<id>.json` (`ranks`, alongside `ratings`; they run on past the last rating week while the player is still active) and the number of ranked players per week in `data/rank-counts.json`. Each history also has `seasons`, the rating, club, rank and number of ranked players at the end of each season, precomputed by `rate.mjs` for the tables on the player page.
+
 ### Mixed doubles: men and women ranked separately
 
 Mixed doubles is rated as one pool, but men and women are ranked in separate lists. Nearly every mixed pair is one man and one woman (32,297 of the 32,425 pairs where both genders are known), so results show how men compare with other men and women with other women, but not how men's mixed ratings compare with women's: raising every man's rating by the same amount and lowering every woman's would predict every result the same.

@@ -9,7 +9,8 @@ use yii\base\Component;
  * Reads the rating files written by elo/rate.mjs:
  *
  * - elo/data/ratings.json: every player's current rating and the strongest clubs per pool ("men", "women")
- * - elo/data/history/<id>.json: one player's rating at the end of every week, per pool
+ * - elo/data/history/<id>.json: one player's rating and national rank at the end of every week, per pool
+ * - elo/data/rank-counts.json: the number of ranked players at the end of every week, per pool
  * - elo/data/matches/<id>.json: one player's last matches and biggest wins and losses, per pool
  * - elo/data/club-history/<NBF club id>.json: a club's strength and rank at the end of every week, per pool
  *
@@ -35,6 +36,7 @@ class EloService extends Component
     ];
 
     private ?array $ratings = null;
+    private ?array $rankCounts = null;
 
     private function read(string $file): array
     {
@@ -123,6 +125,26 @@ class EloService extends Component
     }
 
     /**
+     * Adds `rankCounts` to a player's history in a pool: the number of ranked players in each week
+     * of their `ranks` (in mixed doubles, of their own gender), for "#12 of 1,950".
+     */
+    private function withRankCounts(?array $history, string $pool, ?string $gender): ?array
+    {
+        if (!$history || empty($history['ranks'])) {
+            return $history;
+        }
+        $this->rankCounts ??= $this->read('rank-counts.json');
+        $counts = $this->rankCounts['pools'][$pool] ?? [];
+        if ($pool === 'mixedDoubles') {
+            $counts = $counts[$gender] ?? [];
+        }
+        $offset = (int)round((strtotime($history['from']) - strtotime($this->rankCounts['from'] ?? $history['from'])) / (7 * 86400));
+        $history['rankCounts'] = array_slice($counts, $offset, count($history['ranks']));
+
+        return $history;
+    }
+
+    /**
      * One player across the pools they have played in, with their weekly rating history and matches.
      *
      * @return array{id: int, name: string, club: ?string, pools: array<string, array>}|null
@@ -140,7 +162,7 @@ class EloService extends Component
                 $player ??= ['id' => $id, 'pools' => []];
                 $player['pools'][$pool] = $p + [
                     'label' => self::POOLS[$pool],
-                    'history' => $history[$pool] ?? null,
+                    'history' => $this->withRankCounts($history[$pool] ?? null, $pool, $p['gender'] ?? null),
                     'matchLog' => $matches[$pool] ?? null,
                 ];
                 break;
