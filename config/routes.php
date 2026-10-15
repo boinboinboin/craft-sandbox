@@ -15,4 +15,5 @@ return [
     'elo/players/<playerId:\d+>' => ['template' => '_elo/player'],
     'elo/clubs' => ['template' => '_elo/clubs'],
     'elo/eliteserien' => ['template' => '_elo/eliteserien'],
+    'elo/eliteserien/<season:\d{4}-\d{2}>' => ['template' => '_elo/eliteserien-review'],
 ];

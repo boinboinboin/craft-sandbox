@@ -126,6 +126,28 @@ class EloService extends Component
     }
 
     /**
+     * An Eliteserien season in review (elo/eliteserien-review.mjs): predicted against actual
+     * results. `$season` is like "2025-26". Empty if not calculated.
+     */
+    public function getEliteserienReview(string $season): array
+    {
+        return preg_match('/^\d{4}-\d{2}$/', $season) ? $this->read("eliteserien-$season.json") : [];
+    }
+
+    /**
+     * The seasons with a review, newest first, like ["2025-26", "2024-25"].
+     *
+     * @return string[]
+     */
+    public function getEliteserienReviewSeasons(): array
+    {
+        $files = glob(Craft::getAlias('@root/elo/data/eliteserien-[0-9][0-9][0-9][0-9]-[0-9][0-9].json')) ?: [];
+        $seasons = array_map(fn($file) => substr(basename($file, '.json'), strlen('eliteserien-')), $files);
+        rsort($seasons);
+        return $seasons;
+    }
+
+    /**
      * A club's strength history per pool: `from` (Monday of the first week), and per week its
      * `strength`, `rank` and the number of ranked `clubs` (null in weeks it had too few players).
      *

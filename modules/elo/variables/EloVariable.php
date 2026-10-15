@@ -45,6 +45,16 @@ class EloVariable
         return Module::getInstance()->elo->getEliteserien();
     }
 
+    public function eliteserienReview(string $season): array
+    {
+        return Module::getInstance()->elo->getEliteserienReview($season);
+    }
+
+    public function eliteserienReviewSeasons(): array
+    {
+        return Module::getInstance()->elo->getEliteserienReviewSeasons();
+    }
+
     public function player(int $id): ?array
     {
         return Module::getInstance()->elo->getPlayer($id);

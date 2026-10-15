@@ -1,0 +1,11 @@
+{# A team or club name with its logo, linking to the club page when there is a club entry.
+   Expects `name` and `entries` (club entries by title, with clubLogo eager-loaded); optional `size`
+   (logo size in Tailwind units, default 6), `stacked` (logo above the name) and `class`. #}
+{%- set entry = entries[name] ?? null -%}
+{%- set logo = entry ? entry.clubLogo|first : null -%}
+{%- set size = size ?? 6 -%}
+{%- set tag = entry ? 'a' : 'span' -%}
+<{{ tag }}{% if entry %} href="{{ entry.url }}"{% endif %} class="inline-flex {{ (stacked ?? false) ? 'flex-col' : '' }} items-center gap-1.5 align-middle {{ entry ? 'hover:text-blue-600' : '' }} {{ class ?? '' }}">
+  {%- if logo -%}<img src="{{ logo.url }}" alt="" class="object-contain shrink-0" style="width: {{ size * 0.25 }}rem; height: {{ size * 0.25 }}rem">{%- endif -%}
+  <span>{{ name }}</span>
+</{{ tag }}>

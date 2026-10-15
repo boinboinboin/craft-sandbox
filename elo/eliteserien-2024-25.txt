@@ -1,0 +1,119 @@
+# Eliteserien 2024/2025: the players on each team, from Norges Badmintonforbund's list
+# (https://www.badminton.no/contentassets/071fd88d2d5b4e908d919531979608d0/spillere-i-eliteserien-2024-25.pdf),
+# with its registered changes up to the first round: Hege Leirud (Frogner, from 1. div, 11.11.24)
+# and Johannes Olafsson (Sandefjord, from 1. div, 12.11.24, eligible from the Sunday of
+# Lillerunden) added; Henny Lyfjell moved back to the Eliteserien team (11.11.24).
+# Used by eliteserien-review.mjs.
+#
+# One player per line:  M|K  <player id>  <name as on the list>  [| loan <home club>]
+# The player id links to their ratings (it is in the player page URL, /elo/players/<id>); "-" for
+# players without rated matches. "loan" marks players on loan from another club.
+
+[Bergen]
+M 22376  Markus Barth
+M 23270  Thomas Barth
+M 20267  Mattias Xu
+M 21305  Amund Huus
+M 23852  Bharath Balasingam
+M 33258  Javier Bish
+M 23978  Mathias Ji Hong
+K 17139  Katja Ellingsen
+K 20814  Emilie Hamang
+K 23979  Aimee Hong
+K 17055  Delia Murtazalieva
+K 22113  Sofia Macsali
+K 22375  Vera Ellingsen
+
+[Frogner]
+M 20266  Vegard Rikheim
+M 18731  Jonas Christensen
+M 22112  Magnus Christensen
+M 19897  Anders Leirud
+M 38640  Albert Aasheim Engen
+K 20294  Marie Christensen
+K 19819  Monica Halvorsen
+K 38641  Vilma Åsheim Engen
+K 22122  Live Hov Grønbech
+K 18748  Randi Selle | loan Stavanger
+K 22416  Henny Lyfjell
+K 18722  Hege Leirud
+
+[Haugerud]
+M 20589  Carl Christian Mork
+M 19566  Sturla Flåten Jørgensen
+M 36501  Aleksander Jakovlevs
+M 42944  Mathias Wong | loan Kristiansand
+K 22280  Malin Andersson
+K 38662  Sofie Reistadbakk
+K 36508  Emilie Lie Cook
+K 20179  Elisa Wiborg
+
+[Kristiansand]
+M 22849  Danila Gataullin
+M 21260  Jonas Østhassel
+M 20623  Mads Marum
+M 17754  Andreas Roksvåg
+M 17062  Filip Bøhn
+M 17063  Sander Østhassel
+M 50515  Casper Gustavsen
+K 23506  Julie Marie Abusdal
+K 21042  Helene Abusdal
+K 20087  Vilde Espeseth
+K 24046  Stine Skjævesland Pedersen
+K 17060  Marie Mørk
+
+[Moss]
+M 49066  Shubham
+M 24218  Jørgen Rosenlund
+M 24909  Haakon Jelsness
+M 17625  Martin Enghaug
+M 18512  Jesper Kristensen
+M 18543  Fredrik Kristensen
+M 18971  Nikolai Svensson
+K 17495  Kristine Ødegårdstuen
+K 35319  Mina Korssund
+K 20039  Solvår Serine Flåten Jørgensen
+K 35351  Emma Yasmin Ruud
+K 19880  Natalie Kristensen
+
+[OSI]
+M 24700  John Nguyen
+M 17711  Advait Mital
+M 23944  Jan Malamant
+M 26636  Andy Hang
+M 23953  Jiawen Shi
+M 17648  Zhongyan Yu
+K 26755  Victoria Zhang
+K 29866  Celina Nha-Mi-Thanh
+K 26754  Karianne Zhang
+K 24701  Therese Nguyen
+K 25382  Julie Ødegårdstuen | loan Oppegård
+K 24320  Karina Elisabeth Andreassen
+
+[Sandefjord]
+M 20494  Carl C. Møller Jacobsen
+M 18638  Carl C. Hem
+M 20305  Tobias Krømke
+M 36383  Varun Manikandan
+M 23707  Marius Myhre
+M 22130  Ludvig Smith-Meyer
+M 24766  Johannes Olafsson
+K 20178  Tam Huynh
+K 22187  Emilia Norberg
+K 25549  Alda Jondottir
+K 16988  Marielle Sørby
+K 30003  Frida Bjørvik-Løvheim
+K 18772  Caroline Hem
+
+[Sotra]
+M 23619  Keveen Kumar
+M 43575  Jakob Langeland Risa
+M 43576  Ole-Kristian Lie
+M 42948  Sindre Gjuvsland
+M 21852  Morten Straume
+K 29988  Linnea Holmedal
+K 36518  Akarija Anton Reginold
+K 43577  Oline Langeland Risa
+K 44277  Juli Helen Johansen Klungtveit
+K 24717  Jenny Rajkumar
+

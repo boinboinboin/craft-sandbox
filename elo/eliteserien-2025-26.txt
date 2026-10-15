@@ -1,0 +1,116 @@
+# Eliteserien 2025/2026: the players on each team, from Norges Badmintonforbund's list
+# (https://www.badminton.no/siteassets/dokumenter/eliteserie/spillere-i-eliteserien-2025-26-1.pdf).
+# Used by eliteserien.mjs for last season's review.
+#
+# One player per line:  M|K  <player id>  <name as on the list>  [| loan <home club>]
+# The player id links to their ratings (it is in the player page URL, /elo/players/<id>); "-" for
+# players without rated matches. "loan" marks players on loan from another club.
+
+[Bergen]
+M 22376  Markus Barth
+M 23270  Thomas Barth
+M 20267  Mattias Xu
+M 23978  Mathias Ji Hong
+M 23852  Bharath Balasingam
+M 21305  Amund Huus
+M 33258  Javier Bish
+K 17139  Katja Ellingsen
+K 23979  Aimee Hong
+K 43110  Maria Ellingsen
+K 45433  Giulia Dell'Acqua
+K 20814  Emilie Hamang
+K 17055  Delia Murtazalieva
+K 22113  Sofia Macsali
+K 22375  Vera Ellingsen
+
+[Frogner]
+M 20266  Vegard Rikheim
+M 18731  Jonas Christensen
+M 22112  Magnus Christensen
+M 19897  Anders Leirud
+M 38640  Albert Aasheim-Engen
+M 18971  Nikolai Svensson
+K 20294  Marie Christensen
+K 19819  Monica Halvorsen
+K 22187  Emilia Petersen Norberg
+K 22416  Henny Lyfjell
+K 38641  Vilma Aasheim-Engen
+K 18748  Randi Selle | loan Stavanger
+
+[Haugerud]
+M 20589  Carl Christian Mork
+M 19566  Sturla Flåten Jørgensen
+M 36501  Aleksander Jakovlevs
+M 45812  Deeptanshu Toka | loan Bergen
+K 20179  Elisa Wiborg
+K 38662  Sofie Reistadbakk
+K 43316  Victoria Heiberg
+K 36493  Nancy Hang
+K 26754  Karianne Zhang | loan OSI
+
+[Kristiansand]
+M 21260  Jonas Østhassel
+M 20623  Mads Marum
+M 17062  Filip Bøhn
+M 17063  Sander Østhassel
+M 42944  Mathias Wong
+M 17754  Andreas Roksvåg | loan Grimstad
+M 20301  Torjus Flåtten
+K 23506  Julie Marie Abusdal
+K 20087  Vilde Espeseth
+K 24046  Stine Skjævesland Pedersen
+K 35319  Mina Korssund
+K 21042  Helene Abusdal
+
+[Moss]
+M 24218  Jørgen Rosenlund
+M 17625  Martin Enghaug
+M 44141  Henrik Frende Lavik-Haug
+M 49066  Shubham
+M 18543  Fredrik Kristensen
+K 35351  Emma Yasmin Ruud
+K 20039  Solvår Serine Flåten Jørgensen
+K 47402  Melanie Antonella Matland
+K 19880  Natalie Kristensen
+K 20684  Stine Andersen
+K 17495  Kristine Grande Ødegårdstuen
+
+[NTNUI]
+M 17534  Petter Tryland Laheld
+M 36427  Brynjar Hus
+M 43350  Adit
+M 17647  Boyan Yu
+M 48983  Jesse Stekelenburg
+M 22992  Iver Rolvsjord
+M 17585  Kevin Elson | loan Kristiansand
+K 24979  Ane Hofstad Lycke
+K 26665  Marlen Nygård
+K 17745  Nora Omdal
+K 23534  Moana Vadseth Furholm
+
+[Sandefjord]
+M 20494  Carl Møller
+M 18638  Carl Hem
+M 20305  Tobias Krømke
+M 22130  Ludvig Smith-Meyer
+M 24766  Johannes Olafsson
+M 45023  Sondre Dolven
+M 36383  Varun Manikandan
+M 23707  Marius Myhre
+K 30003  Frida Bjørvik
+K 16988  Marielle Sørby
+K 18772  Caroline Hem
+K 25549  Alda Jonsdottir
+K 19879  Thea Johansen | loan Nøtterøy
+
+[Sotra]
+M 21852  Morten Straume
+M 23619  Keveen Kumar Balasingam
+M 43575  Jakob Langeland Risa
+M 43576  Ole-Kristian Lie
+M 42948  Sindre Gjuvsland
+K 29988  Linnea Holmedal
+K 43577  Oline Langeland Risa
+K 44277  Juli Helen Johansen Klungtveit
+K 36518  Akarija Anton Reginold
+K 24717  Jenny Rajkumar

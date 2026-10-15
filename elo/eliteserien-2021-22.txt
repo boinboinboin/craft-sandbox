@@ -1,0 +1,145 @@
+# Eliteserien 2021/2022: the players on each team, from Norges Badmintonforbund's list (the list as of 28 January 2022)
+# (https://www.badminton.no/contentassets/3641b056d63a468ba5e8f5fa7b08d6fb/eliteserien-spillere-2021-2022-per-28.-januar-2022.pdf).
+# Used by eliteserien-review.mjs.
+#
+# One player per line:  M|K  <player id>  <name as on the list>  [| loan <home club>]
+# The player id links to their ratings (it is in the player page URL, /elo/players/<id>); "-" for
+# players without rated matches. "loan" marks players on loan from another club.
+
+[Bergen]
+M 23852  Bharath Balasingam
+M 33258  Javier Bish
+M 24643  Karl Ødegård
+M 22376  Markus Barth
+M 45770  Manuel Vázquez
+M 23270  Thomas Barth
+K 17139  Katja Ellingsen
+K 23033  Mette Skævesland
+K 22113  Sofía Louis Macsali
+K 22375  Vera Ellingsen
+
+[Frogner]
+M 21305  Amund Rikheim Huus
+M 19897  Anders Leirud
+M 22214  Joachim Skjønhaug
+M 18731  Jonas Christensen
+M 22112  Magnus Christensen
+M 20267  Mattias Xu
+M 21101  Radu Carlan
+M 20539  Toheed Ahmed Saeed
+M 20301  Torjus Flåtten
+M 20266  Vegard Rikheim
+K 20814  Emilie Hamang
+K 18525  Gitte Gamborg
+K 18722  Hege Rikheim
+K 22416  Henny Lyfjell
+K 24717  Jenny Rajkumar
+K 22122  Live Hov Grønbech
+K 20294  Marie Christensen
+K 20093  Marthe Skaug
+K 19819  Monica Halvorsen
+K 18748  Randi Selle | loan Stavanger
+
+[Haugerud]
+M 36501  Alexanders Jakolevs
+M 20589  Carl Christian Mork | loan Asker
+M 23707  Marius Myhre Fartum
+M 23978  Mathias Ji Hong
+M 19566  Sturla Flåten Jørgensen
+M 24699  Theodor Fjelldal
+M 17810  Thomas Grüner Fjeldheim
+K 23979  Aimee Hong
+K 21296  Cecilie Li
+K 17055  Delia Murtazalieva
+K 20179  Elisa Wiborg
+K 26754  Karianne Zhang
+K 22280  Malin Andersson
+K 26755  Victoria Zhang
+
+[Kristiansand]
+M 17754  Andreas Andersen Roksvåg
+M 22849  Danila Gataulin
+M 24333  Eivind Lund
+M 26624  Hermod Holte Haugland
+M 36286  Ikmal Hussain
+M 19358  Jim Ronny Andersen
+M 21260  Jonas Østhassel
+M 17585  Kevin Elson
+M 20623  Mads Marum
+K 20863  Emma Wåland
+K 21042  Helene Abusdal
+K 23506  Julie Marie Abusdal
+K 17060  Marie Mørk
+K 18501  Marie Wåland
+K 20617  Marlene Wåland
+K 20087  Vilde Espeseth
+
+[Moss]
+M 19196  André Høidebraaten
+M 26680  Andreas Korssund
+M 24834  Daniel Brustad Snorasson
+M 16984  Elias Ausen
+M 18543  Fredrik Kristensen
+M 18512  Jesper Kristensen
+M 24218  Jørgen Rosenlund
+M 17625  Martin Enghaug
+M 46343  Nishant Kauthekar
+M 23802  Sander Bunes Kristensen
+K 35351  Emma Yasmin Ruud
+K 25382  Julie Grande Ødegårdstuen
+K 17495  Kristine Grande Ødegårdstuen
+K 35319  Mina Korssund
+K 19880  Natalie Syvertsen
+K 20039  Solvår Flåten Jørgensen
+
+[Sandefjord]
+M 24656  Andreas Andersen
+M 44095  Bobby Bachtiar
+M 18638  Carl Christian Hem
+M 20494  Carl Christian Møller
+M 23007  Christoffer Hamnes
+M 48329  Edvard Rosenberg
+M 21746  Hans Christian Marthinsen
+M 24766  Johannes Olafsson
+M 17576  Karel Eriksson
+M 22130  Ludvig Smith-Meyer
+M 18656  Marius Sørby
+M 23098  Martin Grøtterød
+M 18644  Sebastian Bøe
+M 20305  Tobias Krømke
+M 21613  Truls Barth Nilsen
+K 25549  Alda Karen Jónsdottir
+K 17084  Elisabeth Sirevåg
+K 22187  Emilia Petersen Norberg
+K 30003  Frida Bjørvik Løvheim
+K 20978  Kristine Haakonseth
+K 18642  Mari Helene Bøe
+K 20178  Tam Huynh
+K 19879  Thea Kristine Johansen | loan Nøtterøy
+
+[Tromsø]
+M 20126  Lasse Nyheim
+M 19470  Jarle Grann | loan Kirkenes
+M 21718  Hans Andreas Karlsen
+M 23742  Vegard Næss
+M 22670  Gintar Rundelis
+M 22097  Simen Eggøy Olson
+M 21242  Kent Nyheim
+M 43991  Martin Brekke Hjellestad
+K 17405  Henriette Ellingsen
+K 45612  Marthe Almaas
+K 17914  Eva F. Åbotsvik
+K 17043  Linn Hepsøe
+K 17245  Angelica Brovold | loan Hammerfest
+K 19612  Charlotte Leinan
+
+[Vestre Aker]
+M 18174  Arben Holstad
+M 47008  Arturz Berzins
+M 20164  Joel Collard
+M 20057  Peter Rønn Stensæth
+M 17534  Petter Tryland Laheld
+K 24908  Elise Jelsness | loan Bygdø
+K 23816  Jeanette Svendsen
+K 22823  Karolina Boldstad
+K 45943  Maaike Weerdesteyn

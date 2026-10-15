@@ -1,0 +1,240 @@
+{% extends "_base.twig" %}
+
+{# An Eliteserien season in review (route elo/eliteserien/<season>, like 2025-26), from
+   elo/data/eliteserien-<season>.json (elo/eliteserien-review.mjs). #}
+
+{% set data = craft.elo.eliteserienReview(season ?? '') %}
+{% if data is empty %}{% exit 404 %}{% endif %}
+{% set seasons = craft.elo.eliteserienReviewSeasons() %}
+{% set clubEntries = craft.entries.section('clubs').with(['clubLogo']).collect().keyBy('title') %}
+{% macro signed(x, decimals = 1) %}{{ x > 0 ? '+' : (x < 0 ? '−' : '') }}{{ x|abs|number_format(decimals) }}{% endmacro %}
+
+{% block body %}
+  {% import _self as m %}
+  {% set disciplineNames = { MensSingles: 'MS', WomensSingles: 'WS', MensDoubles: 'MD', WomensDoubles: 'WD', MixedDoubles: 'XD' } %}
+  <section class="base-section">
+    <div class="base-container px-4">
+      <a href="{{ url('elo/eliteserien') }}" class="text-gray-600 hover:text-black">&larr; Eliteserien</a>
+      <h1 class="h1 mt-4">Eliteserien {{ data.season }} in review</h1>
+      {% if seasons|length > 1 %}
+        <nav class="mt-2 flex flex-wrap gap-2" aria-label="Seasons">
+          {% for s in seasons %}
+            {% if s == season %}
+              <span class="px-3 py-1 border border-black rounded-full" aria-current="page">{{ s|replace({'-': '/'}) }}</span>
+            {% else %}
+              <a href="{{ url('elo/eliteserien/' ~ s) }}" class="px-3 py-1 border border-gray-300 rounded-full text-gray-700 hover:border-black hover:text-black">{{ s|replace({'-': '/'}) }}</a>
+            {% endif %}
+          {% endfor %}
+        </nav>
+      {% endif %}
+      <p class="text-2xl max-w-3xl">The team strengths before each round against what actually happened.</p>
+      <div class="max-w-3xl mt-4 text-gray-700 space-y-2">
+        <p>
+          Before each round, every team's best lineup is worked out as for this season, with the players' ratings from the week before and the official ranking from the day before.
+          That gives each tie a <strong class="font-semibold">potential</strong>: the expected result if both teams field their best lineup.
+          It is compared with the result <strong class="font-semibold">expected with the lineups actually played</strong> (each match's win chance from right before it) and with the <strong class="font-semibold">actual result</strong>.
+          Walkovers and matches not played are left out, except in the play-offs (see below).
+        </p>
+        {% if data.rankingNote ?? null %}<p>{{ data.rankingNote }}</p>{% endif %}
+        <p>
+          Teams are from <a href="{{ data.source ?? '#' }}" class="underline hover:text-blue-600" rel="noopener">Norges Badmintonforbund's list</a>, with the players who played for a team without being on its list added from their first match.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {% if data.teams ?? [] is empty %}
+    <section class="base-section"><div class="base-container px-4"><p>No review yet. Run <code>node elo/eliteserien-review.mjs</code>.</p></div></section>
+  {% else %}
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-2">Before the season</h2>
+        <p class="text-gray-700 mb-4 max-w-3xl">
+          The predicted regular-season table before the first round, as on the page for this season: expected table points from one tie against each team
+          (4-0 for winning 6-2 or better, 3-1 for 5-3, 2-2 for 4-4), against the actual table and the final standings after the play-offs.
+        </p>
+        <div class="bg-white overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="text-sm text-gray-600 border-b border-gray-200">
+              <tr>
+                <th scope="col" class="py-3 px-4 font-normal text-right w-12">Predicted</th>
+                <th scope="col" class="py-3 px-4 font-normal">Team</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right">Expected points</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right">Actual points</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right hidden md:table-cell">Matches won per tie</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right">Regular season</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right">Final</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in data.preseason %}
+                {% set off = t.finalRank - t.rank %}
+                <tr class="border-b border-gray-100 last:border-0">
+                  <td class="py-3 px-4 text-right tabular-nums">{{ t.rank }}</td>
+                  <td class="py-3 px-4">{% include '_elo/_team' with { name: t.team, entries: clubEntries } only %}</td>
+                  <td class="py-3 px-4 text-right tabular-nums">{{ t.tablePoints|number_format(1) }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums font-semibold">{{ t.points }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums hidden md:table-cell">{{ t.expected|number_format(2) }} <span class="text-sm text-gray-500">of 8</span></td>
+                  <td class="py-3 px-4 text-right tabular-nums">{{ t.regularRank }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums">{{ t.finalRank }}{% if off != 0 %} <span class="text-sm text-gray-500">({{ off > 0 ? off ~ ' lower' : -off ~ ' higher' }})</span>{% endif %}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-2">Who beat their potential</h2>
+        <p class="text-gray-700 mb-4 max-w-3xl">
+          Matches won over the season against the potential, split in two: <strong class="font-semibold">lineups</strong> (the expected result with the lineups actually played against the potential: players missing or rested, and opponents not at full strength either)
+          and <strong class="font-semibold">performance</strong> (matches won against what the lineups played were expected to win).
+          Table points are for the regular season, against the points expected from the potential of each tie.
+        </p>
+        <div class="bg-white overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="text-sm text-gray-600 border-b border-gray-200">
+              <tr>
+                <th scope="col" class="py-3 px-4 font-normal">Team</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right" title="Expected matches won with both teams at their best">Potential</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right hidden sm:table-cell" title="Expected matches won with the lineups played">Expected</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right">Won</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right">Won − potential</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right hidden md:table-cell">Lineups</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right hidden md:table-cell">Performance</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right" title="Regular-season table points: potential (both teams at their best, round by round) and actual">Table points</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in data.teams %}
+                <tr class="border-b border-gray-100 last:border-0">
+                  <td class="py-3 px-4">{% include '_elo/_team' with { name: t.team, entries: clubEntries } only %} <span class="block text-sm text-gray-600">{{ t.ties }} ties, {{ t.matches }} matches · final {{ t.finalRank }}.</span></td>
+                  <td class="py-3 px-4 text-right tabular-nums">{{ t.potential|number_format(1) }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums hidden sm:table-cell">{{ t.expected|number_format(1) }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums">{{ t.won }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums font-semibold">{{ m.signed(t.won - t.potential) }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums text-gray-700 hidden md:table-cell">{{ m.signed(t.expected - t.potential) }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums text-gray-700 hidden md:table-cell">{{ m.signed(t.won - t.expected) }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums whitespace-nowrap">{{ t.points }} <span class="text-sm text-gray-500">({{ m.signed(t.points - t.potentialPoints) }})</span></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-2">Ties</h2>
+        <p class="text-gray-700 mb-4 max-w-3xl">
+          Each tie's expected score and the home team's chance of winning, with both teams' best lineups (<strong class="font-semibold">potential</strong>)
+          and with the <strong class="font-semibold">lineups actually played</strong> (walkovers counted as won, as in the result), against the actual result.
+          An upset is a tie won by a team that had less than a 30% chance with the lineups played.
+        </p>
+        <p class="text-gray-700 mb-4 max-w-3xl">
+          In the play-offs a tie ends as soon as a team has won 5 matches, so the matches left are counted with their listed lineups' chances from before the round.
+          A tie at 4–4 is decided by a golden set: the teams take turns striking out disciplines, and one set is played in the last one left.
+          It is taken to be the discipline where the teams' top players or pairs are closest in rating, so there are no draws.
+        </p>
+        {% for round in data.rounds %}
+          <h3 class="text-xl mt-6 mb-2">{{ round.name }} <span class="text-base text-gray-600">{{ round.from|date('j') }}–{{ round.to|date('j F Y') }}</span></h3>
+          <div class="bg-white overflow-x-auto">
+            <table class="w-full text-left">
+              <thead class="text-sm text-gray-600 border-b border-gray-200">
+                <tr>
+                  <th scope="col" class="py-2 px-4 font-normal">Tie</th>
+                  <th scope="col" class="py-2 px-4 font-normal text-right" title="Both teams' best lineups: expected score, and the home team's chance of winning">Potential</th>
+                  <th scope="col" class="py-2 px-4 font-normal text-right" title="The lineups actually played: expected score, and the home team's chance of winning">Lineups played</th>
+                  <th scope="col" class="py-2 px-4 font-normal text-right">Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for t in data.ties|filter(t => t.round == round.name) %}
+                  {% set homeWon = (t.winner ?? 0) == 1 %}
+                  {% set awayWon = (t.winner ?? 0) == 2 %}
+                  {# Upsets are judged on the lineups played #}
+                  {% set upset = (homeWon and t.played.win < 0.3) or (awayWon and t.played.loss < 0.3) %}
+                  <tr class="border-b border-gray-100 last:border-0">
+                    <td class="py-2 px-4">
+                      {% include '_elo/_team' with { name: t.home, entries: clubEntries, size: 5, class: homeWon ? 'font-semibold' : '' } only %}
+                      <span class="text-gray-500 mx-1">–</span>
+                      {% include '_elo/_team' with { name: t.away, entries: clubEntries, size: 5, class: awayWon ? 'font-semibold' : '' } only %}
+                      {% if t.playoff ?? false %}<span class="block text-sm text-gray-600">{{ t.group }}</span>{% endif %}
+                    </td>
+                    {% for odds in [t.potential, t.played] %}
+                      {% set total = loop.first or (t.playoff ?? false) ? 8 : t.score[0] + t.score[1] %}
+                      <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap {{ loop.first ? 'text-gray-600' }}">
+                        {{ odds.expected|number_format(1) }}–{{ (total - odds.expected)|number_format(1) }}
+                        <span class="block text-sm text-gray-500">{{ (odds.win >= 0.995 ? '>99%' : (odds.win < 0.005 ? '<1%' : (odds.win * 100)|round ~ '%'))|e }} home win</span>
+                        {% if odds.golden ?? null %}<span class="block text-xs text-gray-500" title="Chance of 4–4, and the golden set's discipline and home win chance">4–4 {{ ((odds.drawBefore * 100)|round ~ '%')|e }}, golden set {{ disciplineNames[odds.golden.discipline] ?? odds.golden.discipline }} {{ ((odds.golden.chance * 100)|round ~ '%')|e }}</span>{% endif %}
+                      </td>
+                    {% endfor %}
+                    <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">
+                      {{ t.score[0] }}–{{ t.score[1] }}{% if not (t.playoff ?? false) %} <span class="text-sm text-gray-500" title="Table points">({{ t.points[0] }}–{{ t.points[1] }})</span>{% endif %}
+                      {% if t.goldenSet ?? null %}
+                        <span class="block text-sm text-gray-600">Golden set {{ disciplineNames[t.goldenSet.discipline] ?? t.goldenSet.discipline }}: {{ t.goldenSet.side1|join(' / ') }} – {{ t.goldenSet.side2|join(' / ') }} {{ t.goldenSet.score|replace({'/': '–'}) }}</span>
+                      {% endif %}
+                      {% if upset %}<span class="ml-1 text-xs px-1.5 py-0.5 border border-gray-400 rounded text-gray-700">Upset</span>{% endif %}
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    {% set regulars = data.players|filter(p => p.games >= 4) %}
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-2">Players</h2>
+        <p class="text-gray-700 mb-4 max-w-3xl">Matches won against the expected wins from the players' ratings right before each match, for players with at least 4 Eliteserien matches. Doubles partners share their results.</p>
+        <div class="grid gap-6 lg:grid-cols-2">
+          {% for title, list in { 'Above expectation': regulars|slice(0, 10), 'Below expectation': regulars|reverse|slice(0, 10) } %}
+            <div class="bg-white p-4 md:p-6">
+              <h3 class="text-xl mb-4">{{ title }}</h3>
+              <table class="w-full text-left">
+                <thead class="text-sm text-gray-600 border-b border-gray-200">
+                  <tr>
+                    <th scope="col" class="py-2 pr-4 font-normal">Player</th>
+                    <th scope="col" class="py-2 pr-4 font-normal text-right">Won</th>
+                    <th scope="col" class="py-2 pr-4 font-normal text-right">Expected</th>
+                    <th scope="col" class="py-2 font-normal text-right">Difference</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for p in list %}
+                    <tr class="border-b border-gray-100 last:border-0">
+                      <td class="py-2 pr-4"><a href="{{ url('elo/players/' ~ p.id) }}" class="hover:text-blue-600">{{ p.name }}</a> <span class="block text-sm text-gray-600">{% include '_elo/_team' with { name: p.team, entries: clubEntries, size: 4 } only %}</span></td>
+                      <td class="py-2 pr-4 text-right tabular-nums">{{ p.won }} of {{ p.games }}</td>
+                      <td class="py-2 pr-4 text-right tabular-nums">{{ p.expected|number_format(1) }}</td>
+                      <td class="py-2 text-right tabular-nums font-semibold">{{ m.signed(p.diff) }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    {% if data.changes is not empty %}
+      <section class="base-section">
+        <div class="base-container px-4">
+          <h2 class="text-xl mb-2">Changes to the list</h2>
+          <p class="text-gray-700 mb-2">Players who played for a team without being on its list, counted for the team they played for:</p>
+          <ul class="text-gray-700 list-disc pl-6">
+            {% for c in data.changes %}
+              <li><a href="{{ url('elo/players/' ~ c.id) }}" class="hover:text-blue-600">{{ c.name }}</a>, {% include '_elo/_team' with { name: c.team, entries: clubEntries, size: 4 } only %}: {{ c.change }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </section>
+    {% endif %}
+  {% endif %}
+{% endblock %}

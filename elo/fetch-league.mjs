@@ -135,6 +135,24 @@ async function fetchGames(g, tie) {
       walkover: !!wo,
     });
   }
+  // Play-off ties at 4-4 are decided by a golden set (one set, one discipline): stored apart from
+  // the games, as tie.goldenSet, so it isn't rated
+  const golden = schema.match(/<tr id='goldensetrow'[^>]*>(.*?)<\/tr>/s)?.[1];
+  if (golden) {
+    const code = text(golden.match(/<td class='goldensetdiscipline'>(.*?)<\/td>/)?.[1] ?? "");
+    const cells = [...golden.matchAll(/<td class='(player\w*)'>(.*?)<\/td>/gs)];
+    const winnerIndex = cells.findIndex(([, cls]) => cls === "playerwinner");
+    if (DISCIPLINES[code] && cells.length === 2) {
+      tie.goldenSet = {
+        discipline: DISCIPLINES[code],
+        game: code,
+        side1: parseSide(cells[0][2], tie.home),
+        side2: parseSide(cells[1][2], tie.away),
+        winner: winnerIndex === -1 ? null : winnerIndex + 1,
+        score: [...golden.matchAll(/<td class='result'>(.*?)<\/td>/gs)].map((m) => text(m[1]).replace(/\s*-\s*/, "/")).filter(Boolean).join(","),
+      };
+    }
+  }
   return games;
 }
 

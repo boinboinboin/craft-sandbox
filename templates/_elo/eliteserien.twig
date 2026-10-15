@@ -16,12 +16,17 @@
       <a href="{{ url('elo') }}" class="text-gray-600 hover:text-black">&larr; Rankings</a>
       <h1 class="h1 mt-4">Eliteserien {{ data.season ?? '' }}</h1>
       <p class="text-2xl max-w-3xl">How strong the eight teams are, from their players' ratings.</p>
+      <p class="mt-2">
+        Earlier seasons in review, predicted against actual results:
+        {% for s in craft.elo.eliteserienReviewSeasons() %}<a href="{{ url('elo/eliteserien/' ~ s) }}" class="underline hover:text-blue-600">{{ s|replace({'-': '/'}) }}</a>{{ not loop.last ? ', ' }}{% endfor %}
+      </p>
       <div class="max-w-3xl mt-4 text-gray-700 space-y-2">
         <p>
           A tie is 8 matches: 2 men's singles, 2 women's singles, 1 men's doubles, 1 women's doubles and 2 mixed doubles, and a player plays at most 2 of them.
           Each team is assumed to field the lineup that gives it the most expected match wins against an average Eliteserien opponent.
           As the rules require, the first singles player has more official ranking points than the second, and the first mixed pair more combined mixed doubles points than the second{% if data.rankingPeriod ?? null %} (ranking {{ data.rankingPeriod }}){% endif %}.
           Win chances use the same formula as the ratings, match against match, and a tie is won with 5 matches and drawn at 4-4.
+          Table points per tie are as in the league: 4-0 for winning 6-2 or better, 3-1 for 5-3 and 2-2 for 4-4.
         </p>
         <p>
           Teams are from <a href="{{ data.source ?? '#' }}" class="underline hover:text-blue-600" rel="noopener">Norges Badmintonforbund's list</a>, including players on loan from other clubs.
@@ -36,14 +41,16 @@
   {% else %}
     <section class="base-section">
       <div class="base-container px-4">
-        <h2 class="text-3xl mb-4">Team strength</h2>
+        <h2 class="text-3xl mb-2">Predicted table</h2>
+        <p class="text-gray-700 mb-4 max-w-3xl">The regular season, with one tie against each other team, by expected table points.</p>
         <div class="bg-white overflow-x-auto">
           <table class="w-full text-left">
             <thead class="text-sm text-gray-600 border-b border-gray-200">
               <tr>
                 <th scope="col" class="py-3 px-4 font-normal text-right w-12">#</th>
                 <th scope="col" class="py-3 px-4 font-normal">Team</th>
-                <th scope="col" class="py-3 px-4 font-normal text-right" title="Average over ties against the other seven teams">Expected matches won</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right" title="Expected table points from one tie against each of the other seven teams">Table points</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right hidden md:table-cell" title="Average over ties against the other seven teams">Matches won per tie</th>
                 <th scope="col" class="py-3 px-4 font-normal text-right">Wins tie</th>
                 <th scope="col" class="py-3 px-4 font-normal text-right hidden sm:table-cell">Draw</th>
                 <th scope="col" class="py-3 px-4 font-normal text-right hidden sm:table-cell">Loses tie</th>
@@ -60,7 +67,8 @@
                       {% if logo %}<img src="{{ logo.url }}" alt="" class="w-6 h-6 object-contain">{% endif %}{{ t.team }}
                     </a>
                   </td>
-                  <td class="py-3 px-4 text-right tabular-nums">{{ t.strength.expected|number_format(2) }} <span class="text-sm text-gray-500">of 8</span></td>
+                  <td class="py-3 px-4 text-right tabular-nums font-semibold">{{ t.strength.tablePoints|number_format(1) }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums hidden md:table-cell">{{ t.strength.expected|number_format(2) }} <span class="text-sm text-gray-500">of 8</span></td>
                   <td class="py-3 px-4 text-right tabular-nums">{{ ((t.strength.win) * 100)|round ~ '%' }}</td>
                   <td class="py-3 px-4 text-right tabular-nums hidden sm:table-cell">{{ ((t.strength.draw) * 100)|round ~ '%' }}</td>
                   <td class="py-3 px-4 text-right tabular-nums hidden sm:table-cell">{{ ((t.strength.loss) * 100)|round ~ '%' }}</td>
@@ -69,7 +77,7 @@
             </tbody>
           </table>
         </div>
-        <p class="text-sm text-gray-600 mt-2">Averages over a tie against each of the other seven teams.</p>
+        <p class="text-sm text-gray-600 mt-2">Expected values: table points add up over the seven ties (28 at most), the other columns are averages per tie.</p>
       </div>
     </section>
 
@@ -82,13 +90,13 @@
             <thead>
               <tr>
                 <th scope="col" class="p-2"></th>
-                {% for b in teams %}<th scope="col" class="p-2 font-normal text-gray-600 text-center">{{ b.team }}</th>{% endfor %}
+                {% for b in teams %}<th scope="col" class="p-2 font-normal text-gray-600 text-center">{% include '_elo/_team' with { name: b.team, entries: clubEntries, size: 6, stacked: true } only %}</th>{% endfor %}
               </tr>
             </thead>
             <tbody>
               {% for a in teams %}
                 <tr>
-                  <th scope="row" class="p-2 font-normal text-left whitespace-nowrap">{{ a.team }}</th>
+                  <th scope="row" class="p-2 font-normal text-left whitespace-nowrap">{% include '_elo/_team' with { name: a.team, entries: clubEntries, size: 5 } only %}</th>
                   {% for b in teams %}
                     {% if a.team == b.team %}
                       <td class="p-2 text-center text-gray-300">–</td>
@@ -97,7 +105,7 @@
                       {# One blue, deeper with the chance; white text on the deep cells #}
                       <td class="p-2 text-center tabular-nums border-2 border-white {{ h.win > 0.55 ? 'text-white' : 'text-gray-900' }}"
                           style="background: rgba(42, 120, 214, {{ (0.08 + h.win * 0.82)|number_format(2) }})"
-                          title="{{ a.team }} against {{ b.team }}: expected {{ h.expected|number_format(1) }}–{{ (8 - h.expected)|number_format(1) }} in matches; wins {{ ((h.win) * 100)|round ~ '%' }}, draws {{ ((h.draw) * 100)|round ~ '%' }}, loses {{ ((h.loss) * 100)|round ~ '%' }}">{{ h.win >= 0.995 ? '>99%' : (h.win < 0.005 ? '<1%' : (h.win * 100)|round ~ '%') }}</td>
+                          title="{{ a.team }} against {{ b.team }}: expected {{ h.expected|number_format(1) }}–{{ (8 - h.expected)|number_format(1) }} in matches, {{ h.points|number_format(1) }}–{{ (4 - h.points)|number_format(1) }} in table points; wins {{ ((h.win) * 100)|round ~ '%' }}, draws {{ ((h.draw) * 100)|round ~ '%' }}, loses {{ ((h.loss) * 100)|round ~ '%' }}">{{ (h.win >= 0.995 ? '>99%' : (h.win < 0.005 ? '<1%' : (h.win * 100)|round ~ '%'))|e }}</td>
                     {% endif %}
                   {% endfor %}
                 </tr>
@@ -114,8 +122,8 @@
       {% set entry = clubEntries[t.team] ?? null %}
       <section class="base-section scroll-mt-4" id="team-{{ t.team|lower }}">
         <div class="base-container px-4">
-          <h2 class="text-3xl mb-1">{{ t.rank }}. {% if entry %}<a href="{{ entry.url }}" class="hover:text-blue-600">{{ t.team }}</a>{% else %}{{ t.team }}{% endif %}</h2>
-          <p class="text-gray-700 mb-6">{{ t.strength.expected|number_format(2) }} expected matches won per tie · wins {{ ((t.strength.win) * 100)|round ~ '%' }} of ties</p>
+          <h2 class="text-3xl mb-1 flex items-center gap-3">{{ t.rank }}. {% include '_elo/_team' with { name: t.team, entries: clubEntries, size: 10, class: 'gap-3' } only %}</h2>
+          <p class="text-gray-700 mb-6">{{ t.strength.tablePoints|number_format(1) }} expected table points · {{ t.strength.expected|number_format(2) }} matches won per tie · wins {{ ((t.strength.win) * 100)|round ~ '%' }} of ties</p>
 
           <div class="grid gap-6 lg:grid-cols-2">
             <div class="bg-white p-4 md:p-6">
