@@ -17,7 +17,6 @@ const DOUBLES = new Set(["mensDoubles", "womensDoubles", "mixedDoubles"]);
 const CALIBRATION_FROM = "2015-07-01";
 const CALIBRATION_MIN_MATCHES = 10;
 // Per player and pool: this many last matches, and biggest wins and losses (by win chance before the match).
-const RECENT_MATCHES = 20;
 const BIGGEST_MATCHES = 5;
 // Rivals: opponents met at least RIVAL_MIN_MATCHES times, closest first by the average point
 // margin d (as in the margin of victory weight). The average is pulled towards a typical margin
@@ -294,7 +293,7 @@ const RETURN_MATCHES = 5;
 
 // onGame(game, side1, side2, expected1) is called before each rating update, for analysis; sides are
 // arrays of player states. Experiment hooks (defaults follow the README): startRating(level),
-// seedRating(pool, side, level, players), kMultiplier(game), playerMultiplier(player, game), ratingMultiplier(r), expectedScore(ra, rb),
+// seedRating(pool, side, level, players), kMultiplier(game), playerMultiplier(player, game, opponents), ratingMultiplier(r), expectedScore(ra, rb),
 // kappa, doublesKappa (base K-factor for doubles) and doublesSplit ("rd" or "equal": how a doubles
 // side's rating change is shared between the partners).
 export function computeRatings(
@@ -444,7 +443,7 @@ export function computeRatings(
       const variance = side.players.reduce((sum, p) => sum + p.rd ** 2, 0);
       side.changes = side.players.map((p) => {
         const share = !doubles ? 1 : doublesSplit === "rd" ? p.rd ** 2 / variance : 1 / side.players.length;
-        return k * share * ratingMultiplier(p.rating) * (playerMultiplier?.(p, g) ?? 1) * (side.s - side.e);
+        return k * share * ratingMultiplier(p.rating) * (playerMultiplier?.(p, g, side.opponents) ?? 1) * (side.s - side.e);
       });
     }
     perSide.forEach((side, i) => side.players.forEach((p, j) => ([p.rd, p.rdDay] = [rdAfter[i][j], g.day])));
@@ -804,8 +803,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       .map(({ score: _, ...r }) => r);
   }
 
-  // Last matches (newest first) and biggest wins and losses: wins with the lowest win chance,
-  // losses with the highest.
+  // All matches (newest first; the player page shows the last few and can show all), biggest wins
+  // and losses (wins with the lowest win chance, losses with the highest) and the matches that
+  // changed the rating most up and down.
   const matches = new Map();
   for (const [pool, map] of Object.entries(players)) {
     for (const p of map.values()) {
@@ -815,9 +815,11 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       matches.set(p.id, {
         ...matches.get(p.id),
         [pool]: {
-          recent: strip(p.log.slice(-RECENT_MATCHES).reverse()),
+          all: strip(p.log.slice().reverse()),
           biggestWins: biggest(1, 1),
           biggestLosses: biggest(0, -1),
+          biggestGains: strip([...p.log].sort((x, y) => y.change - x.change || y.day.localeCompare(x.day)).filter((m) => m.change > 0).slice(0, BIGGEST_MATCHES)),
+          biggestDrops: strip([...p.log].sort((x, y) => x.change - y.change || y.day.localeCompare(x.day)).filter((m) => m.change < 0).slice(0, BIGGEST_MATCHES)),
           rivals: rivals(p, map),
         },
       });

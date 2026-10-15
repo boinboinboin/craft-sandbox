@@ -99,12 +99,12 @@ A 2400 singles player starts doubles at 1940. The factor 0.6 brings the singles 
 
 This and the [junior weight](#junior-weight) were inspired by table tennis rating systems (such as Germany's TTR, which raises the K-factor for juniors) and tuned on doubles matches before 2023, then tested on 2023 onwards. Here all doubles games count, including those with newcomers, where the start rating matters most (log loss, lower is better):
 
-| 2023 onwards, doubles                  | Before | With both | Change |
-| -------------------------------------- | -----: | --------: | -----: |
-| All doubles games                      | 0.5304 |    0.5066 |  −4.5% |
-| Games with a newcomer (<10 matches)    | 0.6302 |    0.5877 |  −6.7% |
-| Games between settled players          | 0.4515 |    0.4425 |  −2.0% |
-| Favourite wins                         |  73.0% |     74.7% |        |
+| 2023 onwards, doubles               | Before | With both | Change |
+| ----------------------------------- | -----: | --------: | -----: |
+| All doubles games                   | 0.5304 |    0.5066 |  −4.5% |
+| Games with a newcomer (<10 matches) | 0.6302 |    0.5877 |  −6.7% |
+| Games between settled players       | 0.4515 |    0.4425 |  −2.0% |
+| Favourite wins                      |  73.0% |     74.7% |        |
 
 The pre-2023 matches improved as much. Seeding from singles is most of the gain: just compressing the class start ratings towards 1500 helped far less. Factors from 0.55 to 0.65 did about equally well.
 
@@ -283,11 +283,11 @@ Gender comes from badmintonportalen's player register. For players not in it, it
 
 Clubs are ranked per pool by the average rating of their best ranked players:
 
-| Pool | Players counted |
-| --- | --- |
-| Men's singles, women's singles | best 3 |
-| Men's doubles, women's doubles | best 4 (two pairs) |
-| Mixed doubles | best 3 men and best 3 women |
+| Pool                           | Players counted             |
+| ------------------------------ | --------------------------- |
+| Men's singles, women's singles | best 3                      |
+| Men's doubles, women's doubles | best 4 (two pairs)          |
+| Mixed doubles                  | best 3 men and best 3 women |
 
 Clubs with fewer ranked players than that are not listed. Mixed doubles counts men and women separately because their mixed ratings can't be compared (see above). Averaging the best few players, rather than all of them, keeps big clubs with many beginners from being ranked low and one-star clubs from being ranked high.
 
@@ -303,7 +303,7 @@ The club page also shows all five disciplines on one graph, and the combined sco
 
 ### Matches
 
-Each player's page lists their last 20 matches and their 5 biggest wins and losses. Biggest wins are the wins with the lowest win chance before the match ($E_A$); biggest losses are the losses with the highest. Only matches where both players already had 10 rated matches count, since start ratings are too uncertain to make an upset meaningful.
+A player's page has one tab per discipline they have played, with a graph of all their disciplines together above the tabs. Each tab lists all their matches, showing the last 20 with a button to show all (`data/matches/<id>.json` holds every match, newest first). A Highlights box, with a tab for each, lists their 5 biggest wins and losses and the 5 matches that raised and lowered their rating most (largest rating change, in any match). Biggest wins are the wins with the lowest win chance before the match ($E_A$); biggest losses are the losses with the highest. Only matches where both players already had 10 rated matches count, since start ratings are too uncertain to make an upset meaningful.
 
 ### Rivals
 
@@ -331,14 +331,27 @@ Making repeated matches against the same opponent count less (to reward playing 
 
 Table tennis systems such as TTR raise the K-factor for a player's first matches. A higher K-factor for a player's first 10, 20 or 30 doubles matches (×1.5 or ×2) predicted results worse on both the tuning and the held-out seasons, and made ratings drift down, since newcomers then lose more points than their opponents win. The same held for singles. Doubles newcomers already move fast, since they take most of their side's rating change (see [doubles](#doubles)).
 
+### Matches against unsettled players counting less
+
+The idea: a result against a player whose rating is still uncertain says less, so it should move ratings less, as in the Glicko system. Tested on matches before 2023 and on 2023 onwards, all games counted, in thousandths of log loss compared with the rules used (positive = worse):
+
+| Variant                                                             | Singles before 2023 | Singles 2023 onwards | Doubles before 2023 | Doubles 2023 onwards | Average rating drift |
+| ------------------------------------------------------------------- | ------------------: | -------------------: | ------------------: | -------------------: | -------------------: |
+| Change × $g(RD)$ of the opponents (Glicko)                          |                +5.5 |                 +6.5 |                +2.3 |                 +3.9 |                  −15 |
+| Change × $g(RD)^3$                                                  |               +19.6 |                +23.3 |                +8.6 |                +13.0 |                  −22 |
+| Opponents with fewer than 10 matches count ×0.5                     |               +24.9 |                +30.3 |               +21.9 |                +32.1 |                  −30 |
+| Change × $g(RD)$, $\kappa$ ×1.25 to make up for the smaller changes |                +6.0 |                 +6.7 |                +2.7 |                 +3.1 |                  −17 |
+
+Every variant predicted worse, and the stronger the discount the worse; a higher K-factor did not make up for it. Newcomers here are not unknowns: their start rating comes from the class they enter (and from their singles rating in doubles), so a result against them still says a lot about the established player. Discounting only the established player's change also lets rating points leak out, so ratings drifted down over the years. Where uncertainty does matter, in doubles, the side's rating change is already shared by the partners' uncertainty.
+
 ## Comparison with the official ranking
 
 The official NBF ranking lists (badmintonportalen.no/NBF/Ranglister/) rank seniors by points collected in tournaments over the last 12 months. For each season from 2014/2015, the season's final official list and these ratings on the same date were both used to pick the favourite in every game played in the following 12 months between two players on the list (`fetch-ranking.mjs`, `compare-ranking.mjs`):
 
-| | Games | Favourite won |
-| --- | ---: | ---: |
-| Official ranking (more points) | 40,655 | 64.3% |
-| Elo (higher rating) | 40,655 | 76.3% |
+|                                |  Games | Favourite won |
+| ------------------------------ | -----: | ------------: |
+| Official ranking (more points) | 40,655 |         64.3% |
+| Elo (higher rating)            | 40,655 |         76.3% |
 
 Elo predicted better in every season and both pools. When the two disagreed on the favourite (14,181 games), the Elo favourite won 67.3% of the time. The rank correlation between official points and Elo is only about 0.4–0.6: official points reward playing many tournaments, Elo only rewards results.
 
@@ -353,4 +366,4 @@ Elo predicted better in every season and both pools. When the two disagreed on t
 | 2021-11-16 – 2022-03-08 | $\times 90\%$       | Normal         | Normal                |
 | From 2022-03-09         | Normal              | Normal         | Normal                |
 
-*Time towards inactive* is how fast time without playing counts towards a player becoming inactive (12 months, see [Rankings](#rankings)). A player who was active when Covid-19 started stays active through the lockdown, until well into 2021. Without it, most players went inactive at once and [club strengths](#club-strength-history) dropped through 2020 and 2021: in June 2021 only 33 clubs had a men's singles strength, against 81 with it.
+_Time towards inactive_ is how fast time without playing counts towards a player becoming inactive (12 months, see [Rankings](#rankings)). A player who was active when Covid-19 started stays active through the lockdown, until well into 2021. Without it, most players went inactive at once and [club strengths](#club-strength-history) dropped through 2020 and 2021: in June 2021 only 33 clubs had a men's singles strength, against 81 with it.

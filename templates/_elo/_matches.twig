@@ -1,6 +1,25 @@
-{# A table of one player's matches (singles or doubles: opponents, and the partner in doubles). Expects `matches` (records from elo/data/matches/<id>.json) and `title`. #}
-<div class="bg-white p-4 md:p-6">
-  <h3 class="text-xl mb-4">{{ title }}</h3>
+{# A table of one player's matches (singles or doubles: opponents, and the partner in doubles). Expects `matches` (records from elo/data/matches/<id>.json, newest first) and `title`.
+   Optional: `subtitle`; `limit` shows only that many rows, with a button to show all (match_list controller); `sortable` adds buttons to sort by date or rating change;
+   `embedded` leaves out the box and title, for a table inside another box (the subtitle is kept). #}
+{% set limit = limit ?? null %}
+{% set sortable = (sortable ?? false) and limit %}
+{% set embedded = embedded ?? false %}
+<div class="{{ embedded ? '' : 'bg-white p-4 md:p-6' }}" {% if limit %}data-controller="match-list" data-match-list-limit-value="{{ limit }}"{% endif %}>
+  <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+    <div>
+      {% if not embedded %}<h3 class="text-xl">{{ title }}</h3>{% endif %}
+      {% if subtitle ?? null %}<p class="text-sm text-gray-600">{{ subtitle }}</p>{% endif %}
+    </div>
+    {% if sortable and matches|length > 1 %}
+      <div class="flex gap-1 text-sm" role="group" aria-label="Sort matches">
+        {% for sort, label in { date: 'Newest', gain: 'Biggest gain', loss: 'Biggest loss' } %}
+          <button type="button" data-match-list-target="sort" data-action="match-list#sort" data-sort="{{ sort }}"
+                  aria-pressed="{{ loop.first ? 'true' : 'false' }}"
+                  class="px-3 py-1 border border-black transition-colors duration-200 hover:bg-black hover:text-white aria-pressed:bg-black aria-pressed:text-white cursor-pointer">{{ label }}</button>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
   <div class="overflow-x-auto">
     <table class="w-full text-left">
       <thead class="text-sm text-gray-600 border-b border-gray-200">
@@ -12,10 +31,12 @@
           <th scope="col" class="py-2 font-normal text-right" title="Rating after the match">Rating</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody {% if limit %}data-match-list-target="body"{% endif %}>
         {% for m in matches %}
-          <tr class="border-b border-gray-100 last:border-0 align-top">
-            <td class="py-2 pr-4 whitespace-nowrap tabular-nums">{{ m.day|date('j M Y') }}</td>
+          <tr class="border-b border-gray-100 last:border-0 align-top"
+              {% if limit %}data-match-list-target="row" data-index="{{ loop.index0 }}" data-change="{{ m.change }}"{% if loop.index > limit %} hidden{% endif %}{% endif %}>
+            {# On small screens the year goes on its own line #}
+            <td class="py-2 pr-4 tabular-nums"><span class="whitespace-nowrap">{{ m.day|date('j M') }}</span> <span class="block sm:inline">{{ m.day|date('Y') }}</span></td>
             <td class="py-2 pr-4">
               {% for o in m.opponents %}
                 <a href="{{ url('elo/players/' ~ o.id) }}" class="hover:text-blue-600">{{ o.name }}</a>
@@ -41,7 +62,12 @@
               {% else %}
                 <span class="font-semibold">Draw</span>
               {% endif %}
-              <span class="block text-sm text-gray-600 tabular-nums">{{ m.score }}</span>
+              {# On small screens each set goes on its own line #}
+              <span class="block text-sm text-gray-600 tabular-nums">
+                {%- for set in m.score|split(', ') -%}
+                  <span class="block sm:inline">{{ set }}{% if not loop.last %}<span class="hidden sm:inline">, </span>{% endif %}</span>
+                {%- endfor -%}
+              </span>
             </td>
             {% set chance = (m.winChance * 100)|round %}
             <td class="py-2 pr-4 text-right tabular-nums">{{ chance > 99 ? '>99' : (chance < 1 ? '<1' : chance) }}%</td>
@@ -54,4 +80,8 @@
       </tbody>
     </table>
   </div>
+  {% if limit and matches|length > limit %}
+    <button type="button" class="btn-outline mt-4" data-match-list-target="toggle" data-action="match-list#toggle"
+            data-show-all="Show all {{ matches|length|number }} matches" data-show-fewer="Show fewer">Show all {{ matches|length|number }} matches</button>
+  {% endif %}
 </div>

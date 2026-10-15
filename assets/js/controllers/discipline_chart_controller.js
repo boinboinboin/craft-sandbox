@@ -2,8 +2,9 @@ import { Controller } from '@hotwired/stimulus'
 import { COLORS, DAY, MARGIN, PALETTE, createTooltip, dateFormat, drawGrid, drawYearAxis, el, formatNumber, placeTooltip, swatch, yDomain } from '../lib/chart.js'
 
 // Several weekly series on one chart, e.g. a club's strength in every discipline.
-// `series` is [{ label, from, values, ranks?, counts? }, ...] in a fixed order (it decides the
-// colours); `from` is the Monday of the series' first week and values[i] the value at the end of
+// `series` is [{ label, from, values, slot?, ranks?, counts? }, ...]; `slot` is the series' fixed
+// palette position, so a discipline has the same colour on every page (default: its position in
+// the list). `from` is the Monday of the series' first week and values[i] the value at the end of
 // week i (null breaks the line). Ranks show in the tooltip as "#3 of 89".
 const WEEK = 7 * DAY
 
@@ -15,7 +16,7 @@ export default class extends Controller {
     this.start = Math.min(...starts)
     this.series = this.seriesValue.map((s, i) => ({
       ...s,
-      color: PALETTE[i],
+      color: PALETTE[s.slot ?? i],
       offset: Math.round((starts[i] - this.start) / WEEK),
     }))
     this.weeks = Math.max(...this.series.map((s) => s.offset + s.values.length))

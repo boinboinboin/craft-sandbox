@@ -24,19 +24,84 @@
           {% endif %}
         </p>
       {% endif %}
-      {% if player.pools|length > 1 %}
-        <nav class="flex flex-wrap gap-2 mt-6" aria-label="Disciplines played">
-          {% for handle, p in player.pools %}
-            <a href="#{{ handle }}" class="px-4 py-2 border border-black hover:bg-black hover:text-white transition-colors duration-200">{{ p.label }}</a>
-          {% endfor %}
-        </nav>
-      {% endif %}
     </div>
   </section>
 
+  {# All disciplines in one chart, with a table of the rating at the end of each season #}
+  {% set series = [] %}
   {% for handle, p in player.pools %}
-    <section class="base-section scroll-mt-4" id="{{ handle }}">
+    {% if p.history and p.history.ratings|length > 1 %}
+      {# slot: fixed colour per discipline, in the order of craft.elo.pools() as on the club pages #}
+      {% set series = series|merge([{ handle: handle, label: p.label, from: p.history.from, values: p.history.ratings, slot: craft.elo.pools()|keys|indexOf(handle) }]) %}
+    {% endif %}
+  {% endfor %}
+  {% if series|length > 1 %}
+    <section class="base-section">
       <div class="base-container px-4">
+        <div class="bg-white p-4 md:p-6">
+          <h2 class="text-xl mb-1">Rating history</h2>
+          <p class="text-sm text-gray-600 mb-4">
+            Rating in each discipline at the end of each week. Doubles ratings spread over a narrower range than singles,
+            so compare how each line moves rather than the levels between singles and doubles.
+          </p>
+          <div class="relative h-80" data-controller="discipline-chart" data-discipline-chart-label-value="Rating"
+               data-discipline-chart-series-value="{{ series|json_encode }}"></div>
+
+          {% set seasons = {} %}
+          {% for column in series %}
+            {% for value in column.values %}
+              {% set weekEnd = column.from|date_modify('+' ~ ((loop.index0 * 7) + 6) ~ ' days') %}
+              {% set year = weekEnd|date('Y') %}
+              {% set season = weekEnd|date('n') >= 7 ? year : year - 1 %}
+              {% set row = (seasons['s' ~ season] ?? { season: season, label: season ~ '/' ~ (season + 1) })|merge({ (column.handle): value }) %}
+              {% set seasons = seasons|merge({ ('s' ~ season): row }) %}
+            {% endfor %}
+          {% endfor %}
+          <details class="mt-4">
+            <summary class="cursor-pointer text-gray-700 hover:text-black">Rating by season</summary>
+            <div class="overflow-x-auto">
+              <table class="mt-2 text-left">
+                <thead class="text-sm text-gray-600">
+                  <tr>
+                    <th scope="col" class="py-1 pr-6 font-normal">Season</th>
+                    {% for column in series %}<th scope="col" class="py-1 pr-6 font-normal text-right">{{ column.label }}</th>{% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in seasons|sort((a, b) => a.season <=> b.season) %}
+                    <tr>
+                      <td class="py-1 pr-6">{{ row.label }}</td>
+                      {% for column in series %}
+                        <td class="py-1 pr-6 text-right tabular-nums">{{ row[column.handle] ?? '–' }}</td>
+                      {% endfor %}
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <p class="text-sm text-gray-600 mt-2">Rating at the end of each season (or the latest week for the current one).</p>
+          </details>
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
+  {# One tab per discipline (no tabs for players with a single discipline) #}
+  {% set tabbed = player.pools|length > 1 %}
+  <section class="base-section" {% if tabbed %}data-controller="tabs"{% endif %}>
+    <div class="base-container px-4">
+      {% if tabbed %}
+        <div role="tablist" aria-label="Disciplines" class="flex flex-wrap gap-2 mb-8">
+          {% for handle, p in player.pools %}
+            <button type="button" role="tab" id="tab-{{ handle }}" aria-controls="{{ handle }}" aria-selected="{{ loop.first ? 'true' : 'false' }}" tabindex="{{ loop.first ? 0 : -1 }}"
+                    data-tabs-target="tab" data-action="tabs#choose keydown->tabs#key"
+                    class="px-4 py-2 border border-black transition-colors duration-200 hover:bg-black hover:text-white aria-selected:bg-black aria-selected:text-white cursor-pointer">{{ p.label }}</button>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+  {% for handle, p in player.pools %}
+      <div id="{{ handle }}" {% if tabbed %}role="tabpanel" aria-labelledby="tab-{{ handle }}" data-tabs-target="panel" {% if not loop.first %}hidden{% endif %}{% endif %}>
         <h2 class="text-3xl mb-6">{{ p.label }}</h2>
 
         <dl class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -106,7 +171,7 @@
         {% endif %}
 
         {% set matches = p.matchLog %}
-        {% if matches and matches.recent is not empty %}
+        {% if matches and (matches.all ?? []) is not empty %}
           <div class="grid gap-6 mt-6">
             {% if matches.rivals is not empty %}
               {% set rival = matches.rivals|first %}
@@ -134,16 +199,35 @@
                 {% endif %}
               </div>
             {% endif %}
-            {% include '_elo/_matches' with { title: 'Last matches', matches: matches.recent } only %}
-            {% if matches.biggestWins is not empty %}
-              {% include '_elo/_matches' with { title: 'Biggest wins', matches: matches.biggestWins } only %}
-            {% endif %}
-            {% if matches.biggestLosses is not empty %}
-              {% include '_elo/_matches' with { title: 'Biggest losses', matches: matches.biggestLosses } only %}
+            {% include '_elo/_matches' with { title: 'Matches', matches: matches.all, limit: 20 } only %}
+            {# Biggest wins and losses (by win chance) and biggest rating gains and losses, as tabs in one box #}
+            {% set highlights = [
+              { key: 'wins', label: 'Biggest wins', subtitle: 'Wins with the lowest chance of winning before the match', matches: matches.biggestWins ?? [] },
+              { key: 'losses', label: 'Biggest losses', subtitle: 'Losses with the highest chance of winning before the match', matches: matches.biggestLosses ?? [] },
+              { key: 'gains', label: 'Biggest rating gains', subtitle: 'The matches that raised the rating most', matches: matches.biggestGains ?? [] },
+              { key: 'drops', label: 'Biggest rating losses', subtitle: 'The matches that lowered the rating most', matches: matches.biggestDrops ?? [] },
+            ]|filter(h => h.matches is not empty) %}
+            {% if highlights is not empty %}
+              <div class="bg-white p-4 md:p-6" data-controller="tabs" data-tabs-hash-value="false">
+                <h3 class="text-xl mb-3">Highlights</h3>
+                <div role="tablist" aria-label="Highlights" class="flex flex-wrap gap-1 mb-4 text-sm">
+                  {% for h in highlights %}
+                    <button type="button" role="tab" id="tab-{{ handle }}-{{ h.key }}" aria-controls="{{ handle }}-{{ h.key }}" aria-selected="{{ loop.first ? 'true' : 'false' }}" tabindex="{{ loop.first ? 0 : -1 }}"
+                            data-tabs-target="tab" data-action="tabs#choose keydown->tabs#key"
+                            class="px-3 py-1 border border-black transition-colors duration-200 hover:bg-black hover:text-white aria-selected:bg-black aria-selected:text-white cursor-pointer">{{ h.label }}</button>
+                  {% endfor %}
+                </div>
+                {% for h in highlights %}
+                  <div id="{{ handle }}-{{ h.key }}" role="tabpanel" aria-labelledby="tab-{{ handle }}-{{ h.key }}" data-tabs-target="panel" {% if not loop.first %}hidden{% endif %}>
+                    {% include '_elo/_matches' with { title: h.label, subtitle: h.subtitle, matches: h.matches, embedded: true } only %}
+                  </div>
+                {% endfor %}
+              </div>
             {% endif %}
           </div>
         {% endif %}
       </div>
-    </section>
   {% endfor %}
+    </div>
+  </section>
 {% endblock %}
