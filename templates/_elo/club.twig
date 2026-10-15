@@ -81,14 +81,10 @@
         {% set columns = disciplineSeries|merge(combinedHistory ? [{ handle: 'combined', label: 'Combined', from: combinedHistory.from, values: combinedHistory.strength }] : []) %}
         {% set seasons = {} %}
         {% for column in columns %}
-          {% for value in column.values %}
-            {% if value is not null %}
-              {% set weekEnd = column.from|date_modify('+' ~ ((loop.index0 * 7) + 6) ~ ' days') %}
-              {% set year = weekEnd|date('Y') %}
-              {% set season = weekEnd|date('n') >= 7 ? year : year - 1 %}
-              {% set row = (seasons['s' ~ season] ?? { season: season, label: season ~ '/' ~ (season + 1) })|merge({ (column.handle): value }) %}
-              {% set seasons = seasons|merge({ ('s' ~ season): row }) %}
-            {% endif %}
+          {# Season rows precomputed by rate.mjs (value at the last week of each season) #}
+          {% for row in history[column.handle].seasons ?? [] %}
+            {% set merged = (seasons['s' ~ row.season] ?? { season: row.season, label: row.season ~ '/' ~ (row.season + 1) })|merge({ (column.handle): row.strength }) %}
+            {% set seasons = seasons|merge({ ('s' ~ row.season): merged }) %}
           {% endfor %}
         {% endfor %}
         <details>
@@ -128,11 +124,21 @@
     </section>
   {% endif %}
 
+  {# One tab per discipline, as on the player page; the selected tab is kept in the URL hash (#men, #mixedDoubles, ...) #}
+  <section class="base-section" data-controller="tabs">
+    <div class="base-container px-4">
+      <div role="tablist" aria-label="Disciplines" class="flex flex-wrap gap-2 mb-8">
+        {% for handle, label in craft.elo.pools() %}
+          <button type="button" role="tab" id="tab-{{ handle }}" aria-controls="{{ handle }}" aria-selected="{{ loop.first ? 'true' : 'false' }}" tabindex="{{ loop.first ? 0 : -1 }}"
+                  data-tabs-target="tab" data-action="tabs#choose keydown->tabs#key"
+                  class="px-4 py-2 border border-black transition-colors duration-200 hover:bg-black hover:text-white aria-selected:bg-black aria-selected:text-white cursor-pointer">{{ label }}</button>
+        {% endfor %}
+      </div>
+
   {% for handle, label in craft.elo.pools() %}
     {% set players = craft.elo.clubPlayers(entry.title, handle) %}
     {% set standing = craft.elo.clubs(handle)|filter(c => c.club == entry.title)|first %}
-    <section class="base-section">
-      <div class="base-container px-4">
+      <div id="{{ handle }}" role="tabpanel" aria-labelledby="tab-{{ handle }}" data-tabs-target="panel" {% if not loop.first %}hidden{% endif %}>
         <h2 class="text-3xl mb-2">{{ label }}</h2>
         {% set strengthHistory = history[handle] ?? null %}
         {% if strengthHistory and strengthHistory.strength|length > 1 %}
@@ -151,16 +157,8 @@
                  data-rating-chart-ranks-value="{{ strengthHistory.rank|json_encode }}"
                  data-rating-chart-counts-value="{{ strengthHistory.clubs|json_encode }}"></div>
 
-            {# Table view of the chart: strength and rank at the end of each season (July to June) #}
-            {% set seasons = {} %}
-            {% for strength in strengthHistory.strength %}
-              {% if strength is not null %}
-                {% set weekEnd = strengthHistory.from|date_modify('+' ~ ((loop.index0 * 7) + 6) ~ ' days') %}
-                {% set year = weekEnd|date('Y') %}
-                {% set season = weekEnd|date('n') >= 7 ? year : year - 1 %}
-                {% set seasons = seasons|merge({ ('s' ~ season): { label: season ~ '/' ~ (season + 1), strength: strength, rank: strengthHistory.rank[loop.index0], clubs: strengthHistory.clubs[loop.index0] } }) %}
-              {% endif %}
-            {% endfor %}
+            {# Table view of the chart: strength and rank at the end of each season (July to June), precomputed by rate.mjs #}
+            {% set seasons = strengthHistory.seasons ?? [] %}
             <details class="mt-4">
               <summary class="cursor-pointer text-gray-700 hover:text-black">Strength by season</summary>
               <table class="mt-2 text-left">
@@ -169,7 +167,7 @@
                 </thead>
                 <tbody>
                   {% for s in seasons %}
-                    <tr><td class="py-1 pr-8">{{ s.label }}</td><td class="py-1 pr-8 text-right tabular-nums">{{ s.strength }}</td><td class="py-1 tabular-nums">#{{ s.rank }} of {{ s.clubs }}</td></tr>
+                    <tr><td class="py-1 pr-8">{{ s.season }}/{{ s.season + 1 }}</td><td class="py-1 pr-8 text-right tabular-nums">{{ s.strength }}</td><td class="py-1 tabular-nums">#{{ s.rank }} of {{ s.clubs }}</td></tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -212,6 +210,7 @@
           <p class="text-sm text-gray-600 mt-2"># is the national rank in {{ label|lower }}{% if handle == 'mixedDoubles' %}, among men or among women{% endif %}.</p>
         {% endif %}
       </div>
-    </section>
   {% endfor %}
+    </div>
+  </section>
 {% endblock %}

@@ -788,11 +788,21 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     for (const [pool, { strength, rank }] of Object.entries(history)) {
       const first = strength.findIndex((x) => x !== null);
       const last = strength.findLastIndex((x) => x !== null);
+      // seasons: strength, rank and number of clubs at the last week of each season with a value,
+      // for the tables on the club page
+      const seasons = new Map();
+      for (let w = first; w <= last; w++) {
+        if (strength[w] === null) continue;
+        const day = addDays(firstWeek, w * 7 + 6);
+        const season = +day.slice(5, 7) >= 7 ? +day.slice(0, 4) : +day.slice(0, 4) - 1;
+        seasons.set(season, { season, strength: strength[w], rank: rank[w], clubs: clubCounts[pool][w] });
+      }
       pools[pool] = {
         from: addDays(firstWeek, first * 7),
         strength: strength.slice(first, last + 1),
         rank: rank.slice(first, last + 1),
         clubs: clubCounts[pool].slice(first, last + 1),
+        seasons: [...seasons.values()],
       };
     }
     writeFileSync(`${DIR}data/club-history/${c.id}.json`, JSON.stringify({ club: c.name, pools }));
