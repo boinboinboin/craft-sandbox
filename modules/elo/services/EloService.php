@@ -345,7 +345,7 @@ class EloService extends Component
         $together = [];
         foreach ($playerA['pools'] as $pool => $p) {
             foreach ($p['matchLog']['all'] ?? [] as $m) {
-                $m += ['pool' => $pool, 'poolLabel' => $p['label']];
+                $m += ['pool' => $pool, 'poolLabel' => $p['label']] + $this->points($m['score'] ?? '');
                 if (in_array($b, array_column($m['opponents'], 'id'), true)) {
                     $meetings[] = $m;
                 } elseif (($m['partner']['id'] ?? null) === $b) {
@@ -369,6 +369,7 @@ class EloService extends Component
                 'b' => $q,
                 'chance' => 1 / (1 + 10 ** (($q['rating'] - $p['rating']) / self::SCALE)),
                 'record' => $this->record(array_filter($meetings, fn(array $m) => $m['pool'] === $pool)),
+                'margins' => $this->margins(array_filter($meetings, fn(array $m) => $m['pool'] === $pool)),
             ];
         }
 
@@ -378,8 +379,74 @@ class EloService extends Component
             'meetings' => $meetings,
             'together' => $together,
             'record' => $this->record($meetings),
+            'margins' => $this->margins($meetings),
             'togetherRecord' => $this->record($together),
             'pools' => $pools,
+        ];
+    }
+
+    /**
+     * Sets and points of a score from the player's side ("21-17, 18-21, 21-15"), and the point
+     * margin. All null for a walkover or a score that can't be read.
+     *
+     * @return array{setsFor: ?int, setsAgainst: ?int, pointsFor: ?int, pointsAgainst: ?int, margin: ?int}
+     */
+    private function points(string $score): array
+    {
+        $none = ['setsFor' => null, 'setsAgainst' => null, 'pointsFor' => null, 'pointsAgainst' => null, 'margin' => null];
+        if (!preg_match_all('/(\d+)-(\d+)/', $score, $sets, PREG_SET_ORDER) || !preg_match('/^\d+-\d+(, \d+-\d+)*$/', trim($score))) {
+            return $none;
+        }
+        $for = $against = $setsFor = $setsAgainst = 0;
+        foreach ($sets as [, $x, $y]) {
+            $for += (int)$x;
+            $against += (int)$y;
+            $setsFor += (int)$x > (int)$y ? 1 : 0;
+            $setsAgainst += (int)$y > (int)$x ? 1 : 0;
+        }
+
+        return ['setsFor' => $setsFor, 'setsAgainst' => $setsAgainst, 'pointsFor' => $for, 'pointsAgainst' => $against, 'margin' => $for - $against];
+    }
+
+    /**
+     * Winning margins of a list of meetings from player A's side (matches with a readable score):
+     * sets and points won by each, and per side (`a`, `b`) the matches won, the average point
+     * margin of those wins and the biggest win; also the matches that went to a deciding set and
+     * the closest match.
+     */
+    private function margins(array $meetings): array
+    {
+        $scored = array_values(array_filter($meetings, fn(array $m) => $m['margin'] !== null));
+        $side = function(bool $forA) use ($scored): array {
+            $wins = array_values(array_filter($scored, fn(array $m) => $forA ? $m['result'] == 1 : $m['result'] == 0));
+            $margins = array_map(fn(array $m) => abs($m['margin']), $wins);
+            $biggest = null;
+            foreach ($wins as $m) {
+                if (!$biggest || abs($m['margin']) > abs($biggest['margin'])) {
+                    $biggest = $m;
+                }
+            }
+            return [
+                'wins' => count($wins),
+                'average' => $margins ? array_sum($margins) / count($margins) : null,
+                'biggest' => $biggest,
+            ];
+        };
+        $closest = null;
+        foreach ($scored as $m) {
+            if (!$closest || abs($m['margin']) < abs($closest['margin'])) {
+                $closest = $m;
+            }
+        }
+
+        return [
+            'matches' => count($scored),
+            'sets' => [array_sum(array_column($scored, 'setsFor')), array_sum(array_column($scored, 'setsAgainst'))],
+            'points' => [array_sum(array_column($scored, 'pointsFor')), array_sum(array_column($scored, 'pointsAgainst'))],
+            'deciding' => count(array_filter($scored, fn(array $m) => $m['setsFor'] + $m['setsAgainst'] === 3)),
+            'closest' => $closest,
+            'a' => $side(true),
+            'b' => $side(false),
         ];
     }
 

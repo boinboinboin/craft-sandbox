@@ -1,6 +1,7 @@
 {# A table of one player's matches (singles or doubles: opponents, and the partner in doubles). Expects `matches` (records from elo/data/matches/<id>.json, newest first) and `title`.
    Optional: `subtitle`; `limit` shows only that many rows, with a button to show all (match_list controller); `sortable` adds buttons to sort by date or rating change;
-   `embedded` leaves out the box and title, for a table inside another box (the subtitle is kept). #}
+   `embedded` leaves out the box and title, for a table inside another box (the subtitle is kept);
+   `showMargin` shows each match's point margin next to the result (`margin`, as on the head-to-head page). #}
 {% set limit = limit ?? null %}
 {% set sortable = (sortable ?? false) and limit %}
 {% set embedded = embedded ?? false %}
@@ -61,6 +62,9 @@
                 <span class="font-semibold text-red-700">Lost</span>
               {% else %}
                 <span class="font-semibold">Draw</span>
+              {% endif %}
+              {% if (showMargin ?? false) and (m.margin ?? null) is not null %}
+                <span class="text-sm text-gray-600 tabular-nums" title="Point margin">{{ m.margin > 0 ? '+' : (m.margin < 0 ? '−' : '±') }}{{ m.margin|abs }}</span>
               {% endif %}
               {# On small screens each set goes on its own line #}
               <span class="block text-sm text-gray-600 tabular-nums">

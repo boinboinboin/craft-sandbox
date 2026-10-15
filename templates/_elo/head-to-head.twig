@@ -15,6 +15,70 @@
 {# Series colours: the first two palette slots (assets/js/lib/chart.js) #}
 {% set colors = ['#2a78d6', '#eb6834'] %}
 
+{# A score from the winner's side: "18-21, 15-21" → "21-18, 21-15" #}
+{% macro winnerScore(match, flip) %}{{ flip ? match.score|split(', ')|map(set => set|split('-')|reverse|join('-'))|join(', ') : match.score }}{% endmacro %}
+
+{# Winning margins of the meetings (EloService::margins): per player the matches, sets and points
+   won, the average margin of their wins and their biggest win; then deciding sets and the closest match #}
+{% macro margins(mg, a, b, colors, showPool) %}
+  {% import _self as m %}
+  {% set sides = [{ player: a, s: mg.a, i: 0 }, { player: b, s: mg.b, i: 1 }] %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left">
+      <thead class="text-sm text-gray-600 border-b border-gray-200">
+        <tr>
+          <th scope="col" class="py-2 pr-4 font-normal"><span class="sr-only">Measure</span></th>
+          {% for side in sides %}
+            <th scope="col" class="py-2 pr-4 font-normal text-right whitespace-nowrap"><span class="inline-block w-3 h-1 rounded-full align-middle mr-1.5" style="background: {{ colors[side.i] }}"></span>{{ side.player.name }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody class="tabular-nums">
+        <tr class="border-b border-gray-100">
+          <th scope="row" class="py-2 pr-4 font-normal text-gray-700">Matches won</th>
+          {% for side in sides %}<td class="py-2 pr-4 text-right">{{ side.s.wins }}</td>{% endfor %}
+        </tr>
+        <tr class="border-b border-gray-100">
+          <th scope="row" class="py-2 pr-4 font-normal text-gray-700">Sets won</th>
+          {% for side in sides %}<td class="py-2 pr-4 text-right">{{ mg.sets[side.i] }}</td>{% endfor %}
+        </tr>
+        <tr class="border-b border-gray-100">
+          <th scope="row" class="py-2 pr-4 font-normal text-gray-700">Points won</th>
+          {% for side in sides %}
+            <td class="py-2 pr-4 text-right">{{ mg.points[side.i]|number }}
+              {% set total = mg.points[0] + mg.points[1] %}
+              {% if total %}<span class="block text-sm text-gray-500">{{ (mg.points[side.i] / total * 100)|round(1) }}%</span>{% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+        <tr class="border-b border-gray-100">
+          <th scope="row" class="py-2 pr-4 font-normal text-gray-700">Average winning margin</th>
+          {% for side in sides %}<td class="py-2 pr-4 text-right">{{ side.s.average is not null ? side.s.average|number_format(1) ~ ' points' : '–' }}</td>{% endfor %}
+        </tr>
+        <tr>
+          <th scope="row" class="py-2 pr-4 font-normal text-gray-700">Biggest win</th>
+          {% for side in sides %}
+            {% set big = side.s.biggest %}
+            <td class="py-2 pr-4 text-right">
+              {% if big %}
+                {{ m.winnerScore(big, side.i == 1) }}
+                <span class="block text-sm text-gray-500">+{{ big.margin|abs }} points · {{ big.day|date('j M Y') }}{% if showPool %} · {{ big.poolLabel|lower }}{% endif %}</span>
+              {% else %}–{% endif %}
+            </td>
+          {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="text-sm text-gray-600 mt-3">
+    {{ mg.deciding }} of {{ mg.matches }} {{ mg.matches == 1 ? 'match' : 'matches' }} went to a deciding set.
+    {% if mg.closest %}
+      {% set winnerIsB = mg.closest.result == 0 %}
+      Closest: {{ (winnerIsB ? b : a).name }} won {{ m.winnerScore(mg.closest, winnerIsB) }} ({{ mg.closest.margin == 0 ? 'level on points' : 'by ' ~ (mg.closest.margin|abs) ~ (mg.closest.margin|abs == 1 ? ' point' : ' points') }}) on {{ mg.closest.day|date('j M Y') }}.
+    {% endif %}
+  </p>
+{% endmacro %}
+
 {% macro pct(x) %}{% set p = (x * 100)|round %}{{ (p > 99 ? '>99%' : (p < 1 ? '<1%' : p ~ '%'))|e }}{% endmacro %}
 
 {% block content %}
@@ -80,6 +144,13 @@
             {% endif %}
           </div>
         </div>
+        {% if h2h.margins.matches %}
+          <div class="bg-white p-4 md:p-6 mt-6">
+            <h2 class="text-xl mb-1">Winning margins</h2>
+            <p class="text-sm text-gray-600 mb-4">Over their {{ h2h.margins.matches }} {{ h2h.margins.matches == 1 ? 'match' : 'matches' }} against each other with a score (not walkovers), all disciplines.</p>
+            {{ m.margins(h2h.margins, a, b, colors, h2h.pools|length > 1) }}
+          </div>
+        {% endif %}
       </div>
     </section>
 
@@ -132,6 +203,10 @@
                     <p class="text-sm text-gray-600 mt-2">Met {{ pool.record.matches }} {{ pool.record.matches == 1 ? 'time' : 'times' }} in {{ pool.label|lower }}: {{ a.name }} won {{ pool.record.wins }}, lost {{ pool.record.losses }}{% if pool.record.draws %}, drew {{ pool.record.draws }}{% endif %}.</p>
                   {% endif %}
                 </div>
+                {% if h2h.pools|length > 1 and pool.margins.matches %}
+                  <h4 class="text-lg mt-8 mb-2">Winning margins in {{ pool.label|lower }}</h4>
+                  {{ m.margins(pool.margins, a, b, colors, false) }}
+                {% endif %}
                 {% set series = [] %}
                 {% for side in ['a', 'b'] %}
                   {% set history = pool[side].history %}
@@ -156,7 +231,7 @@
       <section class="base-section">
         <div class="base-container px-4 grid gap-6">
           {% if h2h.meetings is not empty %}
-            {% include '_elo/_matches' with { title: 'Matches against each other', subtitle: 'From ' ~ a.name ~ "'s side, newest first", matches: h2h.meetings, limit: 20 } only %}
+            {% include '_elo/_matches' with { title: 'Matches against each other', subtitle: 'From ' ~ a.name ~ "'s side, newest first", matches: h2h.meetings, limit: 20, showMargin: true } only %}
           {% endif %}
           {% if h2h.together is not empty %}
             {% include '_elo/_matches' with { title: 'Together as partners', subtitle: 'From ' ~ a.name ~ "'s side, newest first", matches: h2h.together, limit: 20 } only %}
