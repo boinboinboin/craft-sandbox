@@ -9,7 +9,7 @@ Elo ratings for Norwegian badminton players in singles and doubles, calculated f
   - Tournament matches from September 2014 onwards. Tournaments in the 2013/2014 season have no results registered.
 - **Disciplines:** men's singles, women's singles, men's doubles, women's doubles and mixed doubles, rated as five separate pools. A player has a separate rating in each discipline they play.
 - **Pool by event:** the event decides the pool, not the player. A woman playing men's singles is rated in the men's pool for that match.
-- **Excluded:** walkovers (including 21-0, 21-0 results), unplayed matches and tournaments without results.
+- **Excluded:** walkovers (including 21-0, 21-0 results, and 15-0, 15-0 from 2026/2027), unplayed matches, tournaments without results and matches removed in [corrections](#corrections).
 
 ## Rating formula
 
@@ -159,7 +159,26 @@ where $r$ is the player's current rating. $m(r)$ approaches 3 far below $p_0$, e
 
 ### Walkovers
 
-Walkovers are not rated (weight 0%).
+Walkovers are not rated (weight 0%). A 21-0, 21-0 result is treated as a walkover entered as a score; from the 2026/2027 season, when sets go to 15, so is 15-0, 15-0.
+
+### Corrections
+
+Results that are wrong on badmintonportalen can be corrected by hand in `elo/corrections.txt`, which `rate.mjs` applies on every run, so corrections survive refetching the data. One match per line, identified by its match key (shown under each match on the player pages):
+
+```
+T7143 47570 vs 24320  walkover  # Mossetreffen 2026: 21-1 21-1 is impossible with sets to 15
+```
+
+The key is `T<tournament id>` or `L<league tie id>` followed by the player ids of each side (`id+id` in doubles). When the same sides meet more than once in a tournament (in a group and again in a knockout round), the later meetings are numbered in playing order: `T588.2 26596 vs 24788`. A correction is `walkover`, `remove`, `score <sets>` (the winner follows from the score) or `winner <1|2>`; `score` and `winner` follow the side order written in the line. Lines that match no match are reported when rating. A `score` line with the score as recorded changes nothing; it marks the score as checked, so the match is no longer listed for review.
+
+Each run also writes `data/suspicious-scores.txt`, the scores worth checking, newest first, as lines ready to copy into `corrections.txt`:
+
+- **Impossible for the season's set format.** Sets are won by 2 points up to a cap: to 21 (cap 30) until 2025/2026, to 15 (cap 21) from 2026/2027, and to 11 (cap 15) or 15 in some junior classes. A 21-1 set in 2026/2027, or 22-21, can't happen. Tournaments where more than a fifth of the scores break these formats evidently played their own (Sandefjord SaBK Open and Vestre Aker Fjærfest 2015) and are left out.
+- **Extreme blowouts**, where the loser scored at most 1 point per set. Most are real mismatches in junior and beginner classes, but some are no-shows entered as a score.
+
+For impossible scores the list suggests the most likely intended score, assuming one typo per wrong set: the valid score in the match's own set format, with the same set winner, that is one typo away (a digit changed, added, removed or two digits swapped), preferring the smallest change in points and then keeping the winner's score. 18-15 becomes 18-16 and 12-25 with sets to 15 becomes 12-15. Scores without a single clear fix, which are mostly matches cut short (14-11, 21-14), are marked "no clear fix". A suggestion never changes who won a set, so it never changes who won the match.
+
+Nothing is changed until a line is in `corrections.txt`. The 575 scores listed in October 2026 were all added there, with the suggested fixes applied (314) and the rest kept as recorded, for review.
 
 ## Not playing penalty
 
@@ -230,6 +249,14 @@ Clubs are ranked per pool by the average rating of their best ranked players:
 Clubs with fewer ranked players than that are not listed. Mixed doubles counts men and women separately because their mixed ratings can't be compared (see above). Averaging the best few players, rather than all of them, keeps big clubs with many beginners from being ranked low and one-star clubs from being ranked high.
 
 The combined list ranks clubs by their average standard score in all five disciplines, so only clubs listed in every discipline are included. In each discipline, a club's score is its strength minus the average strength of the listed clubs, divided by the standard deviation of their strengths: 0 is an average listed club, +1 one standard deviation above it. The pools are separate rating scales with different spreads (doubles ratings span a narrower range at the top), so averaging the strengths themselves would let singles count for more. Standard scores make each discipline count equally.
+
+### Club strength history
+
+Each club page shows the club's strength per pool at the end of every week since 2013, with its rank among clubs that week. It is the same average of the best ranked players as above, using the ratings at the time. A player counts for a week if they played in the 12 months before it, for the club they played for at the time (as in a player's [club history](#club-history)). Weeks where the club had too few ranked players leave a gap.
+
+The current week is the club ranking itself, so the graph ends on the strength and rank shown next to it. That ranking uses players' registered clubs, so a player who has just changed clubs (and not yet played for the new one) shows up as a step in the last week. The history is written per club to `data/club-history/<NBF club id>.json`, only for clubs in badmintonportalen's club list.
+
+The club page also shows all five disciplines on one graph, and the combined score over time. The combined history uses the same standard scores as the combined ranking, computed each week among the clubs with a strength in all five disciplines that week, so a club has no combined value in weeks it was too small to be listed in every discipline. Its current week is also the combined ranking itself.
 
 ### Matches
 

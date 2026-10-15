@@ -80,9 +80,80 @@ export const parseSets = (score) =>
     .filter((s) => /^\d+\/\d+$/.test(s))
     .map((s) => s.split("/").map(Number));
 
-// 21-0, 21-0 is a walkover entered as a score.
-export const isWalkover = (match, sets) =>
-  match.walkover || (sets.length === 2 && sets.every(([a, b]) => Math.min(a, b) === 0 && Math.max(a, b) === 21));
+// 21-0, 21-0 (15-0, 15-0 from the 2026/2027 season, with sets to 15) is a walkover entered as a score.
+export const isWalkover = (match, sets, day = "") => {
+  const target = day >= SCORING_15_FROM ? 15 : 21;
+  return match.walkover || (sets.length === 2 && sets.every(([a, b]) => Math.min(a, b) === 0 && Math.max(a, b) === target));
+};
+
+// Set formats: [points to win, cap]. A set is won by 2 points up to the cap, where one point wins.
+// From the 2026/2027 season sets go to 15 (cap 21) instead of 21 (cap 30); some junior classes
+// play to 11 (cap 15). A score that fits none of the formats of its season is probably a typo or a
+// placeholder (e.g. 21-1 for a no-show) and is listed in data/suspicious-scores.txt for review.
+export const SCORING_15_FROM = "2026-07-01";
+const SET_FORMATS = { old: [[21, 30], [15, 21], [11, 15]], new: [[15, 21], [11, 15]] };
+const fitsFormat = ([a, b], [target, cap]) => {
+  const [w, l] = a > b ? [a, b] : [b, a];
+  return (w === target && l <= target - 2) || (w > target && w < cap && l === w - 2) || (w === cap && l >= cap - 2 && l < cap);
+};
+export const scoreFitsSeason = (sets, day) =>
+  sets.every((set) => SET_FORMATS[day >= SCORING_15_FROM ? "new" : "old"].some((format) => fitsFormat(set, format)));
+
+// Edit distance between two strings, counting a swap of neighbouring characters as one edit
+// (optimal string alignment): "12" -> "21" is one typo.
+function editDistance(a, b) {
+  const d = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array(b.length).fill(0)]);
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+    }
+  }
+  return d[a.length][b.length];
+}
+
+// Every valid (winner, loser) score of a set format
+function validSets([target, cap]) {
+  const sets = [];
+  for (let l = 0; l <= target - 2; l++) sets.push([target, l]);
+  for (let w = target + 1; w < cap; w++) sets.push([w, w - 2]);
+  sets.push([cap, cap - 2], [cap, cap - 1]);
+  return sets;
+}
+
+// The most likely intended score for a score that breaks the season's set formats, assuming a
+// single typo per wrong set, or null if there is no clear fix. The match's format is the one most
+// of its sets fit. Each wrong set becomes the valid score of that format with the same set winner
+// that is one typo away (a digit changed, added, removed or two digits swapped), preferring the
+// smallest change in points and then keeping the winner's score. Sets as [side 1, side 2].
+export function suggestScore(sets, day) {
+  const formats = SET_FORMATS[day >= SCORING_15_FROM ? "new" : "old"];
+  const fitting = formats.map((format) => sets.filter((set) => fitsFormat(set, format)).length);
+  const most = Math.max(...fitting);
+  if (most === 0) return null; // no set fits any format: the match was played some other way
+  const format = formats[fitting.indexOf(most)];
+  const fixed = [];
+  for (const [a, b] of sets) {
+    if (fitsFormat([a, b], format)) {
+      fixed.push([a, b]);
+      continue;
+    }
+    if (a === b) return null;
+    const [w, l] = a > b ? [a, b] : [b, a];
+    const ranked = validSets(format)
+      .map(([cw, cl]) => ({
+        set: [cw, cl],
+        cost: [editDistance(String(w), String(cw)) + editDistance(String(l), String(cl)), Math.abs(w - cw) + Math.abs(l - cl), cw === w ? 0 : 1],
+      }))
+      .sort((x, y) => x.cost[0] - y.cost[0] || x.cost[1] - y.cost[1] || x.cost[2] - y.cost[2]);
+    const [best, next] = ranked;
+    if (best.cost[0] !== 1) return null; // not a single typo
+    if (next && next.cost.every((c, i) => c === best.cost[i])) return null; // two equally likely fixes
+    fixed.push(a > b ? best.set : [best.set[1], best.set[0]]);
+  }
+  return fixed;
+}
 
 // Score for side 1 (1, 0.5 or 0), or null if the match can't be rated.
 export function result(match, sets) {

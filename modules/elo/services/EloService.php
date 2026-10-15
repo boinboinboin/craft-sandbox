@@ -11,6 +11,7 @@ use yii\base\Component;
  * - elo/data/ratings.json: every player's current rating and the strongest clubs per pool ("men", "women")
  * - elo/data/history/<id>.json: one player's rating at the end of every week, per pool
  * - elo/data/matches/<id>.json: one player's last matches and biggest wins and losses, per pool
+ * - elo/data/club-history/<NBF club id>.json: a club's strength and rank at the end of every week, per pool
  *
  * ratings.json is decoded once per request and kept in memory.
  */
@@ -108,6 +109,17 @@ class EloService extends Component
     public function getClubPlayers(string $club, string $pool): array
     {
         return array_values(array_filter($this->getRankings($pool), fn(array $p) => $p['club'] === $club));
+    }
+
+    /**
+     * A club's strength history per pool: `from` (Monday of the first week), and per week its
+     * `strength`, `rank` and the number of ranked `clubs` (null in weeks it had too few players).
+     *
+     * @return array<string, array{from: string, strength: array, rank: array, clubs: array}>
+     */
+    public function getClubHistory(int $nbfClubId): array
+    {
+        return $this->read("club-history/$nbfClubId.json")['pools'] ?? [];
     }
 
     /**

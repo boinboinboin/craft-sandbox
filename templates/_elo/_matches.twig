@@ -28,6 +28,10 @@
                 </span>
               {% endif %}
               <span class="block text-sm text-gray-600">{{ m.event }}</span>
+              {% if m.key ?? null %}
+                {# Match key for elo/corrections.txt; one click selects all of it for copying #}
+                <code class="block text-xs text-gray-400 select-all" title="Match key, for corrections">{{ m.key }}</code>
+              {% endif %}
             </td>
             <td class="py-2 pr-4 whitespace-nowrap">
               {% if m.result == 1 %}

@@ -1,0 +1,1565 @@
+# Manual corrections of results that are wrong on badmintonportalen. Applied by rate.mjs on every run,
+# so they survive refetching the data.
+#
+# One match per line:  <match key>  <correction>  # note
+#
+# The match key is shown under each match on the player pages, e.g. "T7143 47570 vs 24320":
+# T<tournament id> or L<league tie id>, then the player ids of each side (doubles: "id+id").
+# The sides may be written in either order; `score` and `winner` follow the order in the line.
+#
+# Corrections:
+#   walkover          not rated, like a walkover
+#   remove            the match didn't happen
+#   score 15/9,15/12  the right score; the winner follows from it
+#   winner 2          the other side won (score unchanged)
+#
+# data/suspicious-scores.txt lists scores worth checking, as lines ready to copy here.
+
+T7143 47570 vs 24320  walkover  # Mossetreffen 2026: 21-1 21-1 is impossible with sets to 15
+
+
+# ################################################################################################
+# To review: every score from data/suspicious-scores.txt as of 2026-10-15.
+#
+# Each line starts as the score recorded on badmintonportalen, which leaves the result unchanged.
+# Edit the line if the score is wrong (walkover, remove, score <sets> or winner <1|2>), leave it
+# as it is if the score is right, or delete the entry to put the match back in the review list.
+# ################################################################################################
+
+# ================================================================================================
+# 2026/2027: 18 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 15, cap 21, or 11 in some junior classes): 13 ---
+
+T7160 38578+22087 vs 47645+25066    score 12/15,15/8,15/9  # was 12/25,25/8,15/9
+T7143 47082 vs 50413                score 18/16,15/9  # was 18/15,15/9
+T7143 49237+50653 vs 47171+47254    score 17/15,15/9  # was 17/14,15/9
+T7143 46494 vs 47257                score 7/15,15/11,15/12  # was 7/13,15/11,15/12
+T7115 45444+46740 vs 36407+47227    score 15/11,19/17  # was 16/11,19/17
+T7115 51452 vs 17952                score 15/12,17/15  # was 17/12,17/15
+T7115 48357 vs 48221                score 17/15,15/11  # was 17/15,16/11
+T7122 50841 vs 50844                score 15/11,15/6  # was 15/11,16/6
+T7150 24424+47557 vs 49847+46522    score 15/9,15/13  # was 13/9,15/13
+T7114 46889+45379 vs 46719+49246    score 16/14,15/8  # was 16/15,15/8
+T7098 49321+46047 vs 46389+48710    score 15/10,15/6  # was 15/10,16/6
+T7098 45049+50808 vs 49899+51969    score 15/11,18/20,21/20  # was 21/11,18/20,21/20
+T7139 49525 vs 51244                score 15/13,12/15,15/8  # was 14/13,12/15,15/8
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 5 ---
+
+# 2026-10-03  Moss Infinitum Mossetreffen 2026 (SEN C) · Mixed doubles
+#   Darren Raleigh + Lucy Grace  15-1, 15-1  Sara Fevang + Marek Zak
+T7143 52246+52161 vs 52060+52168    score 15/1,15/1
+
+# 2026-10-03  Moss Infinitum Mossetreffen 2026 (U11 A) · Men's singles
+#   Torstein Soleng  15-1, 15-0  Olivia Seimeni
+T7143 51673 vs 52277                score 15/1,15/0
+
+# 2026-10-03  Moss Infinitum Mossetreffen 2026 (U15 C) · Men's singles
+#   Casper Warhuus Andreassen  15-1, 15-1  Michael Sizhe Feng
+T7143 52137 vs 52186                score 15/1,15/1
+
+# 2026-09-25  Rana Rana Open (U13 A) · Men's singles
+#   lasse lillebø johnsen  15-0, 15-1  Jakob Blomli-Edvardsen
+T7122 51198 vs 52132                score 15/0,15/1
+
+# 2026-09-12  Asker Asker Open 2026 (U15 B) · Men's singles
+#   Vivaan Bhatia  15-1, 15-0  Emil Høvik Helseth
+T7139 50260 vs 51850                score 15/1,15/0
+
+
+# ================================================================================================
+# 2025/2026: 52 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 32 ---
+
+T7029 50435+49946 vs 50994+51282    score 21/14,25/23  # was 23/14,25/23
+T6984 47985+44422 vs 46558+46735    score 24/22,23/21  # was 24/21,23/21
+T6999 52064 vs 52046                score 21/12,21/15  # was 22/12,21/15
+T7055 45906+45921 vs 46494+48509    score 24/22,21/11  # was 24/20,21/11
+T7044 49394 vs 30047                score 19/21,28/26,21/16  # was 19/21,28/25,21/16
+T6972 51911 vs 51909                score 11/9,11/10  # was 11/9,11/10
+
+# 2026-03-28  Kolvereid NØKKEROSA CUP 2026 (U9 A) · Men's singles
+#   Kyrylo Sahkalov  13-2, 12-2  Mykola Ros
+T6972 51908 vs 51913                score 11/2,11/2 
+
+T6972 50646 vs 49440                score 23/21,18/21,21/16  # was 23/21,18/221,21/16
+T7036 50692+51250 vs 47858+47854    score 21/19,29/27  # was 27/19,29/27
+T6959 23608 vs 24485                score 21/8,21/12  # was 12/8,21/12
+T7016 44184 vs 42852                score 26/24,21/14,22/20  # was 26/22,21/14,21/20
+T7028 49183+17674 vs 44948+30100    score 21/15,25/23  # was 21/15,25/24
+T7051 47224+49501 vs 26694+38573    score 21/9,21/23,21/8  # was 20/9,21/23,21/8
+T7060 20291+17637 vs 19535+49664    score 21/7,21/6  # was 21/7,12/6
+T7025 47802 vs 51065                score 21/15,21/18  # was 21/15,22/18
+
+# 2026-01-17  Kolvereid KM (SEN A) · Mixed doubles
+#   Pernille Lillevik + William Aaberg Rølvåg  14-11, 21-14  Benjamin Rølvåg + Mille Kristine Bjelland
+T6973 44536+42846 vs 17951+49337    score 21/11,21/14 
+
+# 2026-01-17  Kolvereid KM (U17 A) · Women's singles
+#   Kristiane Rohde Hallager  10-7, 21-10  Maria Destiny Hildrum
+T6973 43322 vs 50963                score 21/7,21/10 
+
+T7012 49072+49129 vs 51355+51306    score 24/22,18/21,21/18  # was 24/21,18/21,21/18
+T6997 22858+23619 vs 19865+17928    score 21/8,21/12  # was 12/8,21/12
+T6969 44392 vs 47224                score 21/8,24/22  # was 20/8,24/22
+T7071 49189 vs 49526                score 20/22,21/14,21/14  # was 20/22,22/14,22/14
+T7046 47254 vs 46109                score 17/21,21/12,23/21  # was 17/21,24/12,23/21
+T6993 48432 vs 46129                score 25/23,21/17  # was 25/21,21/17
+T7022 43940+36402 vs 18661+43991    score 18/21,21/19,21/17  # was 18/21,20/19,21/17
+T6990 46207+48113 vs 46751+46991    score 22/20,21/14  # was 22/21,21/14
+T7040 23950 vs 50986                score 22/24,24/22,21/10  # was 22/24,24/22,22/10
+T7040 23950+50943 vs 50807+50052    score 21/13,21/14,21/17  # was 21/13,22/14,21/17
+T7040 51419 vs 51449                score 21/11,21/10  # was 12/11,21/10
+T7035 48411 vs 49899                score 21/11,21/10  # was 22/11,21/10
+T7001 45387+48795 vs 47279+46552    score 21/10,23/21  # was 22/10,23/21
+
+# 2025-09-13  Djerv Djerv Høsttreff 2025 (SEN C) · Men's singles
+#   Markus Løland  13-9, 21-13  Abdus Sami
+T7019 50394 vs 50626                score 21/9,21/13 
+
+T7050 50164 vs 50623                score 21/9,22/20  # was 20/9,22/20
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 20 ---
+
+# 2026-06-07  Landsfinalen U13 Pulje 2 (1. DS) · Women's singles
+#   Varshitha Srinivasan  0-11, 1-11, 1-11  Ella Liu
+L13630 49296 vs 50413               score 0/11,1/11,1/11
+
+# 2026-06-06  Landsfinalen U13 Pulje 1 (1. DS) · Women's singles
+#   Alma Lund  11-1, 11-1, 11-1  Emma Lebe
+L13612 48357 vs 52118               score 11/1,11/1,11/1
+
+# 2026-06-06  Landsfinalen U13 Pulje 1 (1. DD) · Women's doubles
+#   Anika Hofmann + Vipasha Balaji  11-1, 11-0, 11-0  Hannah Yujia Jin + Rebecca Shrestha
+L13618 47907+52087 vs 47171+49325   score 11/1,11/0,11/0
+
+# 2026-06-06  Landsfinalen U15 Pulje 1 (1. DD) · Women's doubles
+#   Anna Andersson Bredal + Hannah Vindstad Ilebrekke  0-11, 0-11, 0-11  Evita Gedgaudaite + Milaniia Petrina
+L13641 50974+50007 vs 49180+48457   score 0/11,0/11,0/11
+
+# 2026-03-28  Kolvereid NØKKEROSA CUP 2026 (U9 A) · Men's singles
+#   Milian Weglo Juliussen  11-1, 11-1  Sofia Novik
+T6972 50467 vs 51909                score 11/1,11/1
+
+# 2026-03-14  Bærum Bærum Young and Old Ones (U13 C) · Men's singles
+#   Johannes Brennvall  21-1, 21-1  Ola Solberg Tasken
+T6987 51217 vs 51873                score 21/1,21/1
+
+# 2026-02-14  Stavanger Stavanger Cup 2026 (U17 A) · Men's singles
+#   Caroline Ernest  21-0, 21-1  Tharesh Mahanth
+T7041 48535 vs 51241                score 21/0,21/1
+
+# 2026-02-07  Oppegård IL Follosmashen (U15 C) · Women's singles
+#   Olivia Tathgar  21-1, 21-1  Divya Verma
+T7051 48770 vs 51718                score 21/1,21/1
+
+# 2026-02-07  Oppegård IL Follosmashen (U15 C) · Women's singles
+#   Alva Bjørg Rønningen  21-0, 21-1  Selene Kindle
+T7051 49731 vs 51719                score 21/0,21/1
+
+# 2026-02-07  Imås IL Imås Cup 2026 (U13 A) · Women's doubles
+#   Frida Bøe + Rebecca Shrestha  21-1, 21-0  Eira Helle + Matilde Sofie Engervik
+T7060 50661+49325 vs 51808+51809    score 21/1,21/0
+
+# 2025-12-13  Asker Asker Open 2025 (U11 A) · Men's singles
+#   Dan Wu  21-1, 21-0  Poorvi Ayyanar
+T7027 51220 vs 51219                score 21/1,21/0
+
+# 2025-11-22  Slagen Slagentreffen 2025 (U17 A) · Men's singles
+#   Jonathan Karlsen  21-1, 21-0  Sigurd Storm
+T7046 50253 vs 51551                score 21/1,21/0
+
+# 2025-11-08  Vestre Aker Vestre Aker Sigvart Knudsen Open (U13 C) · Men's singles
+#   Erik Soleng  21-1, 21-1  Bendik Holhjem
+T6993 49906 vs 51462                score 21/1,21/1
+
+# 2025-10-18  Frogner Frognerhøna (SEN B) · Women's singles
+#   Celina Shuja  21-1, 21-1  Mahjabin Hasan
+T6978 49472 vs 51351                score 21/1,21/1
+
+# 2025-10-18  Frogner Frognerhøna (SEN B) · Women's singles
+#   Anja Olsen  21-1, 21-1  Mahjabin Hasan
+T6978 19755 vs 51351                score 21/1,21/1
+
+# 2025-10-18  NTNUI NTNUI Treffpunkt (U15 A) · Women's singles
+#   Mari N. Joakimsen  21-1, 21-1  Emine Antonsen Kristiansen
+T7013 45019 vs 48977                score 21/1,21/1
+
+# 2025-10-11  1. divisjon Grunnspill (2. DS) · Women's singles
+#   Anjam Latif Shuja  1-21, 1-21  Victoria Zhang
+L13230 51425 vs 26755               score 1/21,1/21
+
+# 2025-10-04  Moss Mossetreffen 2025 (U15 C) · Women's singles
+#   Josefine Nielsen  21-1, 21-0  Natalie Aasgaard
+T6985 51284 vs 51271                score 21/1,21/0
+
+# 2025-09-19  Kristiansand RT U13 + Sen* (U13 A) · Women's singles
+#   Nora Langen  21-0, 21-1  Evelin Abusdal
+T6951 46412 vs 47608                score 21/0,21/1
+
+# 2025-09-13  Klemetsrud MAHI SPORT OPEN (U15 A) · Men's singles
+#   Ask Emilian Herlung  21-1, 21-1  Samuel Næss
+T7050 48072 vs 49079                score 21/1,21/1
+
+
+# ================================================================================================
+# 2024/2025: 36 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 29 ---
+
+T7023 45445+48529 vs 48012+47994    score 21/17,21/13  # was 21/17,22/13
+T6876 45811 vs 47426                score 12/21,21/17,23/21  # was 12/21,21/17,23/20
+T6876 47414 vs 45869                score 12/21,21/19,21/19  # was 12/21,21/19,22/19
+T6982 48949 vs 51003                score 21/17,23/21  # was 21/17,23/22
+T6982.2 47907 vs 48061              score 19/21,21/9,22/20  # was 19/22,21/9,22/20
+T6879 51039+51040 vs 22058+44634    score 20/22,22/20,21/16  # was 20/22,22/20,22/16
+T6868 50358+50360 vs 38617+43044    score 22/20,13/21,21/17  # was 22/21,13/21,21/17
+T6904 50542+50459 vs 50462+49599    score 18/21,21/12,22/20  # was 18/22,21/12,22/20
+T6828 17614 vs 36368                score 21/12,21/11  # was 21/12,221/11
+T6838 49503 vs 47722                score 21/13,23/21  # was 21/13,23/20
+
+# 2025-02-28  Grong Namdal Open 2025 (SEN C) · Mixed doubles
+#   Oliver Langen + Malin Sæther-Danielsen  19-12, 21-19  Reidar Bråten + Mona Helen Wangberg Simonsen
+T6932 45508+46020 vs 19946+19952    score 21/12,21/19 
+
+T6906 49108+49109 vs 50457+50477    score 21/16,21/19  # was 21/16,27/19
+T6909 45503+23747 vs 47409+47805    score 21/11,22/20  # was 22/11,22/20
+T6909 50544+47536 vs 46693+49908    score 21/17,21/16  # was 22/17,21/16
+T6823 43350 vs 43575                score 21/17,15/21,21/4  # was 21/17,15/21,12/4
+T6854 50401 vs 47644                score 21/17,21/1  # was 21/17,2/1
+T6850 49475 vs 48889                score 21/23,22/20,21/9  # was 20/23,22/20,21/9
+T6822 44392+46795 vs 43457+46940    score 22/24,21/13,21/12  # was 22/24,22/13,22/12
+T6911 46871 vs 48756                score 21/9,21/11  # was 20/9,21/11
+T6923 49067+49985 vs 49346+47431    score 21/12,21/15  # was 221/12,21/15
+
+# 2024-11-09  Grong Tommy Gåsbakks minneturnering (SEN B) · Men's singles
+#   Morten Solberg  21-11, 17-11  Edvart Soløy Myrbostad
+T6930 20343 vs 43744                score 21/11,21/11  
+
+T6930 45274 vs 44536                score 16/21,21/10,21/11  # was 16/21,22/10,21/11
+T6930 24399 vs 46399                score 15/21,22/20,21/18  # was 15/21,22/21,21/18
+T6908 49464+43875 vs 26630+49989    score 22/20,21/13  # was 22/21,21/13
+T6860 48143 vs 24118                score 22/20,21/6  # was 22/21,21/6
+T6890 18204+18203 vs 48133+49331    score 21/6,19/21,21/12  # was 12/6,19/21,21/12
+T6844 49558 vs 46534                score 21/16,24/22  # was 21/16,24/21
+T6883 49677 vs 49493                score 21/11,21/14  # was 21/11,24/14
+T6817 47279 vs 48839                score 19/21,21/17,28/26  # was 19/21,21/17,228/26
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 7 ---
+
+# 2025-05-24  Sandefjord Sandefjord Open 2025 (U13 A) · Mixed doubles
+#   Marínó Örn Óskarsson + Mari N. Joakimsen  21-0, 21-1  Einar Vik + Rimas Fadhil
+T6884 51067+45019 vs 49467+49493    score 21/0,21/1
+
+# 2025-04-26  Bygdø Bygdø Vårtreff 2025 (U13 A) · Mixed doubles
+#   Mari N. Joakimsen + August Zakrisson  21-1, 21-1  Egon Johansson + Alena Gorokhova
+T6879 45019+51033 vs 51014+51015    score 21/1,21/1
+
+# 2025-04-05  2. Divisjon Midt-Norge Sluttspill 1-4. plass (2. DS) · Women's singles
+#   Rannveig Berg  21-1, 21-1  Vivi Thi Pham
+L12918 44336 vs 44283               score 21/1,21/1
+
+# 2025-02-08  Stanghelle IL Kraftsmashen (U17 A) · Women's singles
+#   Sofie Bjelke Samuelsen  21-0, 21-1  Viktorija Reke
+T6869 47985 vs 47925                score 21/0,21/1
+
+# 2025-01-18  Klemetsrud Kretsmesterskap OFBK / Oslo Vintersmash (U11 A) · Men's singles
+#   Atharv Reddy Mandipati  21-0, 21-1  Viaan Bansal
+T6846 49422 vs 50623                score 21/0,21/1
+
+# 2024-11-23  Sotra Bigbite Strilaslaget 2024 (U15 A) · Men's singles
+#   Liam Nybøe Nilssen  21-1, 21-1  Ludvig Losnedahl
+T6861 44424 vs 46760                score 21/1,21/1
+
+# 2024-09-28  Moss Mossetreffen 2024 (Åpen HC) · Men's singles
+#   Frida Lavik-Haug  21-1, 21-1  Dhaaranes Jayan
+T6900 46665 vs 50264                score 21/1,21/1
+
+
+# ================================================================================================
+# 2023/2024: 57 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 39 ---
+
+T6713 21008 vs 48024                score 21/18,18/21,21/17  # was 22/18,18/21,21/17
+T6713 22552+48763 vs 49952+48475    score 22/20,21/11  # was 22/20,20/11
+
+# 2024-04-26  Kristiansand NM Junior (U19 A) · Mixed doubles
+#   Stine Holm Bjørdal + William R. Barø  19-13, 21-19  Joseph Paul + Ekaja Dubey
+T6703 46529+38564 vs 43457+43996    score 21/13,21/19  
+
+T6723 49045 vs 49526                score 21/11,21/4  # was 121/11,21/4
+T6765 48937 vs 17741                score 24/22,21/14  # was 24/22,24/14
+T6702 18748 vs 17055                score 21/19,22/20  # was 20/19,22/20
+T6746 47638 vs 43376                score 23/21,21/14  # was 23/21,23/14
+T6740 47445 vs 48534                score 21/9,21/12  # was 20/9,21/12
+T6698 20459+44829 vs 19784+21618    score 21/19,24/22  # was 21/19,24/21
+T6773 49823 vs 49803                score 17/21,22/20,21/19  # was 17/21,22/20,22/19
+
+# 2024-03-02  Sandefjord Sandefjord Open 2024 (SEN E) · Men's singles
+#   Carlo Alonzo Agustin  16-21, 25-23, 8-5  Jørgen Rosenlund
+T6717 24052 vs 24218                score 16/21,25/23,8/5 
+
+T6725 46542+48024 vs 46843+47760    score 23/21,24/22  # was 23/21,24/23
+T6778 48778+48457 vs 49722+47707    score 22/20,22/20  # was 22/21,22/20
+T6778 48778 vs 47167                score 21/8,21/2  # was 21/8,23/2
+T6736 23149+24979 vs 26735+26734    score 18/21,21/10,21/10  # was 18/21,21/10,22/10
+T6788 42846 vs 44669                score 25/23,22/20  # was 25/22,22/20
+T6788 35307 vs 44536                score 26/24,21/11  # was 26/24,26/11
+T6788 49445 vs 48392                score 22/20,21/15  # was 22/20,22/15
+T6719 47267 vs 47848                score 21/6,21/10  # was 23/6,21/10
+T6752 29982+24006 vs 46640+46436    score 25/23,21/18  # was 25/23,25/18
+
+# 2024-01-20  Askøy Askøy Open/Kretsmesterskap (U13 A) · Men's singles
+#   Noris Ekanger  21-117, 19-12, 21-11  Torbjørn Lier Andersen
+T6806 46552 vs 48525                score 21/17,19/21,21/11  
+
+T6695 43350+36383 vs 44141+43207    score 21/11,21/13  # was 21/11,27/13
+
+# 2024-01-13  Frogner RT U13 + U19* (U19 X) · Men's singles
+#   Mathias Wong  21-19, 14-11  Aldrin Nelson
+T6695 42944 vs 40720                score 21/19,14/11  
+
+# 2023-12-09  Trondheim Julecupen (SEN B) · Men's singles
+#   Pawel Jakub Saluter  21-12, 17-12, 21-16  Tor Haugstulen Jervell
+T6776 45571 vs 44775                score 21/12,17/21,21/16 
+
+# 2023-12-02  Askøy Askøyserven (U13 A) · Men's singles
+#   Theo Dyrkolbotn Søvik  21-19, 10-6  Michael-René Aguilar
+T6805 46754 vs 48745                score 21/19,10/6  
+
+T6747 19427 vs 45982                score 22/20,21/18  # was 22/20,22/18
+T6777 45619 vs 47357                score 20/22,21/11,21/17  # was 20/22,21/11,20/17
+T6753 46437 vs 45322                score 21/8,29/30,21/8  # was 21/8,29/31,21/8
+T6727 46260 vs 45530                score 22/20,21/17  # was 22/21,21/17
+T6770 48061 vs 47557                score 15/21,22/20,21/15  # was 15/22,22/20,21/15
+T6767 46909 vs 49333                score 21/14,21/14  # was 21/14,20/14
+T6772 47069 vs 29841                score 22/20,23/25,21/17  # was 22/21,23/25,21/17
+
+# 2023-09-30  Moss Mossetreffen 2023 (U17 A) · Men's singles
+#   Henrik Frende Lavik-Haug  17-10, 21-17  Jon Vidar Jonsson
+T6733 44141 vs 43312                score 21/10,21/17  
+
+T6733 44755 vs 43312                score 22/20,21/15  # was 22/21,21/15
+T6769 47794 vs 47662                score 21/14,21/8  # was 21/14,22/8
+T6769 47794 vs 48977                score 21/14,21/9  # was 21/14,22/9
+
+# 2023-09-22  Kristiansand RT U17 + Sen* (SEN X) · Men's singles
+#   Shubham  22-16, 22-14  Danila Gataullin
+T6690 49066 vs 22849                score 21/16,21/14  
+
+T6690 43575 vs 38564                score 25/23,21/17  # was 25/21,21/17
+T6690 29988 vs 43577                score 21/8,17/21,21/18  # was 21/8,17/21,22/18
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 18 ---
+
+# 2024-05-25  Hammerfest Midnight Sun (U13 A) · Women's doubles
+#   Celeste Olsen + Anika Hofmann  21-0, 21-1  Armandas Janulis + Matas Mikucauskas
+T6814 47876+47907 vs 48951+48949    score 21/0,21/1
+
+# 2024-04-26  Kristiansand NM Junior (U19 A) · Men's singles
+#   Mathias Wong  21-1, 21-0  Aksel Holth
+T6703 42944 vs 45818                score 21/1,21/0
+
+# 2024-04-05  Sotra Sparebanken Vest UBM 2024 (U17 A) · Women's singles
+#   Akarija Anton Reginold  21-1, 21-1  Katja Zenkov
+T6700 36518 vs 48702                score 21/1,21/1
+
+# 2024-03-16  Kristiansand Spareskillingsbanken-cup (U13 A) · Mixed doubles
+#   Kristoffer Tobota-Johannessen + Lotta Birkeland Bergtun  21-1, 21-1  Evelin Abusdal + Ivo Ekelund Formoe
+T6746 47653+47593 vs 47608+47609    score 21/1,21/1
+
+# 2024-02-03  Asker Asker Young Ones (U11 A) · Men's singles
+#   Sidarth Karthik  21-1, 21-1  Leo Wen
+T6781.2 47991 vs 49539              score 21/1,21/1
+
+# 2024-02-03  Asker Asker Young Ones (U11 B) · Men's singles
+#   Thanviya Vimalnath  21-1, 21-1  Stellan Alexander Rydjord
+T6781 48064 vs 47997                score 21/1,21/1
+
+# 2024-02-03  Asker Asker Young Ones (U11 B) · Men's singles
+#   Srisailesh Krishnan  21-1, 21-1  Stellan Alexander Rydjord
+T6781 48235 vs 47997                score 21/1,21/1
+
+# 2024-02-03  Asker Asker Young Ones (U13 B) · Men's singles
+#   Jens Petter Svae-Jemblie  21-1, 21-1  Viaan Chawla
+T6781 48388 vs 47561                score 21/1,21/1
+
+# 2024-02-03  Asker Asker Young Ones (U13 B) · Men's singles
+#   Talha Yousaf Mahmood  21-1, 21-1  Rishi Akhil Eashwar
+T6781 48161 vs 49462                score 21/1,21/1
+
+# 2024-02-03  Asker Asker Young Ones (U17 A) · Men's singles
+#   Yatin Mehta  21-1, 21-1  Urvish Deshpande
+T6781 44755 vs 48008                score 21/1,21/1
+
+# 2024-01-20  Klemetsrud Kretsmesterskap 2024 (U13 A) · Men's doubles
+#   Leon Matheo Solbakken Svela + Mia Hegerstrøm Haugli  21-1, 21-1  Dhakshan Rajesh + Viaan Chawla
+T6739 46943+47260 vs 48156+47561    score 21/1,21/1
+
+# 2024-01-20  Kirkenes Finnmarksmesterskapet 2024 (SEN B) · Men's doubles
+#   Jan Petter Olsen + Tom Brovold  21-1, 21-0  John Stefan Lyngvær + Malvind Børresen
+T6754 23528+20444 vs 49620+47913    score 21/1,21/0
+
+# 2024-01-20  Tromsø KM Hålogaland badmintonkrets/Tromsø Open (U11 A) · Women's singles
+#   Anika Hofmann  21-1, 21-1  Sahasra Borra
+T6793 47907 vs 49537                score 21/1,21/1
+
+# 2024-01-05  Bergen RT U15* + Sen* (U15 A) · Men's singles
+#   Kevin Vaaga  21-1, 21-1  Mikkel Vorland Hjelseth
+T6694 46767 vs 49546                score 21/1,21/1
+
+# 2023-12-02  Askøy Askøyserven (U11 A) · Men's singles
+#   Benjamin Drønen Haugland  21-0, 21-1  Maren Røssland
+T6805 47450 vs 49243                score 21/0,21/1
+
+# 2023-11-11  Bergen Vestlandsmesterskap (SEN C) · Women's singles
+#   Julie Albrektsen  21-1, 21-1  Nora Lindanger
+T6792 38617 vs 43989                score 21/1,21/1
+
+# 2023-11-11  Bergen Vestlandsmesterskap (U17 A) · Women's singles
+#   Linnea Holmedal  21-0, 21-1  Sofie Bjelke Samuelsen
+T6792 29988 vs 47985                score 21/0,21/1
+
+# 2023-09-23  Tromsø Tromsøpalmen (U17 A) · Men's singles
+#   Mateo Manfreda  21-1, 21-1  Kristian Sverre Laksformo
+T6751 46640 vs 48089                score 21/1,21/1
+
+
+# ================================================================================================
+# 2022/2023: 52 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 36 ---
+
+T6665 47900 vs 45339                score 21/8,17/21,21/17  # was 21/8,17/21,23/17
+T6687 47916 vs 47141                score 21/4,19/21,21/13  # was 23/4,19/23,21/13
+
+# 2023-05-26  Hammerfest Midnight Sun (U17 A) · Women's doubles
+#   Geir Andre Andersen + Jonatan Brovold  24-21  Caroline Brovold + Sofia Pylnenko
+T6687 47896+46362 vs 46363+47916    score 24/22  
+
+T6641 44948+45767 vs 38673+31178    score 21/7,21/17  # was 24/7,21/17
+T6675 47624+47122 vs 48658+46798    score 21/7,22/20  # was 20/7,22/20
+T6651 46547 vs 48156                score 21/7,21/17  # was 20/7,21/17
+T6630 48980 vs 48945                score 16/14,16/14  # was 16/14,16/13
+T6584 46981 vs 47816                score 21/9,21/5  # was 12/9,21/5
+
+# 2023-03-25  Ålesund Ålesundsvippen 2023 (U11 B) · Men's singles
+#   Christian Feodorov  21-16, 16-11  Vebjørn Bell
+T6605 47718 vs 47752                score 21/16,21/11 
+
+T6583 46767+47645 vs 47590+47600    score 21/11,17/21,21/17  # was 21/11,17/26,21/17
+T6640 45739 vs 48653                score 21/17,21/5  # was 21/17,31/5
+T6640 43938 vs 43003                score 21/16,21/16  # was 221/16,21/16
+T6685 44956 vs 24685                score 22/24,21/17,21/10  # was 22/24,21/17,20/10
+T6602 47379+46921 vs 46534+47081    score 21/19,19/21,21/12  # was 25/19,19/21,21/12
+T6615 42744 vs 48613                score 22/20,21/19  # was 22/20,22/19
+T6615 47592 vs 48396                score 19/21,21/14,21/1  # was 19/21,21/14,2/1
+T6657 46491 vs 48391                score 22/20,21/19  # was 22/21,21/19
+T6670 46527+45867 vs 46722+18566    score 21/18,23/21  # was 21/18,23/20
+T6670 46511 vs 46943                score 10/21,21/14,21/17  # was 10/21,21/14,221/17
+T6606 22812+23164 vs 19600+19829    score 21/14,22/20  # was 20/14,22/20
+
+# 2022-11-11  Karmøy Vestlandsmesterskapet (U15 B) · Women's singles
+#   Solvor Jansen  22-20, 113-21, 21-18  Sofia Ormazabal Holden
+T6628 48376 vs 48207                score 22/20,13/21,21/18  
+
+T6628 48174 vs 48355                score 21/17,28/26  # was 21/17,228/26
+T6595 24081 vs 45177                score 21/17,21/12  # was 22/17,21/12
+T6595 43724 vs 24081                score 22/20,21/11  # was 22/20,22/11
+T6598 45300+44002 vs 46158+18808    score 21/15,21/11  # was 21/15,22/11
+T6574 17055+38662 vs 36358+17418    score 23/21,21/18  # was 23/21,23/18
+
+# 2022-10-01  Stavanger Stavanger høst turnering (U15 B) · Men's singles
+#   Peter Storm Fjellstad  10-9, 21-10  Erlend Jøsang Munthe
+T6609 46780 vs 46986                score 21/9,21/10  
+
+T6609 48127+46786 vs 45310+44902    score 21/10,21/8  # was 22/10,21/8
+T6647 47642 vs 47334                score 21/17,10/21,22/20  # was 21/17,10/21,22/21
+T6647 45139+46511 vs 48160+48159    score 21/4,21/4  # was 12/4,21/4
+T6590 48040+22670 vs 17043+17405    score 21/16,21/14  # was 22/16,21/14
+T6659 46096 vs 46792                score 16/21,21/17,21/12  # was 16/21,221/17,21/12
+T6676 45982 vs 43677                score 0/21,21/15,21/19  # was 0/22,21/15,21/19
+
+# 2022-09-17  Stanghelle IL KraftSmashen (U17 A) · Men's singles
+#   Julian Økland Henriksen  21-11, 19-11  Brand Ivar Hetland Bauman
+T6632 46579 vs 45339                score 21/11,21/11  
+
+T6601 46795+44139 vs 46886+46943    score 21/8,21/7  # was 21/8,22/7
+T6586 44002 vs 19760                score 21/18,21/7  # was 21/18,20/7
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 16 ---
+
+# 2023-05-20  Frøya Frøya IL VÅRYR (U15 B) · Women's singles
+#   Amelia Siemiatkowska  21-0, 21-1  Marna Fjærli Hammernes
+T6674 47424 vs 48144                score 21/0,21/1
+
+# 2023-02-25  Tana Vintergnisten 2023 (U13 A) · Women's singles
+#   Caroline Brovold  21-1, 21-0  Sofia Isabel Halonen
+T6624 46363 vs 48699                score 21/1,21/0
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (SEN E) · Men's singles
+#   Magnus Tjøm  21-1, 21-1  Avinash Avi
+T6602 30133 vs 47736                score 21/1,21/1
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (SEN E) · Men's singles
+#   Jørgen Rosenlund  21-1, 21-1  Avinash Avi
+T6602 24218 vs 47736                score 21/1,21/1
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (SEN E) · Men's singles
+#   Torjus Flåtten  21-1, 21-1  Avinash Avi
+T6602 20301 vs 47736                score 21/1,21/1
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (SEN A) · Women's doubles
+#   Helene Ye + Minh Nhu Thai  21-1, 21-1  Kristine Bayona Dela Cruz + Jeramae Larios Padron
+T6602 42860+23309 vs 44696+47866    score 21/1,21/1
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (SEN C) · Men's singles
+#   Mads Nikolaj Bjerre  21-1, 21-1  Hanzala Iqbal Malik
+T6602 47969 vs 48218                score 21/1,21/1
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (SEN C) · Men's doubles
+#   Haider Ali + Sourav Kumar Mishra  21-1, 21-1  Qadeer Alvi + Waheed ud din Choudry
+T6602 47109+46094 vs 45845+46889    score 21/1,21/1
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (SEN C) · Men's doubles
+#   Asghar Mahmood + Roger Sagen  21-1, 21-1  Qadeer Alvi + Waheed ud din Choudry
+T6602 45302+45844 vs 45845+46889    score 21/1,21/1
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (U9 B) · Men's singles
+#   Ola Torvik Nydal  21-1, 21-1  Rithu R. Pillai
+T6602 47980 vs 48543                score 21/1,21/1
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (U9 B) · Men's singles
+#   Pretika Angelina Sivasanger  21-1, 21-1  Rithu R. Pillai
+T6602 47082 vs 48543                score 21/1,21/1
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (U9 B) · Men's singles
+#   Johanne Sønsteli  21-1, 21-1  Rithu R. Pillai
+T6602 48474 vs 48543                score 21/1,21/1
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (U9 B) · Men's singles
+#   Varshan Jeyabaskar  21-1, 21-1  Rithu R. Pillai
+T6602 48389 vs 48543                score 21/1,21/1
+
+# 2023-01-14  Klemetsrud Bonova.no Vinter Smash med Torjus 🏸 (U11 A) · Men's singles
+#   Leon Trung Nguyen  21-1, 21-1  Dhakshan Rajesh
+T6602 46946 vs 48156                score 21/1,21/1
+
+# 2022-09-24  Gullvikmoen Rockesmashen 2022 (U13 B) · Men's singles
+#   Viktor Eldegard  21-1, 21-1  Theo Leander Johansen Heir
+T6676 44786 vs 48027                score 21/1,21/1
+
+# 2022-09-10  Klemetsrud Inkludering Klemetsrud IL & Lambertseter IL (U15 C) · Men's singles
+#   Andreas Østby  21-0, 21-1  Gavin Andras Pent Østreng
+T6601 47224 vs 48014                score 21/0,21/1
+
+
+# ================================================================================================
+# 2021/2022: 42 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 19 ---
+
+T6472 45913 vs 45097                score 16/21,21/16,21/19  # was 16/23,21/16,21/19
+T6524 21438+19395 vs 17952+43612    score 21/16,20/22,21/16  # was 22/16,20/22,21/16
+T6471 24281 vs 19991                score 22/24,21/10,21/10  # was 21/24,21/10,21/10
+T6471 45570 vs 45913                score 22/20,21/14  # was 22/21,21/14
+T6514 47170+43173 vs 45318+47115    score 21/10,23/21  # was 21/10,23/20
+
+# 2022-03-11  Rubbestadneset Bømlo Wärtsilä Open (U13 B) · Men's singles
+#   Mathias Kallevik  16-7, 21-16  Kevin Vaaga
+T6498 46955 vs 46767                score 21/7,21/16  
+
+T6553 46837 vs 43086                score 21/18,21/12  # was 21/18,20/12
+
+# 2022-03-05  Vestre Aker Fjærfest (U17 A) · Men's singles
+#   Varun Manikandan  16-12, 21-16  Adit Sharma
+T6553 36383 vs 43350                score 16/21,21/16 
+
+T6523 22991 vs 21852                score 21/16,21/23,28/26  # was 21/16,21/23,28/27
+
+# 2021-12-11  Trondheim TBK Julecup 75år (U15 A) · Men's singles
+#   William Aaberg Rølvåg  16-8, 21-16  Asgeir Våbenø Berg
+T6490 42846 vs 38649                score 21/8,21/16 
+
+T6542 46655+46860 vs 45241+45312    score 19/21,21/19,23/21  # was 19/23,21/19,23/21
+T6559 46142 vs 45442                score 21/19,21/18  # was 21/19,22/18
+T6517 44890+44893 vs 38675+38677    score 21/14,20/22,21/12  # was 21/14,20/22,20/12
+T6552 46992 vs 46916                score 21/10,21/12  # was 21/10,22/12
+T6552 46491 vs 46576                score 21/10,21/7  # was 22/10,21/7
+T6476 18267+26628 vs 45388+17134    score 21/9,21/13  # was 29/9,21/13
+T6506 45445 vs 46393                score 21/18,19/21,21/11  # was 21/18,19/221,21/11
+T6452 43924+43925 vs 46683+46686    score 21/15,22/20  # was 21/15,22/21
+T6483 20343+24281 vs 29836+18919    score 21/12,9/21,21/15  # was 20/12,9/21,21/15
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 23 ---
+
+# 2022-04-30  Sandefjord RT 13 + Sen (U13 A) · Men's singles
+#   William R. Barø  21-1, 21-1  Leon Matheo Solbakken Svela
+T6465 38564 vs 46943                score 21/1,21/1
+
+# 2022-04-30  Sandefjord RT 13 + Sen (U13 A) · Women's singles
+#   Abiramy Kokilan  21-1, 21-1  Lani Steff Grønvold
+T6465 44912 vs 47622                score 21/1,21/1
+
+# 2022-04-30  Bergen RT 17* + 17A + 17B (U17 B) · Women's singles
+#   Heidi Hartmann  21-1, 21-0  Sophia Isabella Miedler
+T6466 30152 vs 47280                score 21/1,21/0
+
+# 2022-04-30  Orkanger Orkla Cup (U13 B) · Women's singles
+#   Sofie Holm  21-1, 21-1  Karen Kjevik
+T6471 47075 vs 47857                score 21/1,21/1
+
+# 2022-04-24  2. div Midt-Norge Pulje 1 (2. MD) · Mixed doubles
+#   Elias Søvik Gunnarsson + Yngvild Buraas  21-1, 21-1  Eimund Sandbugt-Hammer + Pairin Surintham
+L9099 45411+17984 vs 47050+47811    score 21/1,21/1
+
+# 2022-04-01  Moss UBM (U15 A) · Women's singles
+#   Linnea Holmedal  21-1, 21-1  Helene Yri
+T6464 29988 vs 47766                score 21/1,21/1
+
+# 2022-03-19  Imås IL Mcdonals Cup 2022 (U9 A) · Men's singles
+#   Daniel Hansen  21-1, 21-0  William Lyngstad Rønning
+T6529 46718 vs 47025                score 21/1,21/0
+
+# 2021-12-11  Trondheim TBK Julecup 75år (U19 A) · Women's singles
+#   Nila Lorvik  21-1, 21-1  Emma Michelle Kolloen
+T6490 43747 vs 46978                score 21/1,21/1
+
+# 2021-11-13  Askøy Vestlandsmesterskapet 2021 (U13 B) · Men's singles
+#   Eskild Røssland  21-1, 21-1  Sindre Mangerøy Fauske
+T6517 46734 vs 47132                score 21/1,21/1
+
+# 2021-11-06  U15 Vest Pulje 1 (2. HS) · Men's singles
+#   Jonathan Kvalø  1-21, 1-21  Ole Kristian Lie
+L8921 47201 vs 43576                score 1/21,1/21
+
+# 2021-10-22  Klubbserie høst 2021 Pulje 1 (2. HS) · Men's singles
+#   Philip Fure  1-21, 1-21  Kenneth salvadhoor
+L8333 47096 vs 46086                score 1/21,1/21
+
+# 2021-10-16  Bygdø Bygdø Høsttreff 2021 (U13 A) · Men's singles
+#   Shravan Ramkumar  21-0, 21-1  Emil Kristensen Midttun
+T6519 43924 vs 46995                score 21/0,21/1
+
+# 2021-10-15  Haugesund Viking Cup 2021 (SEN D) · Women's singles
+#   Astrid Lovise Pallesen  21-1, 21-0  Milka Kathrin Shao
+T6509 35308 vs 46905                score 21/1,21/0
+
+# 2021-10-02  Moss Mossetreffen 2021 (U15 C) · Men's singles
+#   Bryan Javier Matland  21-1, 21-0  Filip Roer Andersen
+T6491 46795 vs 46851                score 21/1,21/0
+
+# 2021-10-02  Tana Tana Open 2021 (SEN C) · Women's singles
+#   Andrine-Mikaela Kristiansen  21-1, 21-1  Johanne Mikkelhaug
+T6493 22117 vs 45579                score 21/1,21/1
+
+# 2021-10-02  Tana Tana Open 2021 (SEN C) · Women's singles
+#   Violetta Roskova  21-1, 21-1  Johanne Mikkelhaug
+T6493 45787 vs 45579                score 21/1,21/1
+
+# 2021-10-02  Tana Tana Open 2021 (SEN C) · Women's doubles
+#   Mali Elise Eriksen + Karoline Strandheim Eriksen  21-1, 21-1  Johanne Mikkelhaug + Charlotte Mikalsen
+T6493 29951+24436 vs 45579+29953    score 21/1,21/1
+
+# 2021-10-02  Tana Tana Open 2021 (SEN C) · Women's doubles
+#   Amund Arvid Benberg Nordli + Adrian Leander Hojem Steen  21-1, 21-1  Johanne Mikkelhaug + Charlotte Mikalsen
+T6493 44607+45073 vs 45579+29953    score 21/1,21/1
+
+# 2021-10-02  Tana Tana Open 2021 (SEN C) · Mixed doubles
+#   Karoline Strandheim Eriksen + Amund Arvid Benberg Nordli  21-1, 21-1  Johanne Mikkelhaug + Charlotte Mikalsen
+T6493 24436+44607 vs 45579+29953    score 21/1,21/1
+
+# 2021-10-02  Tana Tana Open 2021 (SEN C) · Mixed doubles
+#   Mali Elise Eriksen + Adrian Leander Hojem Steen  21-1, 21-1  Johanne Mikkelhaug + Charlotte Mikalsen
+T6493 29951+45073 vs 45579+29953    score 21/1,21/1
+
+# 2021-10-02  Ålesund Ålesundcupen 2021 (U15 A) · Men's singles
+#   Andreas Årseth Kvamme  21-1, 21-1  Kristian Hofseth
+T6513 44857 vs 46088                score 21/1,21/1
+
+# 2021-10-02  Ålesund Ålesundcupen 2021 (U15 A) · Men's singles
+#   Andreas Årseth Kvamme  21-1, 21-1  Ludvik Liaaen
+T6513 44857 vs 46563                score 21/1,21/1
+
+# 2021-09-11  Askøy Vestlandsmesterskapet 2020 (U19 A) · Women's singles
+#   Viola Jordalen  21-1, 21-1  Ida Marie Dang
+T6516 45075 vs 46745                score 21/1,21/1
+
+
+# ================================================================================================
+# 2020/2021: 1 score
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 1 ---
+
+T6377 46471 vs 46642                score 21/14,15/21,21/19  # was 21/14,15/21,22/19
+
+
+# ================================================================================================
+# 2019/2020: 33 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 21 ---
+
+# 2020-02-29  Tana Vintergnisten 2020 (U13 B) · Women's singles
+#   Jetheena Yeyawardana  21-16, 16-0  Martin Petrov Jakobsen
+T6247 46469 vs 45022                score 21/16,16/0 
+
+T6267 45340+44947 vs 45691+45692    score 21/14,12/21,21/18  # was 21/14,12/24,21/18
+T6309 45820 vs 38557                score 18/21,21/17,21/15  # was 18/21,20/17,21/15
+T6272 46322 vs 46286                score 21/9,21/12  # was 12/9,21/12
+T6262 21798+21802 vs 45601+24209    score 21/11,21/23,21/19  # was 20/11,21/23,21/19
+T6269 38675+38677 vs 43668+43669    score 21/6,20/22,21/12  # was 21/6,20/22,22/12
+T6302 45379 vs 45961                score 21/8,25/23  # was 21/8,25/24
+T6316 45980 vs 43725                score 21/6,21/5  # was 221/6,21/5
+T6252 23642+21027 vs 29938+23727    score 21/15,21/13  # was 23/15,21/13
+T6252 20676 vs 43859                score 17/21,22/20,21/11  # was 17/21,222/20,21/11
+T6252 44082 vs 45999                score 21/7,25/23  # was 21/7,25/21
+
+# 2019-12-07  Trondheim TBK Julecup 2019 (SEN D) · Women's singles
+#   Stine Marie Jakobsen  14-8, 21-4  Lina Bjørndal Westerlund
+T6252 17150 vs 45601                score 21/8,21/4  
+
+# 2019-12-07  Kristiansand KBK-cup (U17 A) · Men's singles
+#   Marius Aasen Grandal  16-21, 23-21, 18-10  Ali Reza Sedghi
+T6264 46196 vs 44379                score 16/21,23/21,21/10 
+
+# 2019-11-16  Asker Asker Open (U13 C) · Men's singles
+#   August Korseberg Stokke  19-1, 21-9, 21-14  Erik Zhang
+T6239 44363 vs 46082                score 19/21,21/9,21/14  
+
+T6239 44242+44667 vs 43536+45201    score 21/8,21/12  # was 12/8,21/12
+T6283 45185 vs 45715                score 21/5,21/4  # was 21/5,12/4
+T6287 32191 vs 20399                score 18/21,21/11,21/15  # was 18/24,21/11,21/15
+T6261 45480 vs 44127                score 21/12,21/9  # was 21/12,12/9
+T6235 44389 vs 45164                score 23/21,21/19  # was 23/21,23/19
+T6236 43207 vs 43479                score 22/20,21/19,21/17  # was 22/21,21/19,21/17
+T6193 45640 vs 44194                score 21/5,21/15  # was 12/5,21/15
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 12 ---
+
+# 2020-03-07  Asker Asker Young Ones (U15 A) · Women's singles
+#   Andrea Nygård  21-0, 21-1  Oda Wibye
+T6240 44190 vs 46503                score 21/0,21/1
+
+# 2020-02-29  Tana Vintergnisten 2020 (U13 A) · Men's doubles
+#   Michael Andre Lund + Morten Jørgensen  21-1, 21-1  Mats Labahå Pedersen + Martin Petrov Jakobsen
+T6247 45842+46320 vs 46289+45022    score 21/1,21/1
+
+# 2020-02-29  Tana Vintergnisten 2020 (U17 A) · Women's doubles
+#   Karoline Strandheim Eriksen + Sarah Slapø  21-1, 21-1  Cicilie Jørgensen + Mira Stensvik Eliassen
+T6247 24436+44849 vs 46468+38643    score 21/1,21/1
+
+# 2020-02-29  Tana Vintergnisten 2020 (U17 A) · Women's doubles
+#   Johanne Mikkelhaug + Charlotte Mikalsen  21-1, 21-1  Cicilie Jørgensen + Mira Stensvik Eliassen
+T6247 45579+29953 vs 46468+38643    score 21/1,21/1
+
+# 2020-02-08  Imås IL Sparebanken Sør Cup 2020 (U13 A) · Men's singles
+#   Sturla Mørk  21-1, 21-1  Mathias Solberg
+T6279 17202 vs 44386                score 21/1,21/1
+
+# 2019-12-07  Kristiansand KBK-cup (U15 A) · Women's doubles
+#   Selma Kvarenes Bjørnestøl + Maia Celine Elgueta-Johannesen  21-1, 21-1  Thea Gustavsen + Alina Reiersølmoen Vigre
+T6264 17418+44711 vs 44205+44204    score 21/1,21/1
+
+# 2019-12-01  U13 Oslofjorden 19/20 Pulje 1 (2. DS) · Women's singles
+#   Adele Margrethe Hansen  21-1, 21-0  Vaiva Andrulyte
+L7708 29974 vs 46223                score 21/1,21/0
+
+# 2019-11-16  Asker Asker Open (U13 C) · Women's singles
+#   Abiramy Kokilan  21-1, 21-1  Shriya Danve
+T6239 44912 vs 45694                score 21/1,21/1
+
+# 2019-11-16  Asker Asker Open (U15 A) · Women's singles
+#   Laura Zeying Du  21-1, 21-1  Celestien Mezzera
+T6239 44242 vs 46077                score 21/1,21/1
+
+# 2019-11-09  Sotra Vestlandsmesterskapet 2019 (U15 B) · Women's singles
+#   Malin Fossen Genberg  21-0, 21-1  Mathilde Olsen
+T6287 45766 vs 45941                score 21/0,21/1
+
+# 2019-10-05  Ålesund Ålesundcupen 2019 (U15 A) · Men's singles
+#   Heine Lam Nybakk  21-1, 21-1  Sigurd K Lausund
+T6216 43887 vs 44259                score 21/1,21/1
+
+# 2019-09-28  Stanghelle IL Kraft-Smashen (U9 A) · Men's singles
+#   Jatin Yalamanchili  21-1, 21-0  Veslemøy Langhelle Magnussen
+T6270 45445 vs 45744                score 21/1,21/0
+
+
+# ================================================================================================
+# 2018/2019: 54 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 32 ---
+
+T6108 26703+36427 vs 43079+36428    score 24/22,20/22,21/16  # was 24/20,20/22,21/16
+T6094 24656 vs 26624                score 21/15,24/22  # was 22/15,24/22
+
+# 2019-04-27  Orkanger Orkla Cup (U13 B) · Men's singles
+#   Fillip August Rotabakk  14-9, 21-14  Arne Hoff Holen
+T6098 44943 vs 43684                score 21/9,21/14  
+
+T6161 44659 vs 44872                score 21/13,20/22,21/16  # was 22/13,20/22,21/16
+T6154 43151 vs 36396                score 21/11,22/20  # was 20/11,22/20
+T6154 36393+36396 vs 45009+48391    score 21/11,20/22,21/13  # was 21/11,20/222,21/13
+T6177 36367 vs 43913                score 21/7,21/0  # was 12/7,21/0
+T6177 38572 vs 44871                score 21/17,19/21,21/19  # was 21/17,19/22,21/19
+
+# 2019-03-09  Brodd Vårstikket 2019 (SEN C) · Women's singles
+#   Fenfang Zhao  23-21, 8-5  Maurina Adriana
+T6112 45111 vs 42757                walkover  
+
+# 2019-03-08  Orkanger Veteranmesterskapet (O50 A) · Women's singles
+#   Britt Grindland  18-1, 21-19, 21-19  Gunn Fiskergaard
+T6089 19439 vs 18952                score 18/21,21/19,21/19  
+
+# 2019-03-02  Vestre Aker Fjærfest (SEN B) · Mixed doubles
+#   Xijiang Yu + Kristine Bayona Dela Cruz  21-8, 16-8  Jakob Nygaard Johannessen + Sofie Jin Reistadbakk
+T6169 17646+44696 vs 24486+38662    score 21/8,21/8  
+
+T6130 43923 vs 43402                score 25/23,21/13  # was 25/21,21/13
+T6120 18340 vs 36449                score 21/7,22/20  # was 21/7,22/21
+T6149 36399 vs 44669                score 21/12,21/15,21/16  # was 21/12,23/15,21/16
+T6137 38571+17165 vs 45122+43057    score 21/3,21/6  # was 21/3,22/6
+T6132 43312 vs 44553                score 21/17,21/23,21/9  # was 21/17,22/23,21/9
+T6136 45322 vs 38557                score 21/12,21/18  # was 22/12,21/18
+T6186 36487 vs 37515                score 21/6,21/11  # was 20/6,21/11
+T6187 29821 vs 36409                score 21/2,21/9  # was 22/2,21/9
+T6111 25194 vs 45209                score 21/12,21/11  # was 21/12,12/11
+T6139 45137 vs 45013                score 21/17,1/21,21/2  # was 21/17,1/21,22/2
+T6180 29997 vs 17407                score 22/20,21/7  # was 22/20,20/7
+T6127 22097 vs 17563                score 22/20,21/11  # was 22/21,21/11
+
+# 2018-11-03  Frogner Frognerhøna (SEN A) · Men's doubles
+#   Bjørn Hamang + Daniel Bjørklund  21-8, 13-21, 113-21  Nauman Majid + Terje Jacobsen
+T6166 19829+23172 vs 22800+20415    score 21/8,13/21,13/21 
+
+# 2018-11-03  Frogner Frognerhøna (SEN D) · Men's singles
+#   Dennis Zhongyan Yu  21-19, 16-12, 21-19  Øivind Harket
+T6166 17648 vs 43715                score 21/19,16/21,21/19 
+
+T6079 35351 vs 36367                score 21/7,21/12  # was 12/7,21/12
+
+# 2018-10-13  Tana Tana Open 2018 (SEN B) · Women's singles
+#   Svetoslava Petrova  17-10, 20-17  Violetta Roskova
+T6134 24965 vs 35285                score 21/10,21/17  
+
+# 2018-10-13  Tana Tana Open 2018 (U13 A) · Men's singles
+#   omar alhmo alhso  17-8, 21-17  Amund Arvid Benberg Nordli
+T6134 44228 vs 44607                score 21/8,21/17  
+
+# 2018-10-13  Tana Tana Open 2018 (U15 A) · Women's singles
+#   Mali Elise Eriksen  20-8, 20-7  Mira Stensvik Eliassen
+T6134 29951 vs 38643                score 21/8,21/7  
+
+T6160 29850+39696 vs 44755+43200    score 15/21,21/16,21/11  # was 15/21,21/16,12/11
+T6133 44374 vs 21611                score 20/22,21/19,21/10  # was 20/22,221/19,21/10
+T6075 17139+24909 vs 17754+17714    score 19/21,21/19,21/6  # was 19/22,21/19,21/6
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 22 ---
+
+# 2019-06-01  Landsfinalen U15 grunnspill Grunnspill pulje 1 (2. DS) · Women's singles
+#   Amalie Theil  1-21, 1-21  Victoria Zhang
+L7316 18411 vs 26755                score 1/21,1/21
+
+# 2019-03-23  U15 Oslofjorden 18/19 Grunnspill (2. HS) · Men's singles
+#   Jonas Telle  21-1, 21-1  Shanjay Balaganesh
+L6574 43508 vs 45247                score 21/1,21/1
+
+# 2019-03-23  U15 Oslofjorden 18/19 Grunnspill (1. DS) · Women's singles
+#   Victoria Zhang  21-0, 21-1  Hareeni Subanendrarajah
+L6574 26755 vs 44508                score 21/0,21/1
+
+# 2019-03-16  Bærum Bærum Debutanten (U15 B) · Men's singles
+#   Adam Tollisen Leyland  21-1, 21-1  Max Hjorth-Milne
+T6182 43200 vs 43696                score 21/1,21/1
+
+# 2019-03-02  Tana Vintergnisten 2019 (SEN A) · Men's doubles
+#   Vegar Næss + Hendry Nordli  21-1, 21-1  Vladislav Postnov + Aleksei Vasilchuk
+T6135 23742+44642 vs 44987+43355    score 21/1,21/1
+
+# 2019-03-02  Tana Vintergnisten 2019 (SEN B) · Men's singles
+#   Hendry Nordli  21-1, 21-1  Evgeny Kulakov
+T6135 44642 vs 25089                score 21/1,21/1
+
+# 2019-03-02  Tana Vintergnisten 2019 (SEN B) · Men's singles
+#   Joakim Andreassen  21-1, 21-1  Evgeny Kulakov
+T6135 17511 vs 25089                score 21/1,21/1
+
+# 2019-03-02  Tana Vintergnisten 2019 (SEN B) · Men's singles
+#   Glenn Martin Ngametua Pedersen  21-1, 21-1  Evgeny Kulakov
+T6135 24346 vs 25089                score 21/1,21/1
+
+# 2019-03-02  Tana Vintergnisten 2019 (SEN B) · Men's singles
+#   Dag Rune Vellene  21-1, 21-1  Waqas Tariq
+T6135 17862 vs 45322                score 21/1,21/1
+
+# 2019-03-02  Tana Vintergnisten 2019 (SEN B) · Men's doubles
+#   Aleksander Røeggen Johansen + Glenn Martin Ngametua Pedersen  21-1, 21-1  Evgeny Kulakov + Alexander Krasnov
+T6135 17910+24346 vs 25089+17601    score 21/1,21/1
+
+# 2019-03-02  Tana Vintergnisten 2019 (SEN B) · Men's doubles
+#   Nikolai Korostel + Dag Rune Vellene  21-1, 21-1  Evgeny Kulakov + Alexander Krasnov
+T6135 24935+17862 vs 25089+17601    score 21/1,21/1
+
+# 2019-03-02  Tana Vintergnisten 2019 (U15 A) · Women's doubles
+#   Sofiia Shaitanova + Varvara Makhmudova  21-1, 21-1  Astrid Helene Johnsen + Sandra Sofie Eilertsen
+T6135 43723+43722 vs 24142+24141    score 21/1,21/1
+
+# 2019-03-02  Tana Vintergnisten 2019 (U15 A) · Women's doubles
+#   Mali Elise Eriksen + Karoline Strandheim Eriksen  21-1, 21-1  Astrid Helene Johnsen + Sandra Sofie Eilertsen
+T6135 29951+24436 vs 24142+24141    score 21/1,21/1
+
+# 2019-01-26  Tana Finnmarksmesterskapet 2019 (SEN A) · Men's singles
+#   Arild Hammeren  21-1, 21-1  Aleksander Røeggen Johansen
+T6136 20552 vs 17910                score 21/1,21/1
+
+# 2019-01-26  Tana Finnmarksmesterskapet 2019 (SEN A) · Men's singles
+#   Kim Steve Nystad  21-1, 21-1  Aleksander Røeggen Johansen
+T6136 18785 vs 17910                score 21/1,21/1
+
+# 2019-01-19  U13 Oslofjorden 18/19 Grunnspill (1. DS) · Women's singles
+#   Vilma Aasheim-Engen  21-1, 21-0  Saline Knip
+L6554 38641 vs 43536                score 21/1,21/0
+
+# 2019-01-05  Frogner RT 15 + 17 (U15 A) · Women's singles
+#   Victoria Zhang  21-1, 21-0  Nandita Anil
+T6083 26755 vs 32224                score 21/1,21/0
+
+# 2018-12-02  2.div. Sør Pulje 1 (1. MD) · Mixed doubles
+#   Anders Bellesen + Bente Kverneland  21-1, 21-0  Jim Høyland + Hildegunn Waage
+L6416 17820+44525 vs 23937+17610    score 21/1,21/0
+
+# 2018-12-02  1. Div Oslofjorden 18/19 Grunnspill (2. DS) · Women's singles
+#   Inger Russnes  1-21, 1-21  Monica Halvorsen
+L6829 43310 vs 19819                score 1/21,1/21
+
+# 2018-11-17  Grong RT 17* (U17 A) · Mixed doubles
+#   Julie Marie Andersen Abusdal + Kevin Elson  21-1, 21-1  Gabriel Grønbech + Anette Jakobsen Mathisen
+T6081 23506+17585 vs 17946+36409    score 21/1,21/1
+
+# 2018-10-27  1. div Midt-Norge Pulje 1 (1. HD) · Men's doubles
+#   Knut-Alfred Haugland + Kasper Kvinnesland  1-21, 0-21  Amund Skavhaug + Robert Barø
+L6458 23120+44719 vs 23373+35305    score 1/21,0/21
+
+# 2018-10-13  Grimstad GBK cup (U13 B) · Men's singles
+#   Christian Ripegutu  21-1, 21-0  Mathias Solberg
+T6142 36480 vs 44386                score 21/1,21/0
+
+
+# ================================================================================================
+# 2017/2018: 52 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 35 ---
+
+T6041 42833+42751 vs 20837+17378    score 22/20,21/13  # was 22/20,20/13
+T6041 18474+20119 vs 18087+19774    score 21/13,22/20  # was 20/13,22/20
+T6009 44893+44896 vs 44894+44895    score 20/22,21/15,21/19  # was 20/22,21/15,22/19
+T6012 38675+38677 vs 42985+42987    score 23/21,21/17  # was 23/21,23/17
+T5979 31180 vs 22975                score 22/20,21/12  # was 22/20,20/12
+T6048 44201 vs 38605                score 25/23,21/19  # was 25/24,21/19
+T6048 26601 vs 44019                score 21/17,17/21,21/17  # was 221/17,17/21,21/17
+
+# 2018-03-10  Kristiansand KBK cup II (U17 B) · Women's doubles
+#   Natalia Gandurska + June Morland  21-18, 18-11  Anna Olava Hansen + Mina Ueland
+T6048 39676+36315 vs 30120+36390    score 21/18,21/11  
+
+T5954 21257+23007 vs 17624+17625    score 16/21,21/15,21/16  # was 16/21,221/15,21/16
+T6019 43658 vs 43662                score 15/21,21/19,22/20  # was 15/21,20/19,22/20
+T6019 17790 vs 24147                score 21/13,21/23,21/16  # was 21/13,22/23,21/16
+T6025 20164+18174 vs 30094+43856    score 21/15,21/10  # was 21/15,24/10
+T5988 17417+36363 vs 17594+38662    score 21/9,23/21  # was 20/9,23/21
+T6063 43604 vs 25381                score 22/24,21/10,21/14  # was 21/24,21/10,21/14
+T6054 23922 vs 24075                score 21/19,21/7  # was 21/19,20/7
+T5997 44429 vs 44430                score 21/15,24/22  # was 22/15,24/22
+
+# 2017-12-02  Sola Sola Slaget 2017 (SEN C) · Men's doubles
+#   Trond Helgøy + Marius Kjellqvist  12-21, 18-13, 21-18  Anilkumar Unnithan + Kjell Arne Selle
+T6000 22922+44173 vs 42800+20361    score 12/21,21/13,21/18  
+
+# 2017-12-02  Sola Sola Slaget 2017 (SEN C) · Mixed doubles
+#   Anders Bellesen + Sara Bellesen  21-14, 32-10  Kirsten Smith + Håkon Njål Hustoft
+T6000 17820+35281 vs 29775+25176    score 21/14,14/10  
+
+T6010 42948+43887 vs 29835+38580    score 21/19,21/23,21/17  # was 21/19,22/23,21/17
+T6047 43682 vs 43377                score 21/6,21/8  # was 21/6,12/8
+T6004 42833 vs 43703                score 21/2,21/4  # was 12/2,21/4
+T6024 18302 vs 25218                score 21/17,13/21,21/19  # was 23/17,13/21,21/19
+T6024 43655 vs 44326                score 21/16,22/20  # was 21/16,22/21
+
+# 2017-11-11  Vestre Aker Racketspesialisten.no Open (U15 A) · Women's singles
+#   Simona Früh  20-2222, 21-14, 21-17  Emilie Haukebøe
+T6024 18387 vs 17417                score 20/22,21/14,21/17  
+
+# 2017-11-11  Norborg Sparebanken Møre Cup (U15 A) · Mixed doubles
+#   Andrea Ulla Nogva + Trygve Gulbrandsen  2121-16, 19-21, 21-19  Ronja Hartmann + Martin Stene Olsen
+T6042 18250+26693 vs 29997+26696    score 21/16,19/21,21/19  
+
+T5977 43347 vs 41733                score 21/2,21/13  # was 22/2,21/13
+T5973 44140 vs 44171                score 17/21,21/12,21/10  # was 17/21,21/12,22/10
+
+# 2017-10-21  Moss DNB MosseTreffen 2017 (U15 A) · Men's doubles
+#   Daniel Brustad Snorrason + Andreas Korssund  19-12, 21-11, 21-14  Vetle Bækkelien + Hans Jørgen Berg
+T5973 24834+26680 vs 17870+18335    score 19/21,21/11,21/14  
+
+T6005 32224 vs 35301                score 20/22,21/19,23/21  # was 20/22,21/19,23/20
+T6062 17150+43859 vs 43209+29889    score 22/20,21/13  # was 22/20,20/13
+T6018 17340 vs 21119                score 18/21,21/15,24/22  # was 18/21,21/15,24/21
+T6014 21027 vs 20261                score 21/9,21/12  # was 12/9,21/12
+T6003 17484+44008 vs 33273+38612    score 21/15,16/21,21/8  # was 221/15,16/21,21/8
+T6003 35301+29988 vs 36519+36518    score 21/11,21/10  # was 21/11,221/10
+T6003 29836+18049 vs 26703+36423    score 21/14,21/14  # was 221/14,21/14
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 17 ---
+
+# 2018-06-09  Stavanger Sommerblomsten 2018 (U13 A) · Men's singles
+#   Brage Løken-Jakobsen  21-0, 21-1  Even Lien Akre
+T5981 25193 vs 44017                score 21/0,21/1
+
+# 2018-04-13  Sandefjord UBM (U15 A) · Men's singles
+#   Andreas Andersen Roksvåg  21-1, 21-1  Jacob Sperre Stephens
+T5958 17754 vs 36288                score 21/1,21/1
+
+# 2018-03-10  Herøy RT 15* (U15 A) · Men's doubles
+#   Elias Øyen Selsaas + Andreas Korssund  21-1, 21-1  Sebastian Hestenes + Marius Sandvær
+T5956 25058+26680 vs 38580+26758    score 21/1,21/1
+
+# 2018-03-10  Herøy RT 15* (U15 A) · Mixed doubles
+#   Julie Marie Andersen Abusdal + Kevin Elson  21-0, 21-1  Linnea Nordnes Prestø + Sebastian Hestenes
+T5956 23506+17585 vs 26735+38580    score 21/0,21/1
+
+# 2018-03-10  Brodd Vårstikket 2018 (U13 A) · Men's singles
+#   Lukas Skrunes Sundt  21-0, 21-1  Peder Moe Lundberg
+T6046 26703 vs 43675                score 21/0,21/1
+
+# 2018-03-03  Tana Vintergnisten 2018 (SEN A) · Men's doubles
+#   Bjørn Floer + Jarle Grann  21-1, 21-1  Nguyen Minh Nhat + Aleksander Røeggen Johansen
+T6019 19244+19470 vs 44559+17910    score 21/1,21/1
+
+# 2018-03-03  Tana Vintergnisten 2018 (SEN A) · Men's doubles
+#   Ingelin Espeseth + Arild Hammeren  21-1, 21-1  Nguyen Minh Nhat + Aleksander Røeggen Johansen
+T6019 20088+20552 vs 44559+17910    score 21/1,21/1
+
+# 2018-03-03  Tana Vintergnisten 2018 (SEN A) · Men's doubles
+#   Vegar Næss + Hendry Nordli  21-1, 21-1  Nguyen Minh Nhat + Aleksander Røeggen Johansen
+T6019 23742+44642 vs 44559+17910    score 21/1,21/1
+
+# 2018-03-03  Tana Vintergnisten 2018 (U11 A) · Men's doubles
+#   Ema rakauskas + Ada sophie johansen  21-1, 21-1  arijus aguerbi + Matas
+T6019 43662+43658 vs 44367+43661    score 21/1,21/1
+
+# 2018-02-02  Klæbu Smash Cup 2018 (U15 A) · Mixed doubles
+#   Gustav Seglsten + Amber Heggdal  21-1, 21-1  Runa Storsve + Brose Karlsen
+T6063 29849+29816 vs 43881+43880    score 21/1,21/1
+
+# 2018-01-26  Leksvik KM Midtnorsk sør / Leksvik cup (SEN C) · Men's doubles
+#   Mark Anthony Benoy + Jan Erik Søraas Lien  21-1, 21-1  Jomar Tømmerdal + Jimmy Melting Carlsen
+T6067 43859+38664 vs 30055+44059    score 21/1,21/1
+
+# 2018-01-21  U15 Oslofjordserien Pulje 1 (1. HS) · Men's singles
+#   Andreas Korssund  21-0, 21-1  Saran Vijayaratnam
+L5858 26680 vs 44272                score 21/0,21/1
+
+# 2017-12-02  Haugerud Haugerud Cup (SEN C) · Men's singles
+#   Palany Subramaniam  21-1, 21-0  Rune Fartum
+T5997 43225 vs 18588                score 21/1,21/0
+
+# 2017-11-11  Norborg Sparebanken Møre Cup (U13 A) · Women's singles
+#   Andrea Ulla Nogva  21-1, 21-0  Noèe Vaes
+T6042 18250 vs 44400                score 21/1,21/0
+
+# 2017-10-29  U15 Oslofjordserien Pulje 1 (1. DS) · Women's singles
+#   Louise Faarup Storvik  21-1, 21-0  Sabthahi Balendren
+L5837 23005 vs 44267                score 21/1,21/0
+
+# 2017-10-29  U15 Oslofjordserien Pulje 1 (1. HS) · Men's singles
+#   Peter Nystad  1-21, 0-21  Andreas Korssund
+L5838 44217 vs 26680                score 1/21,0/21
+
+# 2017-09-24  U15 Sør Pulje 1 (2. DS) · Women's singles
+#   Anna Botnen Akselsen  0-21, 1-21  Stine Skjævesland Pedersen
+L5023 43058 vs 24046                score 0/21,1/21
+
+
+# ================================================================================================
+# 2016/2017: 60 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 37 ---
+
+T5856 43929+19477 vs 17910+17911    score 24/22,21/19  # was 24/21,21/19
+T4851 22268 vs 24685                score 22/20,21/17  # was 22/21,21/17
+T5924 17462+17266 vs 22585+43083    score 22/24,21/10,21/11  # was 22/24,21/10,22/11
+T4849 24643 vs 17536                score 21/5,21/12  # was 12/5,21/12
+
+# 2017-03-18  Brodd Vårstikket 2017 (SEN C) · Men's singles
+#   Casper Cappelen  13-12, 21-13  Bernt Pallesen
+T4856 21833 vs 17260                score 21/12,21/13  
+
+T4856 42800 vs 43546                score 23/21,21/23,21/16  # was 23/21,21/23,23/16
+T4856 42856+25079 vs 36416+17165    score 23/25,21/11,21/10  # was 23/25,21/11,22/10
+
+# 2017-03-18  Brodd Vårstikket 2017 (U17 A) · Women's doubles
+#   Hanne Kolstø + Heidi Kristine Skree  10-8, 21-10  Nandita Anil + Astrid Lovise Pallesen
+T4856 17165+25079 vs 32224+35308    score 21/8,21/10  
+
+# 2017-03-04  Vestre Aker Fjærfest (U17 B) · Women's singles
+#   Anna Olava Hansen  19-1, 21-15, 21-12  Solveig Sennels Romsaas
+T5925 30120 vs 42892                score 19/21,21/15,21/12  
+
+T5909 32242 vs 32214                score 21/17,19/21,21/10  # was 21/17,19/22,21/10
+T5861 36434 vs 30068                score 18/21,21/7,21/7  # was 18/221,21/7,21/7
+T5861 36432+36433 vs 43575+43576    score 21/3,21/5  # was 221/3,21/5
+T5930 36312+34279 vs 43597+39680    score 17/21,21/16,21/14  # was 17/21,21/16,221/14
+T5930 17418 vs 36469                score 14/21,21/10,21/18  # was 14/20,21/10,21/18
+T5921.2 22670 vs 20126              score 18/21,24/22,21/18  # was 18/21,24/22,22/18
+T5921 17328 vs 43556                score 21/14,21/23,21/16  # was 21/14,22/23,21/16
+T5912 39690 vs 39691                score 21/14,16/21,21/6  # was 21/14,16/28,21/6
+T4841 20087+36286 vs 17350+24643    score 21/15,21/16  # was 221/15,21/16
+T4841 17810 vs 17413                score 21/7,21/12  # was 12/7,21/12
+T4840 22991 vs 24656                score 20/22,21/19,21/19  # was 21/22,21/19,21/19
+T4840 22375 vs 22113                score 21/9,21/11  # was 12/9,21/11
+T5938 20700+29770 vs 23743+23481    score 23/21,21/11  # was 23/20,21/11
+T5878 21830 vs 23033                score 22/20,21/14  # was 22/21,21/14
+T5935 43452 vs 43372                score 20/22,21/11,21/7  # was 20/21,21/11,20/7
+T5867 24385 vs 42757                score 21/7,21/12  # was 12/7,21/12
+
+# 2016-11-19  Stavanger Vestlandsmesterskapet 2016 (U11 A) · Men's singles
+#   Thomas Dinh  14-8, 21-14  Elkan Abraham
+T5867 38578 vs 29946                score 21/8,21/14  
+
+# 2016-11-05  Frogner Frognerhøna (SEN B) · Men's singles
+#   Frank Heggen  11-10  Khiem Duc Nguyen
+T5919 26628 vs 18267                walkover 
+
+T5902 38528 vs 42866                score 23/21,21/8  # was 23/22,21/8
+T5904 38662 vs 39691                score 21/23,21/18,24/22  # was 21/23,21/18,24/20
+T5904 39703 vs 36343                score 21/16,21/18  # was 21/16,22/18
+T5904 35296 vs 43218                score 21/15,11/21,21/15  # was 21/15,11/27,21/15
+
+# 2016-10-15  Slagen Slagentreffen 2016 - Jubileumsturnering 2016 (U17 A) · Men's singles
+#   Boyan Yu  21-18, 8-3  Trym Eirik Grytten
+T5904 17647 vs 17437                walkover  
+
+# 2016-10-14  Herøy Marine Harvest Cup (U11 A) · Mixed doubles
+#   Signe Lenning + Marius Sandvær  21-12, 19-1, 21-15  Boris Spasovic + Maria Helgå
+T5917 26734+26758 vs 43141+42844    score 21/12,19/21,21/15  
+
+T5915 20088+21118 vs 42945+24358    score 21/13,21/13  # was 22/13,21/13
+T5859 24762+32191 vs 38612+33273    score 21/18,21/13  # was 221/18,21/13
+
+# 2016-10-01  Askøy STRUCTOR OPEN (U13 B) · Men's singles
+#   Sondre Lie Foldnes  21-13, 111-21, 21-14  Kim Kristoffersen
+T5859 42915 vs 35291                score 21/13,11/21,21/14  
+
+T5934 20126+21594 vs 19858+42792    score 21/12,21/23,21/13  # was 21/12,20/23,21/13
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 23 ---
+
+# 2017-05-20  Bergen Fana Cup 2017 (U13 A) · Mixed doubles
+#   Jonas Bergli Almås + Divya Tehlan  21-1, 21-1  Joachim Sortland Paulsen + Therese Steffensen
+T5876 18049+42999 vs 43891+43892    score 21/1,21/1
+
+# 2017-05-13  Frogner Frognerkyllingen (U15 B) · Men's singles
+#   Zacharias Ramstad  21-1, 21-1  Sivert Gran Sandvik
+T5920 18384 vs 43921                score 21/1,21/1
+
+# 2017-04-29  Bygdø Bygdø Vårtreff 2017 (U13 B) · Men's singles
+#   Jan Zabielski  21-1, 21-0  Even Xu
+T5911 17980 vs 43837                score 21/1,21/0
+
+# 2017-04-21  NBF NM junior - Ungdomslekene (U19 A) · Women's doubles
+#   Sofia Louis Macsali + Emilia Petersen Norberg  21-1, 21-0  Jenny Aalberg + Victoria Smestadmoen
+T4849 22113+22187 vs 23051+23673    score 21/1,21/0
+
+# 2017-03-31  Moss UBM (U15 A) · Men's singles
+#   Kevin Elson  21-1, 21-1  Noah Andersen
+T4848 17585 vs 17622                score 21/1,21/1
+
+# 2017-03-31  Moss UBM (U17 A) · Women's singles
+#   Julie Grande Ødegårdstuen  21-1, 21-1  Helene Winger
+T4848 25382 vs 17766                score 21/1,21/1
+
+# 2017-03-04  Ålesund Ålesundsvippen 2017 (SEN B) · Women's singles
+#   Ingrid Stene Olsen  21-1, 21-1  Amalie Berstad
+T5882 22916 vs 30154                score 21/1,21/1
+
+# 2017-03-04  Tana Vintergnisten 2017 (SEN B) · Men's doubles
+#   Joakim Andreassen + Nikolai Korostel  21-1, 21-1  Georgi Chashnikov + Timur Makusinskii
+T5916 17511+24935 vs 43021+24961    score 21/1,21/1
+
+# 2017-03-04  Tana Vintergnisten 2017 (SEN B) · Men's doubles
+#   Andrey Ermolenko + Valerii Chebotkov  21-1, 21-1  Georgi Chashnikov + Timur Makusinskii
+T5916 17340+26611 vs 43021+24961    score 21/1,21/1
+
+# 2017-03-04  Tana Vintergnisten 2017 (SEN B) · Men's doubles
+#   Kristian Løe + Marek Kwiatkowski  21-1, 21-1  Georgi Chashnikov + Timur Makusinskii
+T5916 42945+18395 vs 43021+24961    score 21/1,21/1
+
+# 2017-03-04  Tana Vintergnisten 2017 (U17 A) · Women's singles
+#   Arina Koraeva  21-1, 21-1  Evelina Chernykh
+T5916 25090 vs 26607                score 21/1,21/1
+
+# 2017-03-04  Tana Vintergnisten 2017 (U17 A) · Women's singles
+#   Anastasia Aleshintseva  21-1, 21-1  Evelina Chernykh
+T5916 24954 vs 26607                score 21/1,21/1
+
+# 2017-02-10  Båtsfjord Finnmarkmesterskapet 2017 (U11 A) · Men's singles
+#   Stina Saine Fjelldahl  21-1, 21-1  Arius
+T5927 43368 vs 43659                score 21/1,21/1
+
+# 2017-01-22  U13 Oslofjorden Pulje 1 (1. DS) · Women's singles
+#   Victoria Zhang  21-1, 21-1  Anna Mikako Nishimura
+L4272 26755 vs 26753                score 21/1,21/1
+
+# 2017-01-22  U13 Vestlandet Pulje 1 (1. HD) · Men's doubles
+#   Mathushen Anton Ruseyn + Rafid Ishaq  21-1, 21-0  Mads Møvik Olsen
+L4392 25259+17645 vs 43488          score 21/1,21/0
+
+# 2016-11-26  Sædalen Sædalsspelet 2016 (U13 B) · Women's singles
+#   Divya Tehlan  21-1, 21-0  Margo Adamopoulou
+T5860 42999 vs 43451                score 21/1,21/0
+
+# 2016-11-26  Vestre Aker Racketspesialisten.no Open (U15 A) · Men's singles
+#   Petter Tryland Laheld  21-1, 21-1  Rasmus Fægri
+T5926 17534 vs 40716                score 21/1,21/1
+
+# 2016-11-26  Kristiansand KBK cup (U13 B) · Men's singles
+#   Alexander Morland  21-1, 21-0  Jesper Werner Jørgensen
+T5931 36314 vs 43378                score 21/1,21/0
+
+# 2016-11-19  Stavanger Vestlandsmesterskapet 2016 (U13 A) · Men's singles
+#   Andreas Holmedal  21-0, 21-1  Theodor Eik
+T5867 24351 vs 24725                score 21/0,21/1
+
+# 2016-11-12  2.div. Sør Pulje 2 (1. DS) · Women's singles
+#   Ingeborg Krogsæter  21-1, 21-1  Annett Henriksen
+L4091 21201 vs 43308                score 21/1,21/1
+
+# 2016-10-29  U15 Sør Pulje 1 (1. DS) · Women's singles
+#   Elida Jondal Thorsen  1-21, 0-21  Julie Marie Andersen Abusdal
+L4104 43080 vs 23506                score 1/21,0/21
+
+# 2016-10-01  Askøy STRUCTOR OPEN (U15 A) · Men's singles
+#   Andreas Holmedal  21-1, 21-0  Martin Moen
+T5859 24351 vs 42968                score 21/1,21/0
+
+# 2016-10-01  Stavanger Stavanger Open 2016 (U15 A) · Men's singles
+#   Jakob Solvoll  21-1, 21-1  Kornelius Mandelid Ringen
+T5865 24191 vs 38550                score 21/1,21/1
+
+
+# ================================================================================================
+# 2015/2016: 57 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 44 ---
+
+T2782 17843 vs 18440                score 21/11,21/16  # was 12/11,21/16
+T2791 23816+22280 vs 25334+17462    score 21/23,21/12,23/21  # was 21/23,221/12,23/21
+T734 20878 vs 17502                 score 30/28,21/13  # was 30/21,21/13
+T734 20589+24643 vs 20623+20305     score 22/20,21/17  # was 22/20,20/17
+T1748 42885 vs 38574                score 12/21,21/11,21/19  # was 12/27,21/11,21/19
+T1748 25290 vs 26636                score 25/23,21/18  # was 25/21,21/18
+
+# 2016-04-16  BSI BSI Smashen 2016 (SEN C) · Women's singles
+#   Mariann Andreassen  19-12  Vivi Doung
+T4825 24118 vs 38678                walkover 
+
+T751 19948+19022 vs 19305+19470     score 21/17,17/21,21/12  # was 21/17,17/20,21/12
+T751 29951+29995 vs 24141+35295     score 18/21,21/12,21/19  # was 18/21,22/12,21/19
+T751 24956+24961 vs 23225+22359     score 21/16,12/21,23/21  # was 21/16,12/21,23/20
+
+# 2016-04-08  Kristiansand UBM 2016 (U17 A) · Women's doubles
+#   Marit Louise Ulvang + Vilde Morvik Ekerhovd  27-15, 27-16  Ingvild Håland + Anne Berit Iversen
+T733 24359+22729 vs 23149+23148     score 21/15,21/16 
+
+T758 38601 vs 42795                 score 21/13,12/21,21/18  # was 21/13,12/212,21/18
+T758 17802 vs 17518                 score 21/11,21/11  # was 221/11,21/11
+T730 24700+23186 vs 23852+17305     score 26/24,21/11  # was 26/23,21/11
+
+# 2016-03-04  NTNUI NTNUI Open 2016 (SEN C) · Men's singles
+#   Daniel Groos  22-17, 20-22, 19-12  Ernst Torsgård
+T761 18214 vs 31175                 score 21/17,20/22,19/21 
+
+T2771 35308 vs 39695                score 21/9,21/12  # was 12/9,21/12
+T2771 24046 vs 24048                score 21/11,19/21,21/15  # was 21/11,19/21,215/15
+T2771 34256 vs 17735                score 21/10,21/10  # was 22/10,21/10
+
+# 2016-02-26  Grong Namdal Open (SEN D) · Men's singles
+#   Simen Davidsen  21-14, 17-11  Daniel Eriksson
+T2812 37529 vs 42786                score 21/14,17/11 
+
+T4850 40737 vs 40738                score 27/25,21/17  # was 27/23,21/17
+
+# 2016-02-13  Berlevåg Finnmarksmesterskapet 2016 (SEN A) · Women's singles
+#   Christina svendsen  24-21, 22-8  Nora Uri Malterud
+T2780 19464 vs 24308                score 23/21,21/8  
+
+T2795 24685 vs 18341                score 21/13,21/16  # was 22/13,21/16
+T2785 18104 vs 18260                score 23/21,21/17  # was 23/20,21/17
+T2785 23051 vs 17770                score 22/20,19/21,21/16  # was 22/20,19/22,21/16
+T1760 35301 vs 29988                score 21/12,24/22  # was 22/12,24/22
+
+# 2016-01-30  Orkanger KM Midtnorsk Sør/Orkanger Cup (U9 A) · Women's singles
+#   Uma Angelica Nilsen  21-15, 22-21, 7-4  Emilie Romundstad Nyborg
+T3825 38528 vs 36353                score 21/15,23/21,7/4 
+
+T726 17810 vs 23270                 score 24/26,21/15,21/9  # was 21/26,21/15,21/9
+T755 33277 vs 38536                 score 21/10,21/11  # was 21/10,22/11
+T722 20301 vs 18543                 score 14/21,21/11,24/22  # was 14/21,21/11,24/21
+T2768 17753 vs 35324                score 21/16,19/21,22/20  # was 21/16,19/21,22/21
+T2768.2 17202+17746 vs 17413+17745  score 21/18,21/16  # was 21/18,23/16
+T2768 17672 vs 24220                score 21/17,22/20  # was 21/17,22/21
+T2813 29915 vs 30003                score 21/12,26/24  # was 21/12,26/22
+T2786 22122 vs 22848                score 24/22,19/21,21/19  # was 24/22,19/20,21/19
+T4830 24372 vs 17619                score 23/21,21/8  # was 23/20,21/8
+T2767 24699 vs 17711                score 21/14,19/21,25/23  # was 21/14,19/25,25/23
+T2781 21296 vs 23816                score 21/16,24/22  # was 22/16,24/22
+T2781 18398 vs 24585                score 21/10,13/21,21/12  # was 21/10,13/20,21/12
+
+# 2015-10-03  Frogner Frognerhøna (SEN C) · Men's doubles
+#   Ola Gunnes + Stian Askerød  14-2, 21-19, 21-19  Muhammad Shahid + Muhammad Shakoor
+T2781 19396+20583 vs 26654+26652    score 14/21,21/19,21/19  
+
+T760 26721 vs 30067                 score 21/11,17/21,21/17  # was 21/11,17/20,21/17
+T754 18919+25323 vs 17521+19395     score 21/13,21/17  # was 212/13,21/17
+T754 22729 vs 17021                 score 21/9,21/10  # was 22/9,21/10
+T754 24469 vs 20685                 score 21/10,21/14  # was 221/10,21/14
+T754 26642 vs 17419                 score 23/21,19/21,21/16  # was 23/21,19/21,221/16
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 13 ---
+
+# 2016-04-30  Sotra Strilaslaget 2016 (SEN C) · Women's singles
+#   Randi Rolvsjord  21-1, 21-1  Hanne Nesse
+T2801 25335 vs 23201                score 21/1,21/1
+
+# 2016-04-08  Kristiansand UBM 2016 (U15 A) · Men's singles
+#   Bharath Kumar Balasingam  21-1, 21-1  Jostein Thorsland Madsen
+T733 23852 vs 36499                 score 21/1,21/1
+
+# 2016-04-08  Kristiansand UBM 2016 (U15 A) · Women's singles
+#   Emilia Petersen Norberg  21-0, 21-1  Sara Kelly Ramsgaard
+T733 22187 vs 36323                 score 21/0,21/1
+
+# 2016-04-08  Kristiansand UBM 2016 (U17 A) · Women's singles
+#   Frida Sotnes Hamang  21-1, 21-1  Hanne Smittil Høksnes
+T733 20813 vs 22419                 score 21/1,21/1
+
+# 2016-04-03  Lagserie U15 Pulje 1 (2. DS) · Women's singles
+#   June Bøhn  21-1, 21-0  Marie Brede
+L3851 17064 vs 26589                score 21/1,21/0
+
+# 2016-04-03  Lagserie U15 Pulje 1 (2. DS) · Women's singles
+#   June Bøhn  21-1, 21-1  Maiken Kjellesvik Skjørholm
+L3852 17064 vs 38571                score 21/1,21/1
+
+# 2016-02-27  Vestre Aker Fjærfest (U15 B) · Women's singles
+#   Elisabeth Parnemann Sirevåg  21-1, 21-1  Sol De Paoli
+T2790 17084 vs 41720                score 21/1,21/1
+
+# 2016-01-30  Sotra KM VEST/Sotra Open 2016 (U15 A) · Men's singles
+#   Simon Vedaa  21-1, 21-1  Adrian Storhaug
+T1760 17305 vs 26642                score 21/1,21/1
+
+# 2016-01-23  Oslofjorden U13 Pulje 1 (2. HS) · Men's singles
+#   Theodor Jenssen  21-1, 21-1  Anna Mikako Nishimura
+L3390 17839 vs 26753                score 21/1,21/1
+
+# 2015-12-28  Kolvereid Blodslitet 2015 i Gronghallen (U17 A) · Women's doubles
+#   Malin Kolstrøm + Balsam Altayb  21-0, 21-1  Istbraq Saim + Fatimah Haider
+T744 17627+17885 vs 37527+37526     score 21/0,21/1
+
+# 2015-10-31  Oslofjorden U13 Pulje 1 (2. HS) · Men's singles
+#   Theodor Jenssen  21-0, 21-1  Harish Ramesh
+L3359 17839 vs 32218                score 21/0,21/1
+
+# 2015-10-31  1.div Pulje 1 (1. HS) · Men's singles
+#   Rolf Ove Karlsen  21-1, 21-0  Andreas Stensbye
+L3575 20822 vs 26720                score 21/1,21/0
+
+# 2015-10-17  Slagen Slagentreffen 2015 (U11 B) · Men's singles
+#   Jan Zabielski  21-1, 21-1  Jacob Sperre Stephens
+T2783 17980 vs 36288                score 21/1,21/1
+
+
+# ================================================================================================
+# 2014/2015: 60 scores
+# ================================================================================================
+
+# --- Impossible for the set format (sets to 21, cap 30, or 11 in some junior classes): 41 ---
+
+T578 17518 vs 23270                 score 11/21,21/18,21/15  # was 11/21,21/18,221/15
+T582 17753 vs 32225                 score 7/21,21/17,27/25  # was 7/21,21/17,27/24
+T593 29943 vs 26777                 score 21/17,21/10  # was 22/17,21/10
+T566 18495+20377 vs 23953+24643     score 14/21,22/20,25/23  # was 14/20,22/20,25/23
+
+# 2015-03-14  Brodd Vårstikket 2015 (U15 B) · Women's singles
+#   Sophia To  6-3, 21-6  Marie Brede
+T588 24788 vs 26589                 score 21/3,21/6  
+
+T588.2 26596 vs 24788               score 19/21,21/17,21/14  # was 19/29,21/17,21/14
+T627 30076+24469 vs 20165+20685     score 22/20,16/21,21/19  # was 222/20,16/21,21/19
+T562 25138+23814 vs 24701+24700     score 21/19,14/21,21/18  # was 21/19,14/21,22/18
+T628 21199+19588 vs 22375+23629     score 24/22,21/2  # was 24/22,22/2
+T613 23747 vs 30092                 score 21/7,21/12  # was 12/7,21/12
+T576 24218 vs 18743                 score 20/22,21/14,21/12  # was 21/22,21/14,21/12
+T640 18103 vs 17022                 score 20/22,21/17,21/15  # was 20/21,22/17,21/15
+T605 21887 vs 19477                 score 19/21,21/16,23/21  # was 19/20,21/16,23/21
+T561 20266 vs 23305                 score 25/23,21/11  # was 25/21,21/11
+T561 18971 vs 18957                 score 21/12,21/11  # was 21/12,12/11
+T589 23491+19942 vs 17940+23355     score 22/20,21/15  # was 22/20,22/15
+T587 22081+22642 vs 18762+20390     score 21/19,21/10  # was 20/19,21/10
+T560 21081+21721 vs 22086+20038     score 22/20,11/21,21/12  # was 22/20,11/21,22/12
+
+# 2015-01-09  Bygdø RT 13 + NRSenior (SEN E) · Women's singles
+#   Marie Christensen  12-21, 21-17, 5-2  Elisa Wiborg
+T559 20294 vs 20179                 score 12/21,21/17,5/2 
+
+# 2015-01-09  Bygdø RT 13 + NRSenior (U13 A) · Men's singles
+#   Thomas Grüner Fjeldheim  21-14, 13-5  Jørgen Vedaa
+T559 17810 vs 17304                 score 21/14,13/5  
+
+T577 26588 vs 24299                 score 21/15,21/10  # was 21/15,11/10
+
+# 2014-11-29  Sædalen Sædalsspelet 2014 (U13 A) · Men's singles
+#   Michael White  21-12, 8-2  Jørgen Vedaa
+T600 22858 vs 17304                 score 21/12,8/2 
+
+T600 23852 vs 22866                 score 17/21,22/20,21/17  # was 17/21,22/21,21/17
+T604 17672 vs 24992                 score 21/9,21/23,21/19  # was 21/9,21/23,23/19
+T604 25260+24781 vs 26599+17758     score 22/20,21/12  # was 22/20,20/12
+T614 24502 vs 29825                 score 24/22,15/21,21/18  # was 24/23,15/21,21/18
+T614 25373+25372 vs 17988+29783     score 21/1,21/3  # was 12/1,21/3
+
+# 2014-11-15  Askøy Vestlands Mesterskap 2014 (SEN A) · Women's singles
+#   Lovise Krogsæter  21-14, 118-21, 21-18  Svenja Hodne
+T594 21199 vs 18594                 score 21/14,18/21,21/18  
+
+# 2014-10-25  Kirkenes Barents Open 2014 (SEN B) · Men's singles
+#   Marek Kwiatkowski  22-15, 24-21  Alexander Krasnov
+T580 18395 vs 17601                 score 21/15,23/21  
+
+T580 17405+18042 vs 17158+18089     score 21/12,21/10  # was 24/12,21/10
+
+# 2014-10-25  Kirkenes Barents Open 2014 (U15 B) · Men's singles
+#   Nikolai Harjo Antonsen  20-17, 22-21  Vemund Furuhovde
+T580 24438 vs 17919                 score 21/17,23/21 
+
+T581 22502 vs 23789                 score 21/19,25/27,21/12  # was 21/19,20/27,21/12
+T638 17530 vs 25000                 score 21/19,16/21,21/16  # was 21/19,16/22,21/16
+
+# 2014-10-11  Tana Tana Open 2014 (SEN B) · Women's doubles
+#   Anastasia Vasilieva + Aleksandra Khrenova  1-0, 1-0  Ekaterina Ankhimova + Liubov Shitsco
+T591 21127+24956 vs 24952+24950     walkover
+
+# 2014-10-11  Tana Tana Open 2014 (U13 A) · Men's singles
+#   Gaute Henriksen  1-0  Kevin Jakobsen
+T591 17619 vs 24145                 walkover
+
+T591 22357+22356 vs 26613+26626     score 21/0,21/1  # was 22/0,21/1
+T591 24372 vs 18413                 score 21/18,14/21,21/19  # was 24/18,14/21,21/19
+T591 24310+24372 vs 18414+18413     score 21/19,21/19  # was 221/19,21/19
+T631 17810+24815 vs 17054+24834     score 21/10,21/16  # was 21/10,22/16
+T623 17062 vs 17202                 score 21/19,16/21,24/22  # was 21/19,16/21,24/21
+T610 25356 vs 17495                 score 17/21,21/17,21/17  # was 17/22,21/17,21/17
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 19 ---
+
+# 2015-04-25  Frogner Frognerkyllingen/Frognerbroileren (U15 A) · Mixed doubles
+#   Amund Rikheim Huus + Sara Andersen  21-0, 21-1  Victoria Zhang + Bo Johannes Halvfstad
+T608 21305+17439 vs 26755+17594     score 21/0,21/1
+
+# 2015-04-24  Båtsfjord Båtsfjord Open 2015 (U15 A) · Men's singles
+#   Sondre N. Hammeren  21-1, 21-1  Kristoffer Brest Kristiansen
+T593 21118 vs 26776                 score 21/1,21/1
+
+# 2015-04-10  Sandefjord UBM 2015 (U17 A) · Men's singles
+#   Dusan Nikolic  21-0, 21-1  Daniel Wenaas
+T565 24779 vs 24878                 score 21/0,21/1
+
+# 2015-03-22  U15 Østlandet Pulje 1 (1. DS) · Women's singles
+#   Elisa Jenssen  1-21, 0-21  Rikke Karlsen
+L2662 26676 vs 22791                score 1/21,0/21
+
+# 2015-03-22  U15 Østlandet Pulje 1 (1. DS) · Women's singles
+#   Rikke Karlsen  21-1, 21-1  Karin Tryland Laheld
+L2658 22791 vs 17533                score 21/1,21/1
+
+# 2015-02-13  Verdal Verdalstreffen 2015 (U11 A) · Men's singles
+#   Håkon Rønne  21-1, 21-1  Daniel Loeng Ryan
+T640 23720 vs 29931                 score 21/1,21/1
+
+# 2015-02-07  Hammerfest Finnmarksmesterskapet 2015 (SEN B) · Men's doubles
+#   Daniel Olsen + Tom Brovold  21-0, 21-1  Ron Hugo Johansen + Miroslav Strbac
+T605 19078+20444 vs 17876+30024     score 21/0,21/1
+
+# 2015-02-07  U13 Østlandet Pulje 1 (1. HS) · Men's singles
+#   Kavin Thas  0-21, 1-21  Theodor Jenssen
+L2346 25202 vs 17839                score 0/21,1/21
+
+# 2015-01-24  Norborg KM Midtnorsk Sør (U15 A) · Women's singles
+#   Silje V. Kruksve Aasland  21-1, 21-1  Moana Vadseth Furholm
+T736 22848 vs 23534                 score 21/1,21/1
+
+# 2015-01-09  Bygdø RT 13 + NRSenior (U13 A) · Men's singles
+#   Amund Rikheim Huus  21-1, 21-1  Jakob Pedersen
+T559 21305 vs 23996                 score 21/1,21/1
+
+# 2014-12-06  Haugerud KM Oslofjorden/Haugerud Cup 2015 (U15 A) · Men's doubles
+#   Joachim Skjønhaug + Benjamin Sixten Nordén  21-1, 21-0  Maximillian Bredal-Thorsen + Truls Carlson
+T632 22214+23169 vs 24824+24823     score 21/1,21/0
+
+# 2014-10-24  Herøy Marine Harvest Cup (U11 B) · Women's singles
+#   Lovelle Salvani  21-1, 21-1  Amalie Angel
+T635 26761 vs 26764                 score 21/1,21/1
+
+# 2014-10-11  Tana Tana Open 2014 (SEN A) · Women's singles
+#   Ekaterina Ankhimova  21-0  Irina Beloshitckaia
+T591 24952 vs 18187                 score 21/0
+
+# 2014-10-11  Tana Tana Open 2014 (SEN A) · Women's singles
+#   Liubov Shitsco  21-0  Irina Beloshitckaia
+T591 24950 vs 18187                 score 21/0
+
+# 2014-10-11  Tana Tana Open 2014 (SEN A) · Women's singles
+#   Nina F. Hansen  21-0  Irina Beloshitckaia
+T591 20911 vs 18187                 score 21/0
+
+# 2014-10-11  Tana Tana Open 2014 (SEN B) · Women's doubles
+#   Olga Vasilieva + Anna Chernova  21-0  Ekaterina Ankhimova + Liubov Shitsco
+T591 23250+24951 vs 24952+24950     score 21/0
+
+# 2014-10-11  Tana Tana Open 2014 (U15 B) · Men's doubles
+#   Anna Kristine Jørgensen + Silje Digernes  21-0  Vetle Sehl Svendsen + Aleksei Gorstkin
+T591 23803+25071 vs 24138+26627     score 21/0
+
+# 2014-10-11  Tana Tana Open 2014 (U15 B) · Men's doubles
+#   Nikolai Harjo Antonsen + Ken Robin Hansen  21-0  Vetle Sehl Svendsen + Aleksei Gorstkin
+T591 24438+18415 vs 24138+26627     score 21/0
+
+# 2014-10-11  Frogner Frognerhøna (U19 A) · Men's singles
+#   Ole Herman Imset  21-1, 21-1  Ola Usterud-Svendsen
+T607 21721 vs 24924                 score 21/1,21/1
+
+
+# ================================================================================================
+# 2013/2014: 1 score
+# ================================================================================================
+
+# --- Extreme blowouts (the loser scored at most 1 point per set): 1 ---
+
+# 2014-04-06  1. divisjon - Midt Pulje 1 (1. HS) · Men's singles
+#   Tor Stenvaag  1-21, 0-21  Torstein Moe
+L1080 23608 vs 19757                score 1/21,0/21

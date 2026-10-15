@@ -4,6 +4,8 @@
 
 {% set logo = entry.clubLogo.one() %}
 {% set website = entry.clubWebsite %}
+{# Strength and rank at the end of every week, per pool (see elo/rate.mjs) #}
+{% set history = entry.nbfClubId ? craft.elo.clubHistory(entry.nbfClubId) : {} %}
 
 {% block body %}
   <section class="base-section">
@@ -29,12 +31,151 @@
     </div>
   </section>
 
+  {# All disciplines together and the combined score, over time #}
+  {% set disciplineSeries = [] %}
+  {% for handle, label in craft.elo.pools() %}
+    {% set h = history[handle] ?? null %}
+    {% if h and h.strength|length > 1 %}
+      {% set disciplineSeries = disciplineSeries|merge([{ handle: handle, label: label, from: h.from, values: h.strength, ranks: h.rank, counts: h.clubs }]) %}
+    {% endif %}
+  {% endfor %}
+  {% set combinedHistory = history.combined ?? null %}
+  {% if disciplineSeries|length > 1 or combinedHistory %}
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-6">Over time</h2>
+
+        {% if disciplineSeries|length > 1 %}
+          <div class="bg-white p-4 md:p-6 mb-6">
+            <h3 class="text-xl mb-1">All disciplines</h3>
+            <p class="text-sm text-gray-600 mb-4">
+              Club strength in each discipline at the end of each week. Doubles ratings spread over a narrower range than singles,
+              so compare how each line moves rather than the levels between singles and doubles.
+            </p>
+            <div class="relative h-80"
+                 data-controller="discipline-chart"
+                 data-discipline-chart-series-value="{{ disciplineSeries|json_encode }}"></div>
+          </div>
+        {% endif %}
+
+        {% if combinedHistory and combinedHistory.strength|length > 1 %}
+          <div class="bg-white p-4 md:p-6 mb-6">
+            <h3 class="text-xl mb-1">Combined</h3>
+            <p class="text-sm text-gray-600 mb-4">
+              Average standard score over all five disciplines, among the clubs with a strength in all five that week:
+              0 is an average club, +1 one standard deviation above it. Gaps are weeks the club wasn't strong enough to be listed in every discipline.
+            </p>
+            <div class="relative h-72"
+                 data-controller="rating-chart"
+                 data-rating-chart-label-value="Combined score"
+                 data-rating-chart-decimals-value="2"
+                 data-rating-chart-signed-value="true"
+                 data-rating-chart-from-value="{{ combinedHistory.from }}"
+                 data-rating-chart-ratings-value="{{ combinedHistory.strength|json_encode }}"
+                 data-rating-chart-ranks-value="{{ combinedHistory.rank|json_encode }}"
+                 data-rating-chart-counts-value="{{ combinedHistory.clubs|json_encode }}"></div>
+          </div>
+        {% endif %}
+
+        {# Table view of both charts: values at the end of each season (July to June) #}
+        {% set columns = disciplineSeries|merge(combinedHistory ? [{ handle: 'combined', label: 'Combined', from: combinedHistory.from, values: combinedHistory.strength }] : []) %}
+        {% set seasons = {} %}
+        {% for column in columns %}
+          {% for value in column.values %}
+            {% if value is not null %}
+              {% set weekEnd = column.from|date_modify('+' ~ ((loop.index0 * 7) + 6) ~ ' days') %}
+              {% set year = weekEnd|date('Y') %}
+              {% set season = weekEnd|date('n') >= 7 ? year : year - 1 %}
+              {% set row = (seasons['s' ~ season] ?? { season: season, label: season ~ '/' ~ (season + 1) })|merge({ (column.handle): value }) %}
+              {% set seasons = seasons|merge({ ('s' ~ season): row }) %}
+            {% endif %}
+          {% endfor %}
+        {% endfor %}
+        <details>
+          <summary class="cursor-pointer text-gray-700 hover:text-black">Strength by season</summary>
+          <div class="overflow-x-auto">
+            <table class="mt-2 text-left">
+              <thead class="text-sm text-gray-600">
+                <tr>
+                  <th scope="col" class="py-1 pr-6 font-normal">Season</th>
+                  {% for column in columns %}<th scope="col" class="py-1 pr-6 font-normal text-right">{{ column.label }}</th>{% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in seasons|sort((a, b) => a.season <=> b.season) %}
+                  <tr>
+                    <td class="py-1 pr-6">{{ row.label }}</td>
+                    {% for column in columns %}
+                      {% set value = row[column.handle] ?? null %}
+                      <td class="py-1 pr-6 text-right tabular-nums">
+                        {%- if value is null -%}
+                          <span class="text-gray-400">–</span>
+                        {%- elseif column.handle == 'combined' -%}
+                          {{ value > 0 ? '+' : (value < 0 ? '−' : '') }}{{ value|abs|number_format(2) }}
+                        {%- else -%}
+                          {{ value }}
+                        {%- endif -%}
+                      </td>
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="text-sm text-gray-600 mt-2">Values at the end of each season (or the latest week for the current one).</p>
+        </details>
+      </div>
+    </section>
+  {% endif %}
+
   {% for handle, label in craft.elo.pools() %}
     {% set players = craft.elo.clubPlayers(entry.title, handle) %}
     {% set standing = craft.elo.clubs(handle)|filter(c => c.club == entry.title)|first %}
     <section class="base-section">
       <div class="base-container px-4">
         <h2 class="text-3xl mb-2">{{ label }}</h2>
+        {% set strengthHistory = history[handle] ?? null %}
+        {% if strengthHistory and strengthHistory.strength|length > 1 %}
+          {% set top = craft.elo.clubTop(handle) %}
+          <div class="bg-white p-4 md:p-6 my-6">
+            <h3 class="text-xl mb-1">Strength history</h3>
+            <p class="text-sm text-gray-600 mb-4">
+              Average rating of the club's {{ top is iterable ? 'best ' ~ top.M ~ ' ranked men and best ' ~ top.K ~ ' ranked women' : 'best ' ~ top ~ ' ranked players' }}
+              at the end of each week, counting players who played for the club at the time. Gaps are weeks with too few ranked players.
+            </p>
+            <div class="relative h-72"
+                 data-controller="rating-chart"
+                 data-rating-chart-label-value="Club strength"
+                 data-rating-chart-from-value="{{ strengthHistory.from }}"
+                 data-rating-chart-ratings-value="{{ strengthHistory.strength|json_encode }}"
+                 data-rating-chart-ranks-value="{{ strengthHistory.rank|json_encode }}"
+                 data-rating-chart-counts-value="{{ strengthHistory.clubs|json_encode }}"></div>
+
+            {# Table view of the chart: strength and rank at the end of each season (July to June) #}
+            {% set seasons = {} %}
+            {% for strength in strengthHistory.strength %}
+              {% if strength is not null %}
+                {% set weekEnd = strengthHistory.from|date_modify('+' ~ ((loop.index0 * 7) + 6) ~ ' days') %}
+                {% set year = weekEnd|date('Y') %}
+                {% set season = weekEnd|date('n') >= 7 ? year : year - 1 %}
+                {% set seasons = seasons|merge({ ('s' ~ season): { label: season ~ '/' ~ (season + 1), strength: strength, rank: strengthHistory.rank[loop.index0], clubs: strengthHistory.clubs[loop.index0] } }) %}
+              {% endif %}
+            {% endfor %}
+            <details class="mt-4">
+              <summary class="cursor-pointer text-gray-700 hover:text-black">Strength by season</summary>
+              <table class="mt-2 text-left">
+                <thead class="text-sm text-gray-600">
+                  <tr><th scope="col" class="py-1 pr-8 font-normal">Season</th><th scope="col" class="py-1 pr-8 font-normal text-right">Strength at end</th><th scope="col" class="py-1 font-normal">Rank</th></tr>
+                </thead>
+                <tbody>
+                  {% for s in seasons %}
+                    <tr><td class="py-1 pr-8">{{ s.label }}</td><td class="py-1 pr-8 text-right tabular-nums">{{ s.strength }}</td><td class="py-1 tabular-nums">#{{ s.rank }} of {{ s.clubs }}</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </details>
+          </div>
+        {% endif %}
         {% if players is empty %}
           <p class="text-gray-600">No ranked players: nobody from {{ entry.title }} has played {{ label|lower }} in the last 12 months.</p>
         {% else %}

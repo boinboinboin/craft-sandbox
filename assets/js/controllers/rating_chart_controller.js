@@ -1,38 +1,36 @@
 import { Controller } from '@hotwired/stimulus'
+import { COLORS, DAY, MARGIN, PALETTE, createTooltip, dateFormat, drawGrid, drawYearAxis, el, formatNumber, placeTooltip, swatch, yDomain } from '../lib/chart.js'
 
-// Line chart of a player's weekly rating history, drawn as SVG.
-// `from` is the Monday of the first week; ratings[i] is the rating at the end of week i.
+// Line chart of a weekly rating history, drawn as SVG: a player's rating or a club's strength.
+// `from` is the Monday of the first week; ratings[i] is the value at the end of week i, or null for
+// a week without one (the line breaks there).
 // `clubs` is [[week index, club], ...]: the line is coloured by the club played for at the time.
-const DAY = 86_400_000
-const SVG_NS = 'http://www.w3.org/2000/svg'
-// Club colours: categorical palette in fixed order, by first club played for. Clubs past the
-// eighth share a neutral "other" colour.
-const CLUB_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948']
+// `ranks` and `counts` (optional): rank that week out of `counts[i]`, shown in the tooltip as
+// "#3 of 89 clubs" (`rankOf` names what is ranked). `label` names the value for screen readers.
+// `decimals` and `signed` format the values, e.g. a combined score "+1.23".
+
+// Clubs past the eighth share a neutral "other" colour.
 const OTHER_CLUB_COLOR = '#8a8984'
-const COLORS = { series: CLUB_COLORS[0], grid: '#e7e5e4', axis: '#6b7280', text: '#111827', crosshair: '#9ca3af', surface: '#ffffff' }
-const MARGIN = { top: 12, right: 52, bottom: 28, left: 48 }
-const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-
-const el = (name, attrs = {}) => {
-  const node = document.createElementNS(SVG_NS, name)
-  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value)
-  return node
-}
-
-// Smallest round step that gives at most `max` intervals.
-function niceStep(range, max = 5) {
-  for (const step of [10, 25, 50, 100, 200, 250, 500, 1000]) if (range / step <= max) return step
-  return 1000
-}
 
 export default class extends Controller {
-  static values = { from: String, ratings: Array, clubs: Array }
+  static values = {
+    from: String,
+    ratings: Array,
+    clubs: Array,
+    ranks: Array,
+    counts: Array,
+    rankOf: { type: String, default: 'clubs' },
+    label: { type: String, default: 'Rating' },
+    decimals: { type: Number, default: 0 },
+    signed: Boolean,
+  }
 
   connect() {
     const start = Date.parse(`${this.fromValue}T00:00:00Z`)
+    // Club colours in fixed order, by first club played for
     const colors = new Map()
     for (const [, club] of this.clubsValue) {
-      if (!colors.has(club)) colors.set(club, CLUB_COLORS[colors.size] ?? OTHER_CLUB_COLOR)
+      if (!colors.has(club)) colors.set(club, PALETTE[colors.size] ?? OTHER_CLUB_COLOR)
     }
     this.clubColors = colors
     let period = -1
@@ -43,11 +41,7 @@ export default class extends Controller {
     })
     this.renderLegend()
     this.active = null
-
-    this.tooltip = document.createElement('div')
-    this.tooltip.className = 'absolute pointer-events-none bg-white border border-gray-200 shadow-sm px-3 py-2 text-sm whitespace-nowrap'
-    this.tooltip.hidden = true
-    this.element.append(this.tooltip)
+    this.tooltip = createTooltip(this.element)
 
     this.observer = new ResizeObserver(() => this.render())
     this.observer.observe(this.element)
@@ -58,6 +52,10 @@ export default class extends Controller {
     this.legend?.remove()
   }
 
+  format(value) {
+    return formatNumber(value, this.decimalsValue, this.signedValue)
+  }
+
   render() {
     const width = this.element.clientWidth
     const height = this.element.clientHeight
@@ -65,56 +63,41 @@ export default class extends Controller {
     this.svg?.remove()
 
     const points = this.points
-    const ratings = points.map((p) => p.rating)
-    const min = Math.min(...ratings)
-    const max = Math.max(...ratings)
-    const step = niceStep(Math.max(max - min, 1))
-    const yMin = Math.floor(min / step) * step
-    const yMax = Math.max(Math.ceil(max / step) * step, yMin + step)
+    const ratings = points.map((p) => p.rating).filter((r) => r !== null)
+    const domain = yDomain(Math.min(...ratings), Math.max(...ratings))
     const t0 = points[0].time
     const t1 = points.at(-1).time
     const plot = { left: MARGIN.left, right: width - MARGIN.right, top: MARGIN.top, bottom: height - MARGIN.bottom }
     this.x = (t) => plot.left + ((t - t0) / (t1 - t0)) * (plot.right - plot.left)
-    this.y = (r) => plot.bottom - ((r - yMin) / (yMax - yMin)) * (plot.bottom - plot.top)
+    this.y = (r) => plot.bottom - ((r - domain.yMin) / (domain.yMax - domain.yMin)) * (plot.bottom - plot.top)
     this.plot = plot
 
-    const last = points.at(-1)
+    const last = points.findLast((p) => p.rating !== null)
+    const first = points.find((p) => p.rating !== null)
     const svg = el('svg', {
       width,
       height,
       role: 'img',
       tabindex: 0,
       class: 'block outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-      'aria-label': `Rating history from ${dateFormat.format(t0)} to ${dateFormat.format(t1)}, from ${points[0].rating} to ${last.rating}. Use the arrow keys to read values.`,
+      'aria-label': `${this.labelValue} history from ${dateFormat.format(t0)} to ${dateFormat.format(t1)}, from ${this.format(first.rating)} to ${this.format(last.rating)}. Use the arrow keys to read values.`,
     })
-
-    // Gridlines and y-axis labels
-    for (let r = yMin; r <= yMax; r += step) {
-      svg.append(el('line', { x1: plot.left, x2: plot.right, y1: this.y(r), y2: this.y(r), stroke: COLORS.grid, 'stroke-width': 1 }))
-      const label = el('text', { x: plot.left - 8, y: this.y(r), 'text-anchor': 'end', 'dominant-baseline': 'middle', fill: COLORS.axis, 'font-size': 12, style: 'font-variant-numeric: tabular-nums' })
-      label.textContent = r.toLocaleString('en-GB')
-      svg.append(label)
-    }
-
-    // x-axis: one label per year, thinned so labels don't collide
-    const firstYear = new Date(t0).getUTCFullYear() + 1
-    const lastYear = new Date(t1).getUTCFullYear()
-    const yearStep = Math.max(1, Math.ceil((lastYear - firstYear + 1) / Math.max(1, Math.floor((plot.right - plot.left) / 56))))
-    for (let year = firstYear; year <= lastYear; year += yearStep) {
-      const x = this.x(Date.UTC(year, 0, 1))
-      svg.append(el('line', { x1: x, x2: x, y1: plot.bottom, y2: plot.bottom + 4, stroke: COLORS.axis, 'stroke-width': 1 }))
-      const label = el('text', { x, y: plot.bottom + 18, 'text-anchor': 'middle', fill: COLORS.axis, 'font-size': 12 })
-      label.textContent = year
-      svg.append(label)
-    }
+    drawGrid(svg, plot, this.y, domain, this.signedValue)
+    drawYearAxis(svg, plot, this.x, t0, t1)
 
     // The line, one segment per club period. Each segment starts at the last point of the previous
-    // one so the line stays connected.
+    // one so the line stays connected; weeks without a value break it.
     const segments = []
-    points.forEach((p, i) => {
-      if (!i || p.club !== points[i - 1].club) segments.push({ color: p.color, points: i ? [points[i - 1]] : [] })
+    let previous = null
+    for (const p of points) {
+      if (p.rating === null) {
+        previous = null
+        continue
+      }
+      if (!previous || p.club !== previous.club) segments.push({ color: p.color, points: previous ? [previous] : [] })
       segments.at(-1).points.push(p)
-    })
+      previous = p
+    }
     for (const segment of segments) {
       const d = segment.points.map((p, i) => `${i ? 'L' : 'M'}${this.x(p.time).toFixed(1)},${this.y(p.rating).toFixed(1)}`).join('')
       svg.append(el('path', { d, fill: 'none', stroke: segment.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }))
@@ -123,7 +106,7 @@ export default class extends Controller {
     // End marker with the current value as a direct label
     svg.append(el('circle', { cx: this.x(last.time), cy: this.y(last.rating), r: 4, fill: last.color, stroke: COLORS.surface, 'stroke-width': 2 }))
     const endLabel = el('text', { x: this.x(last.time) + 8, y: this.y(last.rating), 'dominant-baseline': 'middle', fill: COLORS.text, 'font-size': 12, 'font-weight': 600, style: 'font-variant-numeric: tabular-nums' })
-    endLabel.textContent = last.rating.toLocaleString('en-GB')
+    endLabel.textContent = this.format(last.rating)
     svg.append(endLabel)
 
     // Hover layer: crosshair, marker and tooltip at the nearest week
@@ -144,8 +127,13 @@ export default class extends Controller {
 
   nearest(px) {
     const t = this.points[0].time + ((px - this.plot.left) / (this.plot.right - this.plot.left)) * (this.points.at(-1).time - this.points[0].time)
-    const i = Math.round((t - this.points[0].time) / (7 * DAY))
-    return Math.min(this.points.length - 1, Math.max(0, i))
+    const i = Math.min(this.points.length - 1, Math.max(0, Math.round((t - this.points[0].time) / (7 * DAY))))
+    // Snap to the closest week with a value
+    for (let d = 0; d < this.points.length; d++) {
+      if (this.points[i - d]?.rating != null) return i - d
+      if (this.points[i + d]?.rating != null) return i + d
+    }
+    return i
   }
 
   key(event) {
@@ -153,7 +141,11 @@ export default class extends Controller {
     if (!(event.key in moves)) return
     event.preventDefault()
     const current = this.active ?? this.points.length - 1
-    this.show(Math.min(this.points.length - 1, Math.max(0, current + moves[event.key])))
+    let i = Math.min(this.points.length - 1, Math.max(0, current + moves[event.key]))
+    // Skip weeks without a value, in the direction of the move
+    const direction = moves[event.key] > 0 ? 1 : -1
+    while (this.points[i]?.rating == null && i > 0 && i < this.points.length - 1) i += direction
+    if (this.points[i]?.rating != null) this.show(i)
   }
 
   show(i) {
@@ -171,32 +163,27 @@ export default class extends Controller {
 
     const value = document.createElement('strong')
     value.className = 'block text-base tabular-nums'
-    value.textContent = p.rating.toLocaleString('en-GB')
+    value.textContent = this.format(p.rating)
     const date = document.createElement('span')
     date.className = 'text-gray-600'
     date.textContent = `Week ending ${dateFormat.format(p.time)}`
     const lines = [value, date]
+    const rank = this.ranksValue[i]
+    if (rank) {
+      const standing = document.createElement('span')
+      standing.className = 'block text-gray-600'
+      standing.textContent = `#${rank} of ${this.countsValue[i] ?? '?'} ${this.rankOfValue}`
+      lines.splice(1, 0, standing)
+    }
     if (p.club) {
       const club = document.createElement('span')
       club.className = 'flex items-center gap-1.5 text-gray-600'
-      club.append(this.swatch(p.color), p.club)
+      club.append(swatch(p.color), p.club)
       lines.splice(1, 0, club)
     }
     this.tooltip.replaceChildren(...lines)
     this.tooltip.hidden = false
-
-    // Keep the tooltip inside the chart: flip to the left of the crosshair near the right edge
-    const width = this.tooltip.offsetWidth
-    const left = x + 12 + width > this.element.clientWidth ? x - 12 - width : x + 12
-    this.tooltip.style.left = `${Math.max(0, left)}px`
-    this.tooltip.style.top = `${Math.max(0, Math.min(y - 24, this.element.clientHeight - this.tooltip.offsetHeight))}px`
-  }
-
-  swatch(color) {
-    const swatch = document.createElement('span')
-    swatch.className = 'inline-block w-3 h-1 rounded-full'
-    swatch.style.background = color
-    return swatch
+    placeTooltip(this.tooltip, this.element, x, y)
   }
 
   // Legend of the clubs below the chart, in the order the player played for them. A single club
@@ -209,7 +196,7 @@ export default class extends Controller {
     for (const [club, color] of this.clubColors) {
       const item = document.createElement('li')
       item.className = 'flex items-center gap-1.5'
-      item.append(this.swatch(color), club)
+      item.append(swatch(color), club)
       legend.append(item)
     }
     this.element.after(legend)

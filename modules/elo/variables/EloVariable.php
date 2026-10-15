@@ -35,6 +35,11 @@ class EloVariable
         return Module::getInstance()->elo->getClubPlayers($club, $pool);
     }
 
+    public function clubHistory(int $nbfClubId): array
+    {
+        return Module::getInstance()->elo->getClubHistory($nbfClubId);
+    }
+
     public function player(int $id): ?array
     {
         return Module::getInstance()->elo->getPlayer($id);

@@ -73,14 +73,148 @@ function roundStage(round) {
   return 0;
 }
 
-export const skipped = { walkover: 0, bye: 0, unplayed: 0, noPlayer: 0 };
+export const skipped = { walkover: 0, bye: 0, unplayed: 0, noPlayer: 0, removed: 0 };
+
+// A match's key: its tournament (T<id>) or league tie (L<id>) and the player ids of both sides,
+// e.g. "T7143 47570 vs 24320" or "L13068 17534+43350 vs 23978+42948". When the same sides meet
+// again in a tournament (a group match and a final), later meetings get ".2", ".3", ... in playing
+// order: "T588.2 26596 vs 24788". Shown on player pages and used in corrections.txt.
+const sideIds = (side) => side.map((p) => p.id).join("+");
+export const matchKey = (source, side1, side2) => `${source} ${sideIds(side1)} vs ${sideIds(side2)}`;
+// Order-independent form, to find a match whichever order its sides are written in
+const canonical = (source, ids1, ids2) => `${source} ${[ids1, ids2].map((ids) => ids.split("+").sort().join("+")).sort().join(" vs ")}`;
+
+// Manual corrections of results that are wrong on badmintonportalen (corrections.txt):
+//   <key>  walkover | remove | score <sets> | winner <1|2>   # note
+// `score` and `winner` follow the side order written in the line.
+function readCorrections() {
+  const corrections = new Map();
+  const text = (() => {
+    try {
+      return readFileSync(`${DIR}corrections.txt`, "utf8");
+    } catch {
+      return "";
+    }
+  })();
+  text.split("\n").forEach((raw, i) => {
+    const line = raw.split("#")[0].trim();
+    if (!line) return;
+    const m = line.match(/^([TL]\d+(?:\.\d+)?)\s+([\d+]+)\s+vs\s+([\d+]+)\s+(walkover|remove|score\s+\S+|winner\s+[12])$/i);
+    if (!m) return console.warn(`corrections.txt line ${i + 1}: can't read "${raw.trim()}"`);
+    const [, source, ids1, ids2, action] = m;
+    corrections.set(canonical(source, ids1, ids2), { line: i + 1, text: raw.trim(), ids1, action: action.toLowerCase().split(/\s+/), used: false });
+  });
+  return corrections;
+}
+let corrections = new Map();
+
+// Applies a correction to a match: returns the corrected match, or null to drop it.
+function correct(m, source) {
+  const c = corrections.get(canonical(source, sideIds(m.side1), sideIds(m.side2)));
+  if (!c) return m;
+  c.used = true;
+  const [action, value] = c.action;
+  // Does the line list the match's side 1 first?
+  const sameOrder = c.ids1.split("+").sort().join("+") === m.side1.map((p) => p.id).sort().join("+");
+  if (action === "remove") return null;
+  if (action === "walkover") return { ...m, walkover: true };
+  if (action === "winner") return { ...m, winner: sameOrder === (value === "1") ? 1 : 2 };
+  // score: sets as written in the line, turned to the match's side order; the winner follows
+  const sets = R.parseSets(value).map(([a, b]) => (sameOrder ? [a, b] : [b, a]));
+  const won1 = sets.filter(([a, b]) => a > b).length;
+  const won2 = sets.filter(([a, b]) => b > a).length;
+  return { ...m, score: sets.map((x) => x.join("/")).join(","), walkover: false, winner: won1 > won2 ? 1 : won2 > won1 ? 2 : null };
+}
+
+// Scores to review: impossible for the season's set formats, or extreme blowouts (at most 1 point
+// per set for the loser), which are sometimes no-shows entered as a score.
+const suspicious = [];
+const checked = new Map(); // matches checked per tournament or tie
+const meetings = new Map(); // times the same sides have met in a tournament or tie so far
+function checkScore(m, meta) {
+  if (m.walkover || !m.score || !m.side1.length || !m.side2.length) return;
+  const sets = R.parseSets(m.score);
+  if (!sets.length || R.isWalkover(m, sets, meta.day)) return;
+  checked.set(meta.source, (checked.get(meta.source) ?? 0) + 1);
+  const reason = !R.scoreFitsSeason(sets, meta.day)
+    ? "impossible for the season's set format"
+    : sets.every(([a, b]) => Math.min(a, b) <= 1)
+      ? "extreme blowout"
+      : null;
+  if (reason) {
+    suspicious.push({
+      day: meta.day, key: matchKey(meta.keySource ?? meta.source, m.side1, m.side2), sets, reason, event: meta.event, discipline: m.discipline,
+      sides: [m.side1, m.side2].map((side) => side.map((p) => p.name).join(" + ")),
+    });
+  }
+}
+
+// The review list as text: grouped by season (newest first) and reason, every entry a commented
+// description followed by a line that can be copied into corrections.txt as it is.
+const DISCIPLINE_NAMES = { MensSingles: "Men's singles", WomensSingles: "Women's singles", MensDoubles: "Men's doubles", WomensDoubles: "Women's doubles", MixedDoubles: "Mixed doubles" };
+const REASONS = [
+  ["impossible for the season's set format", (season) => `Impossible for the set format (sets to ${season >= 2026 ? "15, cap 21" : "21, cap 30"}, or 11 in some junior classes)`],
+  ["extreme blowout", () => "Extreme blowouts (the loser scored at most 1 point per set)"],
+];
+function suspiciousReport(review) {
+  const seasonOf = (day) => (+day.slice(5, 7) >= 7 ? +day.slice(0, 4) : +day.slice(0, 4) - 1);
+  const keyWidth = Math.max(...review.map((r) => r.key.length));
+  const lines = [
+    "# Scores that may be wrong on badmintonportalen, written by rate.mjs. Don't edit this file: it is",
+    "# rewritten on every run.",
+    "#",
+    "# To fix a match, copy its line (the one without #) into corrections.txt and replace",
+    "# \"score ...\" with the correction: walkover, remove, score <sets> or winner <1|2>.",
+    "# Scores are written from the first side's point of view. For impossible scores the line already",
+    "# suggests the most likely intended score (one typo per wrong set; see suggestScore in rules.mjs).",
+    "#",
+    `# ${review.length} scores to check.`,
+  ];
+  for (const [season, inSeason] of [...Map.groupBy(review, (r) => seasonOf(r.day))].sort((a, b) => b[0] - a[0])) {
+    const title = `${season}/${season + 1}: ${inSeason.length} ${inSeason.length === 1 ? "score" : "scores"}`;
+    lines.push("", "", `# ${"=".repeat(96)}`, `# ${title}`, `# ${"=".repeat(96)}`);
+    for (const [reason, heading] of REASONS) {
+      const entries = inSeason.filter((r) => r.reason === reason);
+      if (!entries.length) continue;
+      lines.push("", `# --- ${heading(season)}: ${entries.length} ---`);
+      for (const r of entries) {
+        const score = r.sets.map((set) => set.join("-")).join(", ");
+        const recorded = r.sets.map((set) => set.join("/")).join(",");
+        const suggestion = reason.startsWith("impossible") ? R.suggestScore(r.sets, r.day) : null;
+        const line = suggestion
+          ? `score ${suggestion.map((set) => set.join("/")).join(",")}  # was ${recorded}`
+          : `score ${recorded}${reason.startsWith("impossible") ? "  # no clear fix: check by hand" : ""}`;
+        lines.push(
+          "",
+          `# ${r.day}  ${r.event} · ${DISCIPLINE_NAMES[r.discipline] ?? r.discipline}`,
+          `#   ${r.sides[0]}  ${score}  ${r.sides[1]}`,
+          `${r.key.padEnd(keyWidth)}  ${line}`
+        );
+      }
+    }
+  }
+  return lines.join("\n") + "\n";
+}
 
 // One rateable game: both sides complete (one player in singles, two in doubles), all with ids.
-function toGame(m, meta) {
-  const pool = POOLS[m.discipline];
+function toGame(original, meta) {
+  const pool = POOLS[original.discipline];
   if (!pool) return null;
+  // Number repeated meetings of the same sides in the same tournament or tie
+  if (original.side1.length && original.side2.length) {
+    const pair = canonical(meta.source, sideIds(original.side1), sideIds(original.side2));
+    const n = (meetings.get(pair) ?? 0) + 1;
+    meetings.set(pair, n);
+    if (n > 1) meta = { ...meta, keySource: `${meta.source}.${n}` };
+  }
+  const m = correct(original, meta.keySource ?? meta.source);
+  if (!m) {
+    skipped.removed++;
+    return null;
+  }
+  if (m === original) checkScore(m, meta);
   const sets = R.parseSets(m.score ?? "");
-  if (R.isWalkover(m, sets)) {
+  if (R.isWalkover(m, sets, meta.day)) {
     skipped.walkover++;
     return null;
   }
@@ -102,13 +236,17 @@ function toGame(m, meta) {
   // Cross-region: every player's region is known and the two sides share none.
   const [r1, r2] = sides.map((side) => side.map((p) => regionOf(p.club)));
   const crossRegion = [...r1, ...r2].every(Boolean) && !r1.some((r) => r2.includes(r));
-  return { pool, side1: m.side1, side2: m.side2, s, sets, crossRegion, ...meta };
+  return { pool, side1: m.side1, side2: m.side2, s, sets, crossRegion, key: matchKey(meta.keySource ?? meta.source, m.side1, m.side2), ...meta };
 }
 
 let regionOf;
 
 export function collectGames() {
   regionOf = regionLookup();
+  corrections = readCorrections();
+  suspicious.length = 0;
+  checked.clear();
+  meetings.clear();
   const games = [];
   for (const t of readDir("portalen")) {
     t.matches.forEach((m, i) => {
@@ -135,6 +273,9 @@ export function collectGames() {
         if (g) games.push(g);
       });
     }
+  }
+  for (const c of corrections.values()) {
+    if (!c.used) console.warn(`corrections.txt line ${c.line}: no such match: "${c.text}"`);
   }
   return games.sort((x, y) => x.day.localeCompare(y.day) || x.source.localeCompare(y.source) || x.order - y.order);
 }
@@ -302,7 +443,7 @@ export function computeRatings(
       for (const side of perSide) {
         side.players.forEach((p, j) => {
           p.log.push({
-            day: g.day, event: g.event,
+            day: g.day, event: g.event, key: g.key,
             partner: doubles ? ref(side.players[1 - j]) : null,
             opponents: side.opponents.map(ref),
             rating: Math.round(p.rating), change: Math.round(side.changes[j] * 10) / 10, result: side.s, winChance: Math.round(side.e * 1000) / 1000,
@@ -463,6 +604,14 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     .sort((a, b) => b.score - a.score)
     .map((c, i) => ({ rank: i + 1, ...c }));
 
+  // Scores to review, newest first, as lines ready to copy into corrections.txt. A tournament where
+  // more than a fifth of the scores break the set formats played its own format (e.g. Sandefjord SaBK
+  // Open and Vestre Aker Fjærfest 2015); its scores are left out.
+  const sourceOf = (r) => r.key.split(" ")[0].split(".")[0];
+  const impossible = Map.groupBy(suspicious.filter((r) => r.reason.startsWith("impossible")), sourceOf);
+  const ownFormat = new Set([...impossible].filter(([source, list]) => list.length > 0.2 * checked.get(source)).map(([source]) => source));
+  const review = suspicious.filter((r) => !(r.reason.startsWith("impossible") && ownFormat.has(sourceOf(r)))).sort((a, b) => b.day.localeCompare(a.day));
+  writeFileSync(`${DIR}data/suspicious-scores.txt`, suspiciousReport(review));
   writeFileSync(`${DIR}data/ratings.json`, JSON.stringify({ generatedAt: new Date().toISOString(), pools: ratings, clubs, clubTop: CLUB_TOP }, null, 1));
   // Per player: `from` is the Monday of their first week; ratings[i] is the rating at the end
   // of week from + 7*i days.
@@ -475,6 +624,147 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   mkdirSync(`${DIR}data/history`, { recursive: true });
   for (const [id, history] of byPlayer) writeFileSync(`${DIR}data/history/${id}.json`, JSON.stringify(history));
+
+  // Club history: each club's strength (the same CLUB_TOP average as the club ranking) at the end
+  // of every week, from the ranked players who played for it at the time. A player counts for a
+  // club in a week if they played in the RANKING_ACTIVE_DAYS before its end, under the club of
+  // their club history for that week. Written per club (NBF club id) to data/club-history/<id>.json.
+  const firstWeek = Object.values(players).flatMap((map) => [...map.values()].map((p) => p.firstWeek)).sort()[0];
+  const weekCount = Math.round((toTime(weekStart(today)) - toTime(firstWeek)) / (7 * DAY_MS)) + 1;
+  const weekIndexCache = new Map();
+  const weekIndex = (day) => {
+    let index = weekIndexCache.get(day);
+    if (index === undefined) {
+      index = Math.round((toTime(weekStart(day)) - toTime(firstWeek)) / (7 * DAY_MS));
+      weekIndexCache.set(day, index);
+    }
+    return index;
+  };
+  const clubHistory = new Map(); // club -> { pool: { strength: [], rank: [] } }
+  const clubCounts = {}; // pool -> clubs with a strength per week
+  for (const [pool, map] of Object.entries(players)) {
+    const top = CLUB_TOP[pool];
+    // week -> club -> [{ rating, gender }]
+    const byWeek = Array.from({ length: weekCount }, () => new Map());
+    for (const p of map.values()) {
+      const offset = weekIndex(p.firstWeek);
+      const playedWeeks = [...new Set(p.log.map((m) => weekIndex(m.day)))].sort((a, b) => a - b);
+      const gender = pool === "mixedDoubles" ? genderOf(p.id) : null;
+      let played = 0; // index into playedWeeks of the last week played up to w
+      let club = 0; // index into p.clubs
+      for (let w = playedWeeks[0]; w < weekCount; w++) {
+        while (playedWeeks[played + 1] <= w) played++;
+        // Active: played within RANKING_ACTIVE_DAYS of the end of week w
+        if ((w - playedWeeks[played]) * 7 > R.RANKING_ACTIVE_DAYS) {
+          if (played === playedWeeks.length - 1) break;
+          continue;
+        }
+        while (p.clubs[club + 1]?.[0] <= w - offset) club++;
+        const name = p.clubs[club]?.[1];
+        if (!name) continue;
+        // After the last recorded week the rating stays the same within the active window.
+        const rating = p.weekly[w - offset] ?? p.weekly.at(-1) ?? p.rating;
+        const members = byWeek[w].get(name) ?? [];
+        members.push({ rating, gender });
+        byWeek[w].set(name, members);
+      }
+    }
+    clubCounts[pool] = [];
+    byWeek.forEach((byClub, w) => {
+      const strengths = [];
+      for (const [name, members] of byClub) {
+        members.sort((a, b) => b.rating - a.rating);
+        const counted =
+          typeof top === "number"
+            ? members.length >= top && members.slice(0, top)
+            : Object.entries(top).every(([g, n]) => members.filter((m) => m.gender === g).length >= n) &&
+              Object.entries(top).flatMap(([g, n]) => members.filter((m) => m.gender === g).slice(0, n));
+        if (counted) strengths.push([name, Math.round(counted.reduce((sum, m) => sum + m.rating, 0) / counted.length)]);
+      }
+      strengths.sort((a, b) => b[1] - a[1]);
+      clubCounts[pool][w] = strengths.length;
+      strengths.forEach(([name, strength], i) => {
+        const history = clubHistory.get(name) ?? {};
+        history[pool] ??= { strength: Array(weekCount).fill(null), rank: Array(weekCount).fill(null) };
+        history[pool].strength[w] = strength;
+        history[pool].rank[w] = i + 1;
+        clubHistory.set(name, history);
+      });
+    });
+  }
+  // The current week is the club ranking itself, so the history ends on the strength and rank shown
+  // with it. That ranking uses each player's registered club, so a recent club change shows up as
+  // a step in the last week.
+  const now = weekCount - 1;
+  for (const [pool, ranked] of Object.entries(clubs)) {
+    if (pool === "combined") continue;
+    for (const history of clubHistory.values()) {
+      if (history[pool]) history[pool].strength[now] = history[pool].rank[now] = null;
+    }
+    clubCounts[pool][now] = ranked.length;
+    for (const c of ranked) {
+      const history = clubHistory.get(c.club) ?? {};
+      history[pool] ??= { strength: Array(weekCount).fill(null), rank: Array(weekCount).fill(null) };
+      history[pool].strength[now] = Math.round(c.strength);
+      history[pool].rank[now] = c.rank;
+      clubHistory.set(c.club, history);
+    }
+  }
+
+  // Combined history: per week, the same average standard score as the combined ranking, among
+  // the clubs with a strength in all five pools that week. The current week is that ranking itself.
+  clubCounts.combined = [];
+  const histories = [...clubHistory.entries()];
+  for (let w = 0; w < weekCount; w++) {
+    const listed = histories.filter(([, h]) => poolNames.every((pool) => h[pool]?.strength[w] != null));
+    clubCounts.combined[w] = listed.length;
+    if (listed.length < 2) continue;
+    const scores = new Map(listed.map(([name]) => [name, 0]));
+    for (const pool of poolNames) {
+      const values = listed.map(([, h]) => h[pool].strength[w]);
+      const mean = values.reduce((a, b) => a + b, 0) / values.length;
+      const sd = Math.sqrt(values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length) || 1;
+      for (const [name, h] of listed) scores.set(name, scores.get(name) + (h[pool].strength[w] - mean) / sd / poolNames.length);
+    }
+    [...scores].sort((a, b) => b[1] - a[1]).forEach(([name, score], i) => {
+      const history = clubHistory.get(name);
+      history.combined ??= { strength: Array(weekCount).fill(null), rank: Array(weekCount).fill(null) };
+      history.combined.strength[w] = Math.round(score * 100) / 100;
+      history.combined.rank[w] = i + 1;
+    });
+  }
+  for (const history of clubHistory.values()) {
+    if (history.combined) history.combined.strength[now] = history.combined.rank[now] = null;
+  }
+  clubCounts.combined[now] = clubs.combined.length;
+  for (const c of clubs.combined) {
+    const history = clubHistory.get(c.club);
+    history.combined ??= { strength: Array(weekCount).fill(null), rank: Array(weekCount).fill(null) };
+    history.combined.strength[now] = c.score;
+    history.combined.rank[now] = c.rank;
+  }
+
+  // Per club file, keyed by NBF club id (clubs no longer in the club list have no club page).
+  // Each pool keeps only the weeks from its first to its last value: `from` is that first week's
+  // Monday; strength[i], rank[i] and clubs[i] (clubs ranked that week) are for week from + 7*i days.
+  // `combined` is the combined score (average standard score) instead of a strength.
+  mkdirSync(`${DIR}data/club-history`, { recursive: true });
+  for (const c of JSON.parse(readFileSync(`${DIR}data/clubs.json`, "utf8"))) {
+    const history = clubHistory.get(c.name);
+    if (!history) continue;
+    const pools = {};
+    for (const [pool, { strength, rank }] of Object.entries(history)) {
+      const first = strength.findIndex((x) => x !== null);
+      const last = strength.findLastIndex((x) => x !== null);
+      pools[pool] = {
+        from: addDays(firstWeek, first * 7),
+        strength: strength.slice(first, last + 1),
+        rank: rank.slice(first, last + 1),
+        clubs: clubCounts[pool].slice(first, last + 1),
+      };
+    }
+    writeFileSync(`${DIR}data/club-history/${c.id}.json`, JSON.stringify({ club: c.name, pools }));
+  }
 
   function rivals(p, pool) {
     // In doubles every opposing player counts as an opponent.
@@ -526,6 +816,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const perPool = [...Map.groupBy(games, (g) => g.pool)].map(([pool, list]) => `${list.length} ${pool}`);
   console.log(`Rated ${games.length} games (${games[0]?.day} to ${games.at(-1)?.day}): ${perPool.join(", ")}.`);
   console.log(`Skipped: ${skipped.walkover} walkovers, ${skipped.bye} byes, ${skipped.unplayed} unplayed, ${skipped.noPlayer} with a side not fully identified.`);
+  const applied = [...corrections.values()].filter((c) => c.used).length;
+  console.log(`Corrections: ${applied} of ${corrections.size} in corrections.txt applied (${skipped.removed} matches removed). ${review.length} scores to review in data/suspicious-scores.txt.`);
   console.log(`Draws: ${games.filter((g) => g.s === 0.5).length}, cross-region games: ${games.filter((g) => g.crossRegion).length}`);
   console.log(`Calibration (from ${CALIBRATION_FROM}, all players ${CALIBRATION_MIN_MATCHES}+ matches; coin flip log loss 0.6931):`);
   for (const [pool, c] of Object.entries(calibration)) {
