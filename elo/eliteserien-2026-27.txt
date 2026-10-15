@@ -1,0 +1,116 @@
+# Eliteserien 2026/2027: the players on each team, from Norges Badmintonforbund's list
+# (https://www.badminton.no/siteassets/spillere-i-eliteserien-2026-27.pdf), with changes registered
+# up to 22.09.26 (Mattias Xu added to Sotra). Used by eliteserien.mjs.
+#
+# One player per line:  M|K  <player id>  <name as on the list>  [| loan <home club>]
+# The player id links to their ratings (it is in the player page URL, /elo/players/<id>); "-" for
+# players without rated matches. "loan" marks players on loan from another club.
+
+[Bergen]
+M 22376  Markus Barth
+M 21305  Amund Huus
+M 23852  Bharath Kumar Balasingam
+M 44555  Simon Vasquez Frisnes
+M 45812  Deeptanshu Toka
+M 33258  Javier Bish
+K 22375  Vera Ellingsen
+K 17139  Katja Ellingsen
+K 43110  Maria Ellingsen
+K 45433  Giulia Dell'Acqua
+
+[Frogner]
+M 20266  Vegard Rikheim
+M 18731  Jonas Christensen
+M 22112  Magnus Christensen
+M 49574  Roshan Chembeti
+M 18971  Nikolai Svensson
+M 19897  Anders Leirud
+M 38640  Albert Aasheim-Engen
+K 20294  Marie Christensen
+K 22187  Emilia Norberg
+K 19819  Monica Halvorsen
+K 38641  Vilma Aasheim-Engen
+K 18748  Randi Selle | loan Stavanger
+K 22416  Henny Lyfjell
+K 20093  Marthe Skaug
+K -      Hege Rikheim
+
+[Haugerud]
+M 20589  Carl Christian Mork
+M 19566  Sturla Flåten Jørgensen
+M 36501  Aleksander Jakovlevs
+M 42944  Mathias Wong
+K 20179  Elisa Wiborg
+K 38662  Sofie Reistadbakk
+K 36493  Nancy Hang
+K 23979  Aimee Hong
+K 23506  Julie Abusdal
+
+[Kristiansand]
+M 20623  Mads Marum
+M 21260  Jonas Østhassel
+M 20301  Torjus Flåtten
+M 17063  Sander Østhassel
+M 17062  Filip Bøhn
+M 17754  Andreas Roksvåg | loan Grimstad
+K 20087  Vilde Espeseth
+K 24046  Stine Pedersen
+K 17064  June Bøhn
+K 21257  Rikke Østhassel
+K 22113  Sofia Macsali
+
+[Moss]
+M 49066  Shubham
+M 24218  Jørgen Rosenlund
+M 17625  Martin Enghaug
+M 44141  Henrik Lavik-Haug
+M 18543  Fredrik Kristensen
+K 20039  Solvår Flåten Jørgensen
+K 35351  Emma Yasmin Ruud
+K 35319  Mina Korssund
+K 46650  Alice Løvås Walbom
+K 19880  Natalie Kristensen
+
+[NTNUI]
+M 17647  Boyan Yu
+M 17585  Kevin Elson
+M 36427  Brynjar Hus
+M 18126  Henrik Buvik
+M 17534  Petter Laheld
+M 25000  Gard Vik Langhammer
+M 22992  Iver Rolfsjord
+K 17745  Nora Omdal
+K 26665  Marlen Nygård
+K 29866  Mi Celina Le-Thanh | loan OSI
+K 24320  Karina Andreassen
+K 18132  Sara Buvik
+
+[Klemetsrud]
+M 51528  Jonathan Larsen
+M 24052  Carlo Augustin
+M 40720  Aldrin Nelson
+M 47397  Den Singh Jassal
+M -      Leonard Alchaz
+M -      Filip Isdal Larsen
+M 43502  Vinit Sharma
+M 26662  Christer Andersen
+M 43925  Shreyas Danve
+M 30133  Magnus Tjøm
+M 49451  Rasmus Ovesen
+K 48778  Amal Mariia Elrozi
+K 48457  Milaniia Petrina
+K 46511  Sennova Lindland | loan Mandal
+K 49180  Evita Gedgaudaite
+
+[Sotra]
+M 23978  Mathias Ji Hong
+M 43575  Jakob Langeland Risa
+M 43576  Ole Kristian Lie
+M 42948  Sindre Gjuvsland
+M 23619  Keveen Kumar Balasingam
+M 20267  Mattias Xu
+K 43577  Oline Langeland Risa
+K 24717  Jenny Rajkumar
+K 29988  Linnea Holmedal
+K 44277  Juli Klungtveit
+K 22729  Vilde Ekerhovd

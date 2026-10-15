@@ -1,0 +1,183 @@
+{% extends "_base.twig" %}
+
+{# Eliteserien team strengths, from elo/data/eliteserien.json (elo/eliteserien.mjs). #}
+
+{% set data = craft.elo.eliteserien() %}
+{% set teams = data.teams ?? [] %}
+{# Club entries (Clubs section) by short name, for links and logos #}
+{% set clubEntries = craft.entries.section('clubs').with(['clubLogo']).collect().keyBy('title') %}
+{# Chance against the average Eliteserien opponent in a slot (same formula as the ratings, scale 300) #}
+{% set refs = data.references ?? {} %}
+{% set refFor = { MS1: refs.MS[0] ?? 0, MS2: refs.MS[1] ?? 0, WS1: refs.WS[0] ?? 0, WS2: refs.WS[1] ?? 0, MD: refs.MD ?? 0, WD: refs.WD ?? 0, XD1: refs.XD[0] ?? 0, XD2: refs.XD[1] ?? 0 } %}
+
+{% block body %}
+  <section class="base-section">
+    <div class="base-container px-4">
+      <a href="{{ url('elo') }}" class="text-gray-600 hover:text-black">&larr; Rankings</a>
+      <h1 class="h1 mt-4">Eliteserien {{ data.season ?? '' }}</h1>
+      <p class="text-2xl max-w-3xl">How strong the eight teams are, from their players' ratings.</p>
+      <div class="max-w-3xl mt-4 text-gray-700 space-y-2">
+        <p>
+          A tie is 8 matches: 2 men's singles, 2 women's singles, 1 men's doubles, 1 women's doubles and 2 mixed doubles, and a player plays at most 2 of them.
+          Each team is assumed to field the lineup that gives it the most expected match wins against an average Eliteserien opponent.
+          As the rules require, the first singles player has more official ranking points than the second, and the first mixed pair more combined mixed doubles points than the second{% if data.rankingPeriod ?? null %} (ranking {{ data.rankingPeriod }}){% endif %}.
+          Win chances use the same formula as the ratings, match against match, and a tie is won with 5 matches and drawn at 4-4.
+        </p>
+        <p>
+          Teams are from <a href="{{ data.source ?? '#' }}" class="underline hover:text-blue-600" rel="noopener">Norges Badmintonforbund's list</a>, including players on loan from other clubs.
+          Players without a doubles or mixed rating are counted as starting doubles from their singles rating (marked ≈).
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {% if teams is empty %}
+    <section class="base-section"><div class="base-container px-4"><p>No team strengths yet. Run <code>node elo/eliteserien.mjs</code> after <code>node elo/rate.mjs</code>.</p></div></section>
+  {% else %}
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-4">Team strength</h2>
+        <div class="bg-white overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="text-sm text-gray-600 border-b border-gray-200">
+              <tr>
+                <th scope="col" class="py-3 px-4 font-normal text-right w-12">#</th>
+                <th scope="col" class="py-3 px-4 font-normal">Team</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right" title="Average over ties against the other seven teams">Expected matches won</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right">Wins tie</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right hidden sm:table-cell">Draw</th>
+                <th scope="col" class="py-3 px-4 font-normal text-right hidden sm:table-cell">Loses tie</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in teams %}
+                {% set entry = clubEntries[t.team] ?? null %}
+                {% set logo = entry ? entry.clubLogo|first : null %}
+                <tr class="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                  <td class="py-3 px-4 text-right text-gray-600 tabular-nums">{{ t.rank }}</td>
+                  <td class="py-3 px-4">
+                    <a href="#team-{{ t.team|lower }}" class="flex items-center gap-2 hover:text-blue-600">
+                      {% if logo %}<img src="{{ logo.url }}" alt="" class="w-6 h-6 object-contain">{% endif %}{{ t.team }}
+                    </a>
+                  </td>
+                  <td class="py-3 px-4 text-right tabular-nums">{{ t.strength.expected|number_format(2) }} <span class="text-sm text-gray-500">of 8</span></td>
+                  <td class="py-3 px-4 text-right tabular-nums">{{ ((t.strength.win) * 100)|round ~ '%' }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums hidden sm:table-cell">{{ ((t.strength.draw) * 100)|round ~ '%' }}</td>
+                  <td class="py-3 px-4 text-right tabular-nums hidden sm:table-cell">{{ ((t.strength.loss) * 100)|round ~ '%' }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <p class="text-sm text-gray-600 mt-2">Averages over a tie against each of the other seven teams.</p>
+      </div>
+    </section>
+
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-2">Head to head</h2>
+        <p class="text-gray-700 mb-4">Chance that the team on the left wins a tie against the team at the top. Hover for the expected score.</p>
+        <div class="bg-white overflow-x-auto p-2">
+          <table class="text-sm">
+            <thead>
+              <tr>
+                <th scope="col" class="p-2"></th>
+                {% for b in teams %}<th scope="col" class="p-2 font-normal text-gray-600 text-center">{{ b.team }}</th>{% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for a in teams %}
+                <tr>
+                  <th scope="row" class="p-2 font-normal text-left whitespace-nowrap">{{ a.team }}</th>
+                  {% for b in teams %}
+                    {% if a.team == b.team %}
+                      <td class="p-2 text-center text-gray-300">–</td>
+                    {% else %}
+                      {% set h = data.headToHead[a.team][b.team] %}
+                      {# One blue, deeper with the chance; white text on the deep cells #}
+                      <td class="p-2 text-center tabular-nums border-2 border-white {{ h.win > 0.55 ? 'text-white' : 'text-gray-900' }}"
+                          style="background: rgba(42, 120, 214, {{ (0.08 + h.win * 0.82)|number_format(2) }})"
+                          title="{{ a.team }} against {{ b.team }}: expected {{ h.expected|number_format(1) }}–{{ (8 - h.expected)|number_format(1) }} in matches; wins {{ ((h.win) * 100)|round ~ '%' }}, draws {{ ((h.draw) * 100)|round ~ '%' }}, loses {{ ((h.loss) * 100)|round ~ '%' }}">{{ h.win >= 0.995 ? '>99%' : (h.win < 0.005 ? '<1%' : (h.win * 100)|round ~ '%') }}</td>
+                    {% endif %}
+                  {% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    {% for t in teams %}
+      {% set players = {} %}
+      {% for p in t.players %}{% set players = players|merge({ ('p' ~ (p.id ?? p.listName)): p }) %}{% endfor %}
+      {% set entry = clubEntries[t.team] ?? null %}
+      <section class="base-section scroll-mt-4" id="team-{{ t.team|lower }}">
+        <div class="base-container px-4">
+          <h2 class="text-3xl mb-1">{{ t.rank }}. {% if entry %}<a href="{{ entry.url }}" class="hover:text-blue-600">{{ t.team }}</a>{% else %}{{ t.team }}{% endif %}</h2>
+          <p class="text-gray-700 mb-6">{{ t.strength.expected|number_format(2) }} expected matches won per tie · wins {{ ((t.strength.win) * 100)|round ~ '%' }} of ties</p>
+
+          <div class="grid gap-6 lg:grid-cols-2">
+            <div class="bg-white p-4 md:p-6">
+              <h3 class="text-xl mb-1">Strongest lineup</h3>
+              <p class="text-sm text-gray-600 mb-4">With the chance of winning each match against an average Eliteserien opponent</p>
+              <table class="w-full text-left">
+                <tbody>
+                  {% for s in data.slots %}
+                    {% set l = t.lineup[s.key] %}
+                    {% set chance = 1 / (1 + 10 ** ((refFor[s.key] - l.rating) / 300)) %}
+                    <tr class="border-b border-gray-100 last:border-0 align-top">
+                      <td class="py-2 pr-4 text-sm text-gray-600 whitespace-nowrap">{{ s.label }}</td>
+                      <td class="py-2 pr-4">
+                        {% for key in l.players %}
+                          {% set p = players['p' ~ key] %}
+                          {% if p.id %}<a href="{{ url('elo/players/' ~ p.id) }}" class="hover:text-blue-600">{{ p.name }}</a>{% else %}{{ p.name }}{% endif %}{% if not loop.last %} <span class="text-gray-500">+</span>{% endif %}
+                        {% endfor %}
+                      </td>
+                      <td class="py-2 text-right tabular-nums whitespace-nowrap">{{ ((chance) * 100)|round ~ '%' }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div class="bg-white p-4 md:p-6">
+              <h3 class="text-xl mb-4">Players</h3>
+              <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                  <thead class="text-sm text-gray-600 border-b border-gray-200">
+                    <tr>
+                      <th scope="col" class="py-2 pr-4 font-normal">Player</th>
+                      <th scope="col" class="py-2 pr-4 font-normal text-right">Singles</th>
+                      <th scope="col" class="py-2 pr-4 font-normal text-right">Doubles</th>
+                      <th scope="col" class="py-2 pr-4 font-normal text-right">Mixed</th>
+                      <th scope="col" class="py-2 font-normal text-right" title="Official ranking points: singles / mixed doubles">Points</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for p in t.players %}
+                      <tr class="border-b border-gray-100 last:border-0 align-top">
+                        <td class="py-2 pr-4">
+                          {% if p.id %}<a href="{{ url('elo/players/' ~ p.id) }}" class="hover:text-blue-600">{{ p.name }}</a>{% else %}{{ p.name }}{% endif %}
+                          {% if p.loanFrom %}<span class="ml-1 text-xs px-1.5 py-0.5 border border-gray-400 rounded text-gray-700 whitespace-nowrap">Loan from {{ p.loanFrom }}</span>{% endif %}
+                          {% if not p.rated %}<span class="block text-sm text-gray-500">No rated matches</span>{% endif %}
+                        </td>
+                        {% for kind in ['singles', 'doubles', 'mixed'] %}
+                          <td class="py-2 pr-4 text-right tabular-nums text-gray-700">
+                            {%- if p.rated -%}{{ p.estimated[kind] ? '≈' }}{{ p[kind] }}{%- else -%}–{%- endif -%}
+                          </td>
+                        {% endfor %}
+                        <td class="py-2 text-right tabular-nums text-gray-500 whitespace-nowrap">{{ p.points.singles ?? 0 }} / {{ p.points.mixed ?? 0 }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              <p class="text-sm text-gray-600 mt-2">≈ estimated: no rating in that discipline yet. Points: official ranking points in singles / mixed doubles, which decide who plays first singles and first mixed. Men first, then women, by singles rating.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    {% endfor %}
+  {% endif %}
+{% endblock %}

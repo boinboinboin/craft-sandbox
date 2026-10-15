@@ -329,6 +329,22 @@ On the page of a woman (by gender in badmintonportalen's player register) who ha
 
 Clubs are entries in the Clubs section (`elo/clubs/<slug>`), created and updated from `data/clubs.json` with `ddev craft elo/clubs/sync`. The sync only writes the short name, full name, region and NBF club ID; logos and websites are added by hand in the control panel and kept. Players are matched to a club entry by its short name (the entry title).
 
+## Eliteserien
+
+The Eliteserien page (`/elo/eliteserien`) estimates how strong the eight teams in the top league are. `node elo/eliteserien.mjs`, run after `rate.mjs`, writes `data/eliteserien.json`.
+
+**Teams.** The players on each team are in `elo/eliteserien-2026-27.txt`, from Norges Badmintonforbund's list (<https://www.badminton.no/siteassets/spillere-i-eliteserien-2026-27.pdf>), one per line with their player id: `M|K <id> <name> [| loan <home club>]`. Players on loan from another club play for the team and count for it; they are marked on the page. The ids were matched by name (the list often shortens names: "Amund Huus" is Amund Rikheim Huus) and checked by hand; players without rated matches have `-`. Edit the file when the list changes and run the script again.
+
+**A tie** is 8 matches: 2 men's singles, 2 women's singles, 1 men's doubles, 1 women's doubles and 2 mixed doubles. A player plays at most 2 matches, and at most one in each discipline. The first singles player must have more official ranking points than the second, and the first mixed pair more combined mixed doubles points than the second; on equal points either order is allowed. The points are the current senior ranking lists on badmintonportalen, fetched with `node elo/fetch-ranking.mjs 2002026` into `data/ranking/2002026.json` (players not on a list have 0 points).
+
+**Ratings.** Each player's current singles, doubles and mixed doubles ratings. A missing doubles or mixed rating is estimated from the singles rating, as for a [new doubles player](#start-rating-from-singles); anything else missing counts at the lowest rating among ranked players.
+
+**Lineup.** Each team is assumed to field the lineup with the most expected match wins against an average Eliteserien opponent in each match: the average of the best players over all eight teams (for the two singles, the 8 best and the next 8; doubles and mixed as pair sums). All lineups allowed by the rules are tried, including who plays mixed with whom and, on equal ranking points, the order.
+
+**Strength.** Teams are compared lineup against lineup, match by match (first men's singles against first men's singles, and so on), with the expected score of the ratings ($E_A$, pair sums in doubles). The matches are taken as independent, which gives the chance of winning a tie (5 or more matches), drawing (4-4) or losing it. A team's strength is its expected number of matches won per tie, averaged over ties against the other seven teams.
+
+Real lineups vary (injuries, tactics, players' availability), so the chances are for each team at full strength.
+
 ## Tested and not used
 
 ### Repeated opponents

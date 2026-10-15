@@ -12,6 +12,7 @@ use yii\base\Component;
  * - elo/data/history/<id>.json: one player's rating and national rank at the end of every week, per pool
  * - elo/data/rank-counts.json: the number of ranked players at the end of every week, per pool
  * - elo/data/matches/<id>.json: one player's last matches and biggest wins and losses, per pool
+ * - elo/data/eliteserien.json: Eliteserien team strengths (elo/eliteserien.mjs)
  * - elo/data/club-history/<NBF club id>.json: a club's strength and rank at the end of every week, per pool
  *
  * ratings.json is decoded once per request and kept in memory.
@@ -113,6 +114,15 @@ class EloService extends Component
     public function getClubPlayers(string $club, string $pool): array
     {
         return array_values(array_filter($this->getRankings($pool), fn(array $p) => $p['club'] === $club));
+    }
+
+    /**
+     * Eliteserien team strengths (elo/eliteserien.mjs): teams with their best lineup, players and
+     * strength, and the head-to-head chances between them. Empty if not calculated yet.
+     */
+    public function getEliteserien(): array
+    {
+        return $this->read('eliteserien.json');
     }
 
     /**

@@ -23,7 +23,10 @@
       {% if generatedAt %}
         <p class="text-gray-600 mt-2">Updated {{ generatedAt|date('j F Y') }}</p>
       {% endif %}
-      <p class="mt-4"><a href="{{ url('elo/clubs') }}" class="underline hover:text-blue-600">Strongest clubs &rarr;</a></p>
+      <p class="mt-4 flex flex-wrap gap-x-6 gap-y-1">
+        <a href="{{ url('elo/clubs') }}" class="underline hover:text-blue-600">Strongest clubs &rarr;</a>
+        <a href="{{ url('elo/eliteserien') }}" class="underline hover:text-blue-600">Eliteserien team strengths &rarr;</a>
+      </p>
     </div>
   </section>
 

@@ -40,6 +40,11 @@ class EloVariable
         return Module::getInstance()->elo->getClubHistory($nbfClubId);
     }
 
+    public function eliteserien(): array
+    {
+        return Module::getInstance()->elo->getEliteserien();
+    }
+
     public function player(int $id): ?array
     {
         return Module::getInstance()->elo->getPlayer($id);

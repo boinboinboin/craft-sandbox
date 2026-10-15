@@ -14,4 +14,5 @@ return [
     'elo' => ['template' => '_elo/index'],
     'elo/players/<playerId:\d+>' => ['template' => '_elo/player'],
     'elo/clubs' => ['template' => '_elo/clubs'],
+    'elo/eliteserien' => ['template' => '_elo/eliteserien'],
 ];

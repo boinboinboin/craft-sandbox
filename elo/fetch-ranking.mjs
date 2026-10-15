@@ -1,9 +1,11 @@
-// Fetch the official NBF senior singles ranking lists (badmintonportalen.no/NBF/Ranglister/),
-// to compare our Elo ratings against.
+// Fetch the official NBF senior ranking lists (badmintonportalen.no/NBF/Ranglister/): singles, to
+// compare our Elo ratings against, and doubles and mixed doubles (the Eliteserien lineup rules use
+// the ranking points).
 // Usage: node fetch-ranking.mjs [seasonId...]   (default 2002026 = 2026/2027; "all" = 2002014 to 2002026)
 //
-// Writes data/ranking/<seasonId>.json: { period, men: [...], women: [...] } with rank, player
-// number, internal id (the same id as in our match data), name, club, class and points.
+// Writes data/ranking/<seasonId>.json: { period, men, women, mensDoubles, womensDoubles, mixedMen,
+// mixedWomen } (lists of rank, player number, internal id (the same id as in our match data), name,
+// club, class and points; mixed doubles has one list for men and one for women).
 // Finished seasons only keep their final list (a rolling 12 months up to about July 1).
 import { mkdirSync, writeFileSync } from "node:fs";
 import { call, text } from "./portalen.mjs";
@@ -11,7 +13,8 @@ import { call, text } from "./portalen.mjs";
 const DIR = new URL(".", import.meta.url).pathname;
 const ALL = Array.from({ length: 13 }, (_, i) => String(2002014 + i));
 const seasons = process.argv[2] === "all" ? ALL : process.argv.length > 2 ? process.argv.slice(2) : ["2002026"];
-const LISTS = { men: "1", women: "3" }; // HS, DS
+// HS, DS, HD, DD, MD for women, MD for men
+const LISTS = { men: "1", women: "3", mensDoubles: "2", womensDoubles: "4", mixedWomen: "5", mixedMen: "6" };
 
 const args = (season, list, page) => ({
   rankinglistagegroupid: "", rankinglistid: list, seasonid: season, rankinglistversiondate: "",
@@ -42,5 +45,5 @@ for (const season of seasons) {
     result[pool] = rows;
   }
   writeFileSync(`${DIR}data/ranking/${season}.json`, JSON.stringify(result, null, 1));
-  console.log(`${season} (${result.period}): ${result.men.length} men, ${result.women.length} women`);
+  console.log(`${season} (${result.period}): ${Object.keys(LISTS).map((pool) => `${result[pool].length} ${pool}`).join(", ")}`);
 }
