@@ -64,4 +64,14 @@ class EloVariable
     {
         return Module::getInstance()->elo->getGeneratedAt();
     }
+
+    public function searchPlayers(string $query, int $limit = 10): array
+    {
+        return Module::getInstance()->elo->searchPlayers($query, $limit);
+    }
+
+    public function headToHead(int $a, int $b): ?array
+    {
+        return Module::getInstance()->elo->getHeadToHead($a, $b);
+    }
 }

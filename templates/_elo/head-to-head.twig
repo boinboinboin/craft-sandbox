@@ -1,0 +1,168 @@
+{% extends "_base.twig" %}
+
+{# Two players head to head: ?a=<player id>&b=<player id>. The player pickers (player_picker
+   controller) search elo/players/search. #}
+
+{% set idA = craft.app.request.getQueryParam('a')|default('')|trim %}
+{% set idB = craft.app.request.getQueryParam('b')|default('')|trim %}
+{% set idA = idA matches '/^\\d+$/' ? idA + 0 : null %}
+{% set idB = idB matches '/^\\d+$/' ? idB + 0 : null %}
+{% set h2h = idA and idB ? craft.elo.headToHead(idA, idB) : null %}
+{# Names for the pickers, also when only one player is chosen #}
+{% set playerA = h2h ? h2h.a : (idA ? craft.elo.player(idA) : null) %}
+{% set playerB = h2h ? h2h.b : (idB ? craft.elo.player(idB) : null) %}
+{% set clubEntries = craft.entries.section('clubs').with(['clubLogo']).collect().keyBy('title') %}
+{# Series colours: the first two palette slots (assets/js/lib/chart.js) #}
+{% set colors = ['#2a78d6', '#eb6834'] %}
+
+{% macro pct(x) %}{% set p = (x * 100)|round %}{{ (p > 99 ? '>99%' : (p < 1 ? '<1%' : p ~ '%'))|e }}{% endmacro %}
+
+{% block body %}
+  {% import _self as m %}
+  <section class="base-section">
+    <div class="base-container px-4">
+      <a href="{{ url('elo') }}" class="text-gray-600 hover:text-black">&larr; Rankings</a>
+      <h1 class="h1 mt-4">Head to head</h1>
+      <p class="text-2xl max-w-3xl">Two players' matches against each other and together, and their chances if they met now.</p>
+
+      <form action="{{ url('elo/head-to-head') }}" method="get" class="mt-6 grid gap-4 md:grid-cols-[1fr_1fr_auto] items-end max-w-4xl">
+        {% for key, player in { a: playerA, b: playerB } %}
+          <div class="relative" data-controller="player-picker" data-player-picker-url-value="{{ url('elo/players/search') }}">
+            <label for="player-{{ key }}" class="block text-sm text-gray-600 mb-1">{{ loop.first ? 'Player' : 'Against' }}</label>
+            <input id="player-{{ key }}" type="text" autocomplete="off" required placeholder="Search by name"
+                   value="{{ player.name ?? '' }}"
+                   role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="player-{{ key }}-list"
+                   data-player-picker-target="input"
+                   data-action="input->player-picker#search keydown->player-picker#key blur->player-picker#close"
+                   class="w-full px-3 py-2 border border-black bg-white">
+            <input type="hidden" name="{{ key }}" value="{{ player.id ?? '' }}" data-player-picker-target="id">
+            <ul id="player-{{ key }}-list" role="listbox" hidden data-player-picker-target="list"
+                class="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-300 shadow-sm max-h-80 overflow-y-auto"></ul>
+          </div>
+        {% endfor %}
+        <div class="flex gap-2">
+          <button type="submit" class="px-4 py-2 border border-black bg-black text-white hover:bg-white hover:text-black transition-colors duration-200 cursor-pointer">Compare</button>
+          {% if h2h %}
+            <a href="{{ url('elo/head-to-head', { a: idB, b: idA }) }}" class="px-4 py-2 border border-black hover:bg-black hover:text-white transition-colors duration-200" title="Swap the players">Swap</a>
+          {% endif %}
+        </div>
+      </form>
+      {% if idA and idB and not h2h %}
+        <p class="mt-4 text-red-700">{{ idA == idB ? 'Choose two different players.' : 'One of the players was not found.' }}</p>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if h2h %}
+    {% set a = h2h.a %}
+    {% set b = h2h.b %}
+    {% set record = h2h.record %}
+    <section class="base-section">
+      <div class="base-container px-4">
+        {# The two players and their record against each other #}
+        <div class="bg-white p-4 md:p-6 grid grid-cols-[1fr_auto_1fr] gap-4 items-center text-center">
+          {% for player in [a, b] %}
+            <div class="{{ loop.first ? 'order-1' : 'order-3' }}">
+              <span class="inline-block w-8 h-1 rounded-full mb-2" style="background: {{ colors[loop.index0] }}"></span>
+              <p class="text-2xl"><a href="{{ url('elo/players/' ~ player.id) }}" class="hover:text-blue-600">{{ player.name }}</a></p>
+              {% if player.club %}<p class="text-gray-600">{% include '_elo/_team' with { name: player.club, entries: clubEntries, size: 5 } only %}</p>{% endif %}
+            </div>
+          {% endfor %}
+          <div class="order-2 px-2">
+            {% if record.matches %}
+              <p class="text-5xl font-semibold tabular-nums">{{ record.wins }}<span class="text-gray-400 mx-2">–</span>{{ record.losses }}</p>
+              <p class="text-sm text-gray-600">{{ record.matches }} {{ record.matches == 1 ? 'match' : 'matches' }} against each other{% if record.draws %}, {{ record.draws }} drawn{% endif %}</p>
+            {% else %}
+              <p class="text-gray-600">Never met</p>
+            {% endif %}
+            {% if h2h.togetherRecord.matches %}
+              <p class="text-sm text-gray-600 mt-2">Together: {{ h2h.togetherRecord.wins }} won, {{ h2h.togetherRecord.losses }} lost</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    {% if h2h.pools is not empty %}
+      {% set tabbed = h2h.pools|length > 1 %}
+      <section class="base-section" {% if tabbed %}data-controller="tabs" data-tabs-hash-value="false"{% endif %}>
+        <div class="base-container px-4">
+          <h2 class="text-3xl mb-2">If they met now</h2>
+          <p class="text-gray-700 mb-6 max-w-3xl">
+            Current ratings in each discipline both play, and {{ a.name }}'s chance of winning against {{ b.name }}.
+            In doubles, the chance is with equally rated partners: a pair's rating is the sum of its players'.
+          </p>
+          {% if tabbed %}
+            <div role="tablist" aria-label="Disciplines" class="flex flex-wrap gap-2 mb-6">
+              {% for handle, pool in h2h.pools %}
+                <button type="button" role="tab" id="tab-{{ handle }}" aria-controls="{{ handle }}" aria-selected="{{ loop.first ? 'true' : 'false' }}" tabindex="{{ loop.first ? 0 : -1 }}"
+                        data-tabs-target="tab" data-action="tabs#choose keydown->tabs#key"
+                        class="px-4 py-2 border border-black transition-colors duration-200 hover:bg-black hover:text-white aria-selected:bg-black aria-selected:text-white cursor-pointer">{{ pool.label }}</button>
+              {% endfor %}
+            </div>
+          {% endif %}
+          {% for handle, pool in h2h.pools %}
+            <div id="{{ handle }}" {% if tabbed %}role="tabpanel" aria-labelledby="tab-{{ handle }}" data-tabs-target="panel" {% if not loop.first %}hidden{% endif %}{% endif %}>
+              <div class="bg-white p-4 md:p-6">
+                <h3 class="text-xl mb-4">{{ pool.label }}</h3>
+                <div class="grid grid-cols-2 gap-4">
+                  {% for side in ['a', 'b'] %}
+                    {% set p = pool[side] %}
+                    <dl class="{{ loop.last ? 'text-right' : '' }}">
+                      <dt class="text-sm text-gray-600">{{ h2h[side].name }}</dt>
+                      <dd class="text-3xl font-semibold tabular-nums">{{ p.rating|round }} <span class="text-base font-normal text-gray-500" title="95% range">±{{ p.plusMinus }}</span></dd>
+                      <dd class="text-sm text-gray-600">
+                        {% if p.rank %}#{{ p.rank }}{% if handle == 'mixedDoubles' %} among {{ p.gender == 'K' ? 'women' : 'men' }}{% endif %}{% else %}Not ranked{% endif %}
+                        · peak {{ p.peak|round }}
+                      </dd>
+                    </dl>
+                  {% endfor %}
+                </div>
+                {# Win chance as a split bar: A's share from the left, B's from the right #}
+                <div class="mt-6">
+                  <div class="flex justify-between text-sm mb-1 tabular-nums">
+                    <span><strong class="text-base">{{ m.pct(pool.chance) }}</strong> {{ a.name }}</span>
+                    <span>{{ b.name }} <strong class="text-base">{{ m.pct(1 - pool.chance) }}</strong></span>
+                  </div>
+                  <div class="flex h-3 gap-0.5" role="img" aria-label="{{ a.name }} {{ m.pct(pool.chance) }}, {{ b.name }} {{ m.pct(1 - pool.chance) }}">
+                    <div class="rounded-l" style="width: {{ (pool.chance * 100)|round(1) }}%; background: {{ colors[0] }}"></div>
+                    <div class="rounded-r flex-1" style="background: {{ colors[1] }}"></div>
+                  </div>
+                  {% if pool.record.matches %}
+                    <p class="text-sm text-gray-600 mt-2">Met {{ pool.record.matches }} {{ pool.record.matches == 1 ? 'time' : 'times' }} in {{ pool.label|lower }}: {{ a.name }} won {{ pool.record.wins }}, lost {{ pool.record.losses }}{% if pool.record.draws %}, drew {{ pool.record.draws }}{% endif %}.</p>
+                  {% endif %}
+                </div>
+                {% set series = [] %}
+                {% for side in ['a', 'b'] %}
+                  {% set history = pool[side].history %}
+                  {% if history and history.ratings|length > 1 %}
+                    {% set series = series|merge([{ label: h2h[side].name, from: history.from, values: history.ratings, slot: loop.index0 }]) %}
+                  {% endif %}
+                {% endfor %}
+                {% if series|length == 2 %}
+                  <h4 class="text-lg mt-8 mb-1">Rating history</h4>
+                  <p class="text-sm text-gray-600 mb-4">Rating at the end of each week</p>
+                  <div class="relative h-72" data-controller="discipline-chart" data-discipline-chart-label-value="Rating"
+                       data-discipline-chart-series-value="{{ series|json_encode }}"></div>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+
+    {% if h2h.meetings is not empty or h2h.together is not empty %}
+      <section class="base-section">
+        <div class="base-container px-4 grid gap-6">
+          {% if h2h.meetings is not empty %}
+            {% include '_elo/_matches' with { title: 'Matches against each other', subtitle: 'From ' ~ a.name ~ "'s side, newest first", matches: h2h.meetings, limit: 20 } only %}
+          {% endif %}
+          {% if h2h.together is not empty %}
+            {% include '_elo/_matches' with { title: 'Together as partners', subtitle: 'From ' ~ a.name ~ "'s side, newest first", matches: h2h.together, limit: 20 } only %}
+          {% endif %}
+        </div>
+      </section>
+    {% endif %}
+  {% endif %}
+{% endblock %}

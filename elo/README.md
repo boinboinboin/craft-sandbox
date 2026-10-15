@@ -317,6 +317,10 @@ A player's page has one tab per discipline they have played, with a graph of all
 
 A player's biggest rival is the opponent they have had the closest matches against, measured by the average point margin $d$ (as in the [margin of victory weight](#margin-of-victory-weight)) over at least 3 matches. To favour many close matches over a few, the average is pulled towards a typical margin of 0.2 as if there were 2 more matches: $(\sum d + 2 \cdot 0.2) / (n + 2)$. The player page shows the closest 3.
 
+### Head to head
+
+`/elo/head-to-head?a=<player id>&b=<player id>` compares two players, chosen with name search (`/elo/players/search?q=<name>`; every word must be in the name, accents ignored and æ/ø/å read as ae/o/a; ranked players first). It shows their record against each other (all disciplines, from player A's side) and together as partners, both from the complete match logs. For each discipline both are rated in, it shows the current ratings and A's chance of beating B now from the expected score; in doubles the chance is with equally rated partners, since a pair's rating is the sum of its players' and equal partners cancel out. Both players' rating histories in that discipline are drawn on one chart. Player pages link to it, also from each rival.
+
 ### Club history
 
 The rating graph is coloured by the club the player played for at the time: the club of their last tournament, if it was within the last 12 months, otherwise the club of their last league team.

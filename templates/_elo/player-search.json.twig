@@ -1,0 +1,3 @@
+{# Player search for the player pickers (player_picker controller): ?q=<name> → [{ id, name, club }] #}
+{% header "Content-Type: application/json; charset=utf-8" %}
+{{ craft.elo.searchPlayers(craft.app.request.getQueryParam('q', '')|slice(0, 60))|json_encode|raw }}

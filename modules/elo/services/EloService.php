@@ -14,6 +14,7 @@ use yii\base\Component;
  * - elo/data/matches/<id>.json: one player's last matches and biggest wins and losses, per pool
  * - elo/data/eliteserien.json: Eliteserien team strengths (elo/eliteserien.mjs)
  * - elo/data/club-history/<NBF club id>.json: a club's strength and rank at the end of every week, per pool
+ * - elo/data/eliteserien-<season>.json: an Eliteserien season in review (elo/eliteserien-review.mjs)
  *
  * ratings.json is decoded once per request and kept in memory.
  */
@@ -35,6 +36,12 @@ class EloService extends Component
         'M' => ['men', 'mensDoubles', 'mixedDoubles', 'women', 'womensDoubles'],
         'K' => ['women', 'womensDoubles', 'mixedDoubles', 'men', 'mensDoubles'],
     ];
+
+    /**
+     * Rating difference scale of the expected score, as SCALE in elo/rules.mjs: a difference of
+     * 300 points means a 91% win chance.
+     */
+    private const SCALE = 300;
 
     private ?array $ratings = null;
     private ?array $rankCounts = null;
@@ -213,5 +220,120 @@ class EloService extends Component
         }
 
         return $player;
+    }
+
+    /**
+     * Players whose name contains every word of $query (accents and case ignored), for the player
+     * pickers: ranked players first, then by number of matches.
+     *
+     * @return array<int, array{id: int, name: string, club: ?string}>
+     */
+    public function searchPlayers(string $query, int $limit = 10): array
+    {
+        $words = preg_split('/\s+/', $this->normalize($query), -1, PREG_SPLIT_NO_EMPTY);
+        if (!$words) {
+            return [];
+        }
+        $found = [];
+        foreach ($this->ratings()['pools'] ?? [] as $players) {
+            foreach ($players as $p) {
+                $name = $this->normalize($p['name']);
+                foreach ($words as $word) {
+                    if (!str_contains($name, $word)) {
+                        continue 2;
+                    }
+                }
+                $entry = $found[$p['id']] ?? ['id' => $p['id'], 'name' => $p['name'], 'club' => $p['club'] ?? null, 'ranked' => false, 'matches' => 0, 'prefix' => str_starts_with($name, $words[0])];
+                $entry['ranked'] = $entry['ranked'] || $p['rank'] !== null;
+                $entry['matches'] += $p['matches'];
+                $found[$p['id']] = $entry;
+            }
+        }
+        usort($found, fn(array $a, array $b) => [$b['prefix'], $b['ranked'], $b['matches']] <=> [$a['prefix'], $a['ranked'], $a['matches']]);
+
+        return array_map(fn(array $p) => ['id' => $p['id'], 'name' => $p['name'], 'club' => $p['club']], array_slice($found, 0, $limit));
+    }
+
+    private function normalize(string $text): string
+    {
+        $text = mb_strtolower($text);
+        $text = strtr($text, ['æ' => 'ae', 'ø' => 'o', 'å' => 'a']);
+
+        return preg_replace('/\p{Mn}/u', '', \Normalizer::normalize($text, \Normalizer::FORM_D));
+    }
+
+    /**
+     * Two players head to head: both players (as getPlayer), their matches against each other and
+     * together as partners (from player A's match logs, newest first, each with its `pool` and
+     * `poolLabel`), the record from A's side, and per discipline both play: the current ratings
+     * and A's chance of beating B now (in doubles, with equally rated partners).
+     *
+     * @return array{a: array, b: array, meetings: array, together: array, record: array, pools: array}|null
+     */
+    public function getHeadToHead(int $a, int $b): ?array
+    {
+        $playerA = $this->getPlayer($a);
+        $playerB = $this->getPlayer($b);
+        if (!$playerA || !$playerB || $a === $b) {
+            return null;
+        }
+
+        $meetings = [];
+        $together = [];
+        foreach ($playerA['pools'] as $pool => $p) {
+            foreach ($p['matchLog']['all'] ?? [] as $m) {
+                $m += ['pool' => $pool, 'poolLabel' => $p['label']];
+                if (in_array($b, array_column($m['opponents'], 'id'), true)) {
+                    $meetings[] = $m;
+                } elseif (($m['partner']['id'] ?? null) === $b) {
+                    $together[] = $m;
+                }
+            }
+        }
+        $newestFirst = fn(array $x, array $y) => strcmp($y['day'], $x['day']);
+        usort($meetings, $newestFirst);
+        usort($together, $newestFirst);
+
+        $pools = [];
+        foreach ($playerA['pools'] as $pool => $p) {
+            $q = $playerB['pools'][$pool] ?? null;
+            if (!$q) {
+                continue;
+            }
+            $pools[$pool] = [
+                'label' => $p['label'],
+                'a' => $p,
+                'b' => $q,
+                'chance' => 1 / (1 + 10 ** (($q['rating'] - $p['rating']) / self::SCALE)),
+                'record' => $this->record(array_filter($meetings, fn(array $m) => $m['pool'] === $pool)),
+            ];
+        }
+
+        return [
+            'a' => $playerA,
+            'b' => $playerB,
+            'meetings' => $meetings,
+            'together' => $together,
+            'record' => $this->record($meetings),
+            'togetherRecord' => $this->record($together),
+            'pools' => $pools,
+        ];
+    }
+
+    /**
+     * Wins, draws and losses of a list of matches (result 1, 0.5 or 0).
+     *
+     * @return array{matches: int, wins: int, draws: int, losses: int}
+     */
+    private function record(array $matches): array
+    {
+        $results = array_column($matches, 'result');
+
+        return [
+            'matches' => count($results),
+            'wins' => count(array_filter($results, fn($r) => $r == 1)),
+            'draws' => count(array_filter($results, fn($r) => $r > 0 && $r < 1)),
+            'losses' => count(array_filter($results, fn($r) => $r == 0)),
+        ];
     }
 }

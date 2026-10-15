@@ -13,6 +13,8 @@ return [
     // Badminton Elo ratings (modules/elo, data from elo/rate.mjs)
     'elo' => ['template' => '_elo/index'],
     'elo/players/<playerId:\d+>' => ['template' => '_elo/player'],
+    'elo/players/search' => ['template' => '_elo/player-search.json'],
+    'elo/head-to-head' => ['template' => '_elo/head-to-head'],
     'elo/clubs' => ['template' => '_elo/clubs'],
     'elo/eliteserien' => ['template' => '_elo/eliteserien'],
     'elo/eliteserien/<season:\d{4}-\d{2}>' => ['template' => '_elo/eliteserien-review'],

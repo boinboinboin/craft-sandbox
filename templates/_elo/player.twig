@@ -24,6 +24,7 @@
           {% endif %}
         </p>
       {% endif %}
+      <p class="mt-4"><a href="{{ url('elo/head-to-head', { a: player.id }) }}" class="underline hover:text-blue-600">Compare head to head with another player &rarr;</a></p>
     </div>
   </section>
 
@@ -212,7 +213,8 @@
                 </p>
                 <p class="text-gray-700 mt-1">
                   {{ rival.matches }} matches: {{ rival.wins }} won{% if rival.draws %}, {{ rival.draws }} drawn{% endif %}, {{ rival.losses }} lost ·
-                  average margin {{ (rival.margin * 100)|round(1) }}% of points · last met {{ rival.lastPlayed|date('j M Y') }}
+                  average margin {{ (rival.margin * 100)|round(1) }}% of points · last met {{ rival.lastPlayed|date('j M Y') }} ·
+                  <a href="{{ url('elo/head-to-head', { a: player.id, b: rival.opponent.id }) }}" class="underline hover:text-blue-600">head to head</a>
                 </p>
                 {% if matches.rivals|length > 1 %}
                   <p class="text-sm text-gray-600 mt-4">Also close:</p>
@@ -220,7 +222,8 @@
                     {% for r in matches.rivals|slice(1) %}
                       <li>
                         <a href="{{ url('elo/players/' ~ r.opponent.id) }}" class="hover:text-blue-600">{{ r.opponent.name }}</a>
-                        <span class="text-sm text-gray-600">{{ r.matches }} matches, {{ r.wins }}–{{ r.losses }}{% if r.draws %}–{{ r.draws }}{% endif %}, margin {{ (r.margin * 100)|round(1) }}%</span>
+                        <span class="text-sm text-gray-600">{{ r.matches }} matches, {{ r.wins }}–{{ r.losses }}{% if r.draws %}–{{ r.draws }}{% endif %}, margin {{ (r.margin * 100)|round(1) }}% ·
+                          <a href="{{ url('elo/head-to-head', { a: player.id, b: r.opponent.id }) }}" class="underline hover:text-blue-600">head to head</a></span>
                       </li>
                     {% endfor %}
                   </ul>
