@@ -1,4 +1,4 @@
-{% extends "_base.twig" %}
+{% extends "_elo/_layout.twig" %}
 
 {# Badminton Elo rankings, from the ratings calculated by elo/rate.mjs (see elo/README.md). #}
 
@@ -15,7 +15,7 @@
 {# Club entry URLs by short name #}
 {% set clubUrls = craft.entries.section('clubs').collect().mapWithKeys(e => { (e.title): e.url }) %}
 
-{% block body %}
+{% block content %}
   <section class="base-section">
     <div class="base-container px-4">
       <h1 class="h1">Badminton Elo</h1>

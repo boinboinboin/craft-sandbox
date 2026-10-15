@@ -321,6 +321,10 @@ A player's biggest rival is the opponent they have had the closest matches again
 
 `/elo/head-to-head?a=<player id>&b=<player id>` compares two players, chosen with name search (`/elo/players/search?q=<name>`; every word must be in the name, accents ignored and æ/ø/å read as ae/o/a; ranked players first). It shows their record against each other (all disciplines, from player A's side) and together as partners, both from the complete match logs. For each discipline both are rated in, it shows the current ratings and A's chance of beating B now from the expected score; in doubles the chance is with equally rated partners, since a pair's rating is the sum of its players' and equal partners cancel out. Both players' rating histories in that discipline are drawn on one chart. Player pages link to it, also from each rival.
 
+### Search
+
+Every Elo page (templates/_elo/_layout.twig) has a search bar for players, clubs and the Eliteserien pages (`/elo/search?q=<text>`): players as in the head-to-head search, clubs by short or full name, and Eliteserien's team strengths and each season in review (e.g. "elite 2024"). Every word of the search must match; choosing a result opens its page.
+
 ### Club history
 
 The rating graph is coloured by the club the player played for at the time: the club of their last tournament, if it was within the last 12 months, otherwise the club of their last league team.

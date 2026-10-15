@@ -1,4 +1,4 @@
-{% extends "_base.twig" %}
+{% extends "_elo/_layout.twig" %}
 
 {# Strongest clubs per pool: average rating of each club's best ranked players (elo/rate.mjs). #}
 
@@ -12,7 +12,7 @@
 {% set clubEntries = craft.entries.section('clubs').with(['clubLogo']).collect().keyBy('title') %}
 {% set rule = combined ? null : craft.elo.clubStrengthRule(pool) %}
 
-{% block body %}
+{% block content %}
   <section class="base-section">
     <div class="base-container px-4">
       <a href="{{ url('elo', combined ? {} : { pool: pool }) }}" class="text-gray-600 hover:text-black">&larr; Rankings</a>

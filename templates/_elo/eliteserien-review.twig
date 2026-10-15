@@ -1,4 +1,4 @@
-{% extends "_base.twig" %}
+{% extends "_elo/_layout.twig" %}
 
 {# An Eliteserien season in review (route elo/eliteserien/<season>, like 2025-26), from
    elo/data/eliteserien-<season>.json (elo/eliteserien-review.mjs). #}
@@ -9,7 +9,7 @@
 {% set clubEntries = craft.entries.section('clubs').with(['clubLogo']).collect().keyBy('title') %}
 {% macro signed(x, decimals = 1) %}{{ x > 0 ? '+' : (x < 0 ? '−' : '') }}{{ x|abs|number_format(decimals) }}{% endmacro %}
 
-{% block body %}
+{% block content %}
   {% import _self as m %}
   {% set disciplineNames = { MensSingles: 'MS', WomensSingles: 'WS', MensDoubles: 'MD', WomensDoubles: 'WD', MixedDoubles: 'XD' } %}
   <section class="base-section">

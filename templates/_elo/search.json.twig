@@ -1,0 +1,3 @@
+{# The search bar on every Elo page (elo_search controller): ?q=<text> → { players, clubs, eliteserien }, each [{ name, detail?, club?, url, logo? }] #}
+{% header "Content-Type: application/json; charset=utf-8" %}
+{{ craft.elo.search(craft.app.request.getQueryParam('q', '')|slice(0, 60))|json_encode|raw }}

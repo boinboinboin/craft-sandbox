@@ -1,4 +1,4 @@
-{% extends "_base.twig" %}
+{% extends "_elo/_layout.twig" %}
 
 {# Two players head to head: ?a=<player id>&b=<player id>. The player pickers (player_picker
    controller) search elo/players/search. #}
@@ -17,7 +17,7 @@
 
 {% macro pct(x) %}{% set p = (x * 100)|round %}{{ (p > 99 ? '>99%' : (p < 1 ? '<1%' : p ~ '%'))|e }}{% endmacro %}
 
-{% block body %}
+{% block content %}
   {% import _self as m %}
   <section class="base-section">
     <div class="base-container px-4">

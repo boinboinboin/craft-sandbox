@@ -1,4 +1,4 @@
-{% extends "_base.twig" %}
+{% extends "_elo/_layout.twig" %}
 
 {# One player's ratings and rating history. `playerId` comes from the route in config/routes.php. #}
 
@@ -7,7 +7,7 @@
   {% exit 404 %}
 {% endif %}
 
-{% block body %}
+{% block content %}
   <section class="base-section">
     <div class="base-container px-4">
       <a href="{{ url('elo') }}" class="text-gray-600 hover:text-black">&larr; Rankings</a>

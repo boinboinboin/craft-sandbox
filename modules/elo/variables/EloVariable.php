@@ -74,4 +74,9 @@ class EloVariable
     {
         return Module::getInstance()->elo->getHeadToHead($a, $b);
     }
+
+    public function search(string $query): array
+    {
+        return Module::getInstance()->elo->search($query);
+    }
 }

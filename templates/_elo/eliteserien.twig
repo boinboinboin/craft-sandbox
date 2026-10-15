@@ -1,4 +1,4 @@
-{% extends "_base.twig" %}
+{% extends "_elo/_layout.twig" %}
 
 {# Eliteserien team strengths, from elo/data/eliteserien.json (elo/eliteserien.mjs). #}
 
@@ -10,7 +10,7 @@
 {% set refs = data.references ?? {} %}
 {% set refFor = { MS1: refs.MS[0] ?? 0, MS2: refs.MS[1] ?? 0, WS1: refs.WS[0] ?? 0, WS2: refs.WS[1] ?? 0, MD: refs.MD ?? 0, WD: refs.WD ?? 0, XD1: refs.XD[0] ?? 0, XD2: refs.XD[1] ?? 0 } %}
 
-{% block body %}
+{% block content %}
   <section class="base-section">
     <div class="base-container px-4">
       <a href="{{ url('elo') }}" class="text-gray-600 hover:text-black">&larr; Rankings</a>

@@ -1,0 +1,21 @@
+{% extends "_base.twig" %}
+
+{# Layout of the Elo pages: the search bar (players, clubs and Eliteserien; elo_search controller,
+   elo/search) above the page's `content` block. #}
+
+{% block body %}
+  <div class="base-container px-4 pt-6">
+    <form role="search" class="relative max-w-md ml-auto"
+          data-controller="elo-search" data-elo-search-url-value="{{ url('elo/search') }}" data-action="submit->elo-search#submit">
+      <label for="elo-search" class="sr-only">Search players, clubs and Eliteserien</label>
+      <input id="elo-search" type="search" autocomplete="off" placeholder="Search players, clubs and Eliteserien"
+             role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="elo-search-list"
+             data-elo-search-target="input"
+             data-action="input->elo-search#search keydown->elo-search#key blur->elo-search#close"
+             class="w-full px-3 py-2 border border-black bg-white">
+      <ul id="elo-search-list" role="listbox" aria-label="Search results" hidden data-elo-search-target="list"
+          class="absolute z-30 left-0 right-0 mt-1 bg-white border border-gray-300 shadow-sm max-h-96 overflow-y-auto pb-1"></ul>
+    </form>
+  </div>
+  {% block content %}{% endblock %}
+{% endblock %}

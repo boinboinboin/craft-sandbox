@@ -3,6 +3,8 @@
 namespace modules\elo\services;
 
 use Craft;
+use craft\elements\Entry;
+use craft\helpers\UrlHelper;
 use yii\base\Component;
 
 /**
@@ -252,6 +254,67 @@ class EloService extends Component
         usort($found, fn(array $a, array $b) => [$b['prefix'], $b['ranked'], $b['matches']] <=> [$a['prefix'], $a['ranked'], $a['matches']]);
 
         return array_map(fn(array $p) => ['id' => $p['id'], 'name' => $p['name'], 'club' => $p['club']], array_slice($found, 0, $limit));
+    }
+
+    /**
+     * The search bar on every Elo page: players (as searchPlayers), clubs (club entries by short or
+     * full name) and the Eliteserien pages (this season's team strengths and each season in
+     * review), each with the URL to go to. Every word of $query must match.
+     *
+     * @return array{players: array, clubs: array, eliteserien: array}
+     */
+    public function search(string $query): array
+    {
+        $words = preg_split('/\s+/', $this->normalize($query), -1, PREG_SPLIT_NO_EMPTY);
+        if (!$words) {
+            return ['players' => [], 'clubs' => [], 'eliteserien' => []];
+        }
+        $matches = function(string $text) use ($words): bool {
+            $text = $this->normalize($text);
+            foreach ($words as $word) {
+                if (!str_contains($text, $word)) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        $players = array_map(fn(array $p) => $p + ['url' => UrlHelper::siteUrl("elo/players/{$p['id']}")], $this->searchPlayers($query, 6));
+
+        $clubs = [];
+        foreach (Entry::find()->section('clubs')->with(['clubLogo'])->orderBy('title')->all() as $entry) {
+            $fullName = (string)($entry->clubFullName ?? '');
+            if (!$matches("$entry->title $fullName")) {
+                continue;
+            }
+            $logo = $entry->clubLogo[0] ?? null;
+            $clubs[] = [
+                'name' => $entry->title,
+                'detail' => $fullName !== $entry->title ? $fullName : (string)($entry->clubRegion ?? ''),
+                'url' => $entry->url,
+                'logo' => $logo?->url,
+            ];
+            if (count($clubs) === 6) {
+                break;
+            }
+        }
+
+        $pages = [];
+        $current = $this->getEliteserien()['season'] ?? null;
+        if ($current) {
+            $pages[] = ['name' => "Eliteserien $current", 'detail' => 'Team strengths', 'url' => UrlHelper::siteUrl('elo/eliteserien'), 'terms' => 'team strengths lineups'];
+        }
+        foreach ($this->getEliteserienReviewSeasons() as $season) {
+            $label = substr($season, 0, 4) . '/' . (substr($season, 0, 4) + 1);
+            $pages[] = ['name' => "Eliteserien $label", 'detail' => 'Season in review', 'url' => UrlHelper::siteUrl("elo/eliteserien/$season"), 'terms' => "$season review results"];
+        }
+        $eliteserien = array_values(array_filter($pages, fn(array $page) => $matches("eliteserie {$page['name']} {$page['terms']}")));
+
+        return [
+            'players' => $players,
+            'clubs' => $clubs,
+            'eliteserien' => array_map(fn(array $page) => array_diff_key($page, ['terms' => true]), $eliteserien),
+        ];
     }
 
     private function normalize(string $text): string

@@ -1,4 +1,4 @@
-{% extends "_base.twig" %}
+{% extends "_elo/_layout.twig" %}
 
 {# A club (Clubs section entry, synced by `craft elo/clubs/sync`) with its ranked players per pool. #}
 
@@ -7,7 +7,7 @@
 {# Strength and rank at the end of every week, per pool (see elo/rate.mjs) #}
 {% set history = entry.nbfClubId ? craft.elo.clubHistory(entry.nbfClubId) : {} %}
 
-{% block body %}
+{% block content %}
   <section class="base-section">
     <div class="base-container px-4">
       <a href="{{ url('elo/clubs') }}" class="text-gray-600 hover:text-black">&larr; Strongest clubs</a>
