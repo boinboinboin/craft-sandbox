@@ -226,7 +226,7 @@ With the singles maximum, doubles ranges were about 30% too wide.
 
 ## Rankings
 
-Ranking lists only include players who have played in the last 12 months. Inactive players keep their rating and history, and reappear in the rankings as soon as they play again. The rankings page can show them too (without a rank) with "Show inactive players".
+Ranking lists only include players who have played in the last 12 months, with time during Covid-19 counting slower (see [Covid-19 period adjustment](#covid-19-period-adjustment)). Inactive players keep their rating and history, and reappear in the rankings as soon as they play again. The rankings page can show them too (without a rank) with "Show inactive players".
 
 The club shown for a player is their club registered on badmintonportalen. Players no longer in the register show the club of their last tournament, or otherwise the club of their last league team. League team names such as "Kristiansand 2" are team numbers, not clubs.
 
@@ -252,7 +252,7 @@ The combined list ranks clubs by their average standard score in all five discip
 
 ### Club strength history
 
-Each club page shows the club's strength per pool at the end of every week since 2013, with its rank among clubs that week. It is the same average of the best ranked players as above, using the ratings at the time. A player counts for a week if they played in the 12 months before it, for the club they played for at the time (as in a player's [club history](#club-history)). Weeks where the club had too few ranked players leave a gap.
+Each club page shows the club's strength per pool at the end of every week since 2013, with its rank among clubs that week. It is the same average of the best ranked players as above, using the ratings at the time. A player counts for a week if they were active then (played in the 12 months before it, Covid-adjusted as for the rankings), for the club they played for at the time (as in a player's [club history](#club-history)). Weeks where the club had too few ranked players leave a gap.
 
 The current week is the club ranking itself, so the graph ends on the strength and rank shown next to it. That ranking uses players' registered clubs, so a player who has just changed clubs (and not yet played for the new one) shows up as a step in the last week. The history is written per club to `data/club-history/<NBF club id>.json`, only for clubs in badmintonportalen's club list.
 
@@ -297,11 +297,13 @@ Elo predicted better in every season and both pools. When the two disagreed on t
 
 ## Covid-19 period adjustment
 
-| Period                  | Not playing penalty | K-factor $c_t$ |
-| ----------------------- | ------------------- | -------------- |
-| 2020-03-18 – 2020-10-10 | None                | $\times 50\%$  |
-| 2020-10-11 – 2021-02-01 | $\times 50\%$       | $\times 50\%$  |
-| 2021-02-02 – 2021-07-24 | $\times 50\%$       | Normal         |
-| 2021-07-25 – 2021-11-15 | $\times 70\%$       | Normal         |
-| 2021-11-16 – 2022-03-08 | $\times 90\%$       | Normal         |
-| From 2022-03-09         | Normal              | Normal         |
+| Period                  | Not playing penalty | K-factor $c_t$ | Time towards inactive |
+| ----------------------- | ------------------- | -------------- | --------------------- |
+| 2020-03-18 – 2020-10-10 | None                | $\times 50\%$  | None                  |
+| 2020-10-11 – 2021-02-01 | $\times 50\%$       | $\times 50\%$  | $\times 50\%$         |
+| 2021-02-02 – 2021-07-24 | $\times 50\%$       | Normal         | $\times 50\%$         |
+| 2021-07-25 – 2021-11-15 | $\times 70\%$       | Normal         | Normal                |
+| 2021-11-16 – 2022-03-08 | $\times 90\%$       | Normal         | Normal                |
+| From 2022-03-09         | Normal              | Normal         | Normal                |
+
+*Time towards inactive* is how fast time without playing counts towards a player becoming inactive (12 months, see [Rankings](#rankings)). A player who was active when Covid-19 started stays active through the lockdown, until well into 2021. Without it, most players went inactive at once and [club strengths](#club-strength-history) dropped through 2020 and 2021: in June 2021 only 33 clubs had a men's singles strength, against 81 with it.

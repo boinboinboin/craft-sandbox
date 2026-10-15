@@ -523,8 +523,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   // Fields only used while rating
   const INTERNAL = new Set(["weekly", "log", "clubs", "nextWeek", "penalizedUntil", "returning", "returnInfo", "rdDay", "tournamentClub", "tournamentDay", "leagueClub"]);
 
-  // Rankings only include players active within RANKING_ACTIVE_DAYS; others get rank null.
-  const activeSince = addDays(today, -R.RANKING_ACTIVE_DAYS);
+  // Rankings only include active players (R.isActive); others get rank null.
   for (const [pool, map] of Object.entries(players)) {
     const list = [...map.values()].sort((a, b) => b.rating - a.rating);
     // Mixed doubles ranks men and women separately: every side has one of each, so results
@@ -533,7 +532,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const ranks = {};
     ratings[pool] = list.map((player) => {
       const p = Object.fromEntries(Object.entries(player).filter(([key]) => !INTERNAL.has(key)));
-      const active = p.lastPlayed >= activeSince;
+      const active = R.isActive(p.lastPlayed, today);
       const gender = genderOf(p.id);
       const rankGroup = separate ? gender : "all";
       const rank = active && rankGroup ? (ranks[rankGroup] = (ranks[rankGroup] ?? 0) + 1) : null;
@@ -627,7 +626,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   // Club history: each club's strength (the same CLUB_TOP average as the club ranking) at the end
   // of every week, from the ranked players who played for it at the time. A player counts for a
-  // club in a week if they played in the RANKING_ACTIVE_DAYS before its end, under the club of
+  // club in a week if they were active at its end (R.isActive, Covid-adjusted), under the club of
   // their club history for that week. Written per club (NBF club id) to data/club-history/<id>.json.
   const firstWeek = Object.values(players).flatMap((map) => [...map.values()].map((p) => p.firstWeek)).sort()[0];
   const weekCount = Math.round((toTime(weekStart(today)) - toTime(firstWeek)) / (7 * DAY_MS)) + 1;
@@ -640,6 +639,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     }
     return index;
   };
+  // Covid-adjusted days without playing from the first week to the end of each week, so the time
+  // between two weeks is a subtraction (same as R.inactiveDays)
+  const activityClock = Array.from({ length: weekCount }, (_, w) => R.inactiveDays(firstWeek, addDays(firstWeek, (w + 1) * 7)));
   const clubHistory = new Map(); // club -> { pool: { strength: [], rank: [] } }
   const clubCounts = {}; // pool -> clubs with a strength per week
   for (const [pool, map] of Object.entries(players)) {
@@ -654,8 +656,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       let club = 0; // index into p.clubs
       for (let w = playedWeeks[0]; w < weekCount; w++) {
         while (playedWeeks[played + 1] <= w) played++;
-        // Active: played within RANKING_ACTIVE_DAYS of the end of week w
-        if ((w - playedWeeks[played]) * 7 > R.RANKING_ACTIVE_DAYS) {
+        // Active: played within RANKING_ACTIVE_DAYS (Covid-adjusted) of the end of week w
+        if (activityClock[w] - activityClock[playedWeeks[played]] > R.RANKING_ACTIVE_DAYS) {
           if (played === playedWeeks.length - 1) break;
           continue;
         }

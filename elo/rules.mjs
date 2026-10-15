@@ -224,19 +224,31 @@ export const covidPenalty = (day) => covidPeriod(day)?.penalty ?? 1;
 // counting at their reduced not playing penalty rate.
 const DAY_MS = 86_400_000;
 const dayNumber = (day) => Date.parse(`${day}T00:00:00Z`) / DAY_MS;
-export function penaltyDays(from, to) {
+function weightedDays(from, to, periods, rateOf) {
   let days = Math.max(0, dayNumber(to) - dayNumber(from));
-  for (const p of COVID) {
+  for (const p of periods) {
     const overlap = Math.min(dayNumber(to), dayNumber(p.to) + 1) - Math.max(dayNumber(from), dayNumber(p.from));
-    if (overlap > 0) days -= overlap * (1 - p.penalty);
+    if (overlap > 0) days -= overlap * (1 - rateOf(p));
   }
   return days;
 }
+export const penaltyDays = (from, to) => weightedDays(from, to, COVID, (p) => p.penalty);
 
 // Not playing penalty. After `graceDays` without playing, the part of the rating above
 // `floor` decays: it halves every `halfLifeDays` (null = no penalty). Ratings at or below
 // the floor are not affected.
 export const INACTIVITY = { graceDays: 365, halfLifeDays: 1095, floor: P0 };
 
-// Ranking lists only include players who played within this many days.
+// A player is active (ranked, and counted for their club's strength) while they have played within
+// this many days. During Covid-19 the time without playing counts slower: not at all from 2020-03-18
+// to 2020-10-10, when hardly anything was played, and at half speed until 2021-07-24. Without this,
+// most players went inactive at once and club strengths dropped through 2020 and 2021.
 export const RANKING_ACTIVE_DAYS = 365;
+const COVID_ACTIVITY = [
+  { from: "2020-03-18", to: "2020-10-10", rate: 0 },
+  { from: "2020-10-11", to: "2021-07-24", rate: 0.5 },
+];
+// Days without playing between two ISO dates (from inclusive, to exclusive), Covid-adjusted
+export const inactiveDays = (from, to) => weightedDays(from, to, COVID_ACTIVITY, (p) => p.rate);
+// Whether a player who last played on `lastPlayed` is still active on `day`
+export const isActive = (lastPlayed, day) => inactiveDays(lastPlayed, day) <= RANKING_ACTIVE_DAYS;
