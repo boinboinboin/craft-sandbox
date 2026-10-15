@@ -1,0 +1,37 @@
+{# One upset (from craft.elo.upsetWeeks()): the winners, who beat whom with what win chance, the
+   score, discipline, event and day, with each player's rating before the match, the rating gained or
+   lost, and their club and its logo. Expects `upset` and
+   `clubEntries` (club entries by title, with clubLogo eager-loaded); optional `rank` (#1, #2, ...). #}
+{% set chance = (upset.winChance * 100)|round %}
+<article class="bg-white p-4 md:p-5 h-full flex flex-col">
+  <div class="flex items-baseline justify-between gap-3">
+    {% if rank ?? null %}<span class="text-sm text-gray-500">#{{ rank }}</span>{% endif %}
+    <p class="ml-auto text-right"><span class="text-3xl font-semibold tabular-nums">{{ (chance < 1 ? '<1' : chance)|e }}%</span>
+      <span class="block text-sm text-gray-600">chance of winning</span></p>
+  </div>
+  {% for side in [upset.winners, upset.losers] %}
+    {% if not loop.first %}<p class="text-sm text-gray-600 mt-2">beat</p>{% endif %}
+    <ul class="{{ loop.first ? 'mt-2 text-lg' : '' }}">
+      {% for p in side %}
+        <li>
+          <a href="{{ url('elo/players/' ~ p.id) }}" class="{{ loop.parent.loop.first ? 'font-semibold' : '' }} hover:text-blue-600">{{ p.name }}</a>
+          {# Rating before the match, and what the match gained or cost #}
+          <span class="text-sm text-gray-500 tabular-nums" title="Rating before the match">{{ p.rating }}</span>
+          {% if p.change is defined %}
+            <span class="text-sm font-semibold tabular-nums {{ p.change >= 0 ? 'text-green-700' : 'text-red-700' }}" title="Rating {{ p.change >= 0 ? 'gained' : 'lost' }}">{{ p.change >= 0 ? '+' : '−' }}{{ p.change|abs|number_format(1) }}</span>
+          {% endif %}
+          {% if p.club ?? null %}
+            <span class="block text-sm text-gray-600">{% include '_elo/_team' with { name: p.club, entries: clubEntries, size: 4 } only %}</span>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% endfor %}
+  <p class="mt-2 tabular-nums">{{ upset.score }}</p>
+  <p class="mt-auto pt-3 text-sm text-gray-600">
+    {{ upset.poolLabel }} · {{ upset.event }} · {{ upset.day|date('j M Y') }}
+    {% if upset.winners|length == 1 %}
+      · <a href="{{ url('elo/head-to-head', { a: (upset.winners|first).id, b: (upset.losers|first).id }) }}" class="underline hover:text-blue-600">head to head</a>
+    {% endif %}
+  </p>
+</article>

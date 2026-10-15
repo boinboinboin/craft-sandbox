@@ -18,6 +18,12 @@ const CALIBRATION_FROM = "2015-07-01";
 const CALIBRATION_MIN_MATCHES = 10;
 // Per player and pool: this many last matches, and biggest wins and losses (by win chance before the match).
 const BIGGEST_MATCHES = 5;
+// Upsets kept per week (data/upsets.json): the matches won with the lowest win chance. Only
+// matches between settled players count: every player has 10+ matches (as for biggest wins) and a
+// rating certain to within ±250 in singles, ±180 in doubles (RD before the match, about the more
+// certain half of ranked players), so a fast-improving junior beating a favourite isn't an upset.
+const WEEKLY_UPSETS = 10;
+const UPSET_MAX_RD = { singles: 125, doubles: 90 };
 // Rivals: opponents met at least RIVAL_MIN_MATCHES times, closest first by the average point
 // margin d (as in the margin of victory weight). The average is pulled towards a typical margin
 // as if there were RIVAL_PRIOR_MATCHES more matches, so many close matches beat a few.
@@ -356,6 +362,9 @@ export function computeRatings(
   const calibration = Object.fromEntries(Object.keys(players).map((pool) => [pool, { n: 0, correct: 0, logLoss: 0 }]));
   // surprise: mean (actual - expected) score. items: [rating before the return, days away, actual - expected]
   const returns = { n: 0, surprise: 0, logLoss: 0, items: [] };
+  // Upsets by week (Monday): decisive matches between settled players won by the side with less
+  // than an even chance
+  const upsets = new Map();
 
   // Not playing penalty for the time between the end of the grace period and `day`.
   function applyInactivity(p, day) {
@@ -470,6 +479,7 @@ export function computeRatings(
     // values). In doubles each player is measured against the opposing side's summed rating and
     // the uncertainty of that sum.
     for (const p of all) p.rd = R.rdAfterTime(p.rd, (toTime(g.day) - toTime(p.rdDay)) / DAY_MS, rdMax(g.pool));
+    const certain = all.every((p) => p.rd <= UPSET_MAX_RD[DOUBLES.has(g.pool) ? "doubles" : "singles"]);
     const teamRd = (side) => Math.sqrt(side.reduce((sum, p) => sum + p.rd ** 2, 0));
     const rdAfter = perSide.map(({ players: side, opponents }) =>
       side.map((p) => R.rdAfterMatch(teamRating(side), p.rd, teamRating(opponents), teamRd(opponents)))
@@ -485,6 +495,24 @@ export function computeRatings(
       });
     }
     perSide.forEach((side, i) => side.players.forEach((p, j) => ([p.rd, p.rdDay] = [rdAfter[i][j], g.day])));
+
+    if (keepWeekly && decisive && settled && certain) {
+      const [winner, loser] = g.s === 1 ? perSide : [perSide[1], perSide[0]];
+      if (winner.e < 0.5) {
+        // rating: before the match; change: what the match gained or cost them
+        const refs = (side) => side.players.map((p, j) => ({
+          id: p.id, name: p.name, rating: Math.round(p.rating), change: Math.round(side.changes[j] * 10) / 10, club: p.clubs.at(-1)?.[1] ?? null,
+        }));
+        if (!upsets.has(week)) upsets.set(week, []);
+        upsets.get(week).push({
+          day: g.day, pool: g.pool, event: g.event, key: g.key,
+          winChance: Math.round(winner.e * 1000) / 1000,
+          winners: refs(winner),
+          losers: refs(loser),
+          score: winner.sets.map((x) => x.join("-")).join(", "),
+        });
+      }
+    }
 
     if (keepWeekly) {
       const ref = (p) => ({ id: p.id, name: p.name, rating: Math.round(p.rating) });
@@ -529,12 +557,12 @@ export function computeRatings(
       p.rd = R.rdAfterTime(p.rd, (toTime(today) - toTime(p.rdDay)) / DAY_MS, rdMax(pool));
     }
   }
-  return { players, calibration, returns };
+  return { players, calibration, returns, upsets };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const games = collectGames();
-  const { players, calibration, returns } = computeRatings(games);
+  const { players, calibration, returns, upsets } = computeRatings(games);
 
   const today = new Date().toISOString().slice(0, 10);
   const round = (x) => Math.round(x * 10) / 10;
@@ -925,6 +953,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   }
   mkdirSync(`${DIR}data/matches`, { recursive: true });
   for (const [id, m] of matches) writeFileSync(`${DIR}data/matches/${id}.json`, JSON.stringify(m));
+
+  // Each week's biggest upsets (lowest win chance first; ties: newest first), newest week first.
+  // Players' ratings are from before the match.
+  const upsetWeeks = [...upsets]
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([week, list]) => ({
+      week,
+      matches: list.sort((x, y) => x.winChance - y.winChance || y.day.localeCompare(x.day)).slice(0, WEEKLY_UPSETS),
+    }));
+  writeFileSync(`${DIR}data/upsets.json`, JSON.stringify({ generatedAt: new Date().toISOString(), weekStartsOn: "Monday", weeks: upsetWeeks }));
 
   const perPool = [...Map.groupBy(games, (g) => g.pool)].map(([pool, list]) => `${list.length} ${pool}`);
   console.log(`Rated ${games.length} games (${games[0]?.day} to ${games.at(-1)?.day}): ${perPool.join(", ")}.`);

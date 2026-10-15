@@ -27,9 +27,32 @@
         <a href="{{ url('elo/clubs') }}" class="underline hover:text-blue-600">Strongest clubs &rarr;</a>
         <a href="{{ url('elo/eliteserien') }}" class="underline hover:text-blue-600">Eliteserien team strengths &rarr;</a>
         <a href="{{ url('elo/head-to-head') }}" class="underline hover:text-blue-600">Head to head &rarr;</a>
+        <a href="{{ url('elo/upsets') }}" class="underline hover:text-blue-600">Biggest upsets &rarr;</a>
       </p>
     </div>
   </section>
+
+  {# The newest week's three biggest upsets: this week's if there have been matches, else the last week that had some #}
+  {% set upsetWeek = craft.elo.upsetWeeks()|first %}
+  {% set clubEntries = craft.entries.section('clubs').with(['clubLogo']).collect().keyBy('title') %}
+  {% if upsetWeek %}
+    {% set thisMonday = now|date_modify('-' ~ (now|date('N') - 1) ~ ' days')|date('Y-m-d') %}
+    <section class="base-section">
+      <div class="base-container px-4">
+        <div class="flex flex-wrap items-baseline justify-between gap-4 mb-4">
+          <h2 class="text-3xl">
+            {% if upsetWeek.week == thisMonday %}This week's biggest upsets{% else %}Biggest upsets, week of {{ upsetWeek.week|date('j') }}–{{ upsetWeek.week|date_modify('+6 days')|date('j F') }}{% endif %}
+          </h2>
+          <a href="{{ url('elo/upsets') }}" class="underline hover:text-blue-600">All weeks &rarr;</a>
+        </div>
+        <ol class="grid gap-4 md:grid-cols-3">
+          {% for upset in upsetWeek.matches|slice(0, 3) %}
+            <li>{% include '_elo/_upset' with { upset: upset, rank: loop.index, clubEntries: clubEntries } only %}</li>
+          {% endfor %}
+        </ol>
+      </div>
+    </section>
+  {% endif %}
 
   <section class="base-section" data-controller="table-filter">
     <div class="base-container px-4">

@@ -16,6 +16,7 @@ use yii\base\Component;
  * - elo/data/matches/<id>.json: one player's last matches and biggest wins and losses, per pool
  * - elo/data/eliteserien.json: Eliteserien team strengths (elo/eliteserien.mjs)
  * - elo/data/club-history/<NBF club id>.json: a club's strength and rank at the end of every week, per pool
+ * - elo/data/upsets.json: each week's biggest upsets (matches won with the lowest win chance)
  * - elo/data/eliteserien-<season>.json: an Eliteserien season in review (elo/eliteserien-review.mjs)
  *
  * ratings.json is decoded once per request and kept in memory.
@@ -46,6 +47,7 @@ class EloService extends Component
     private const SCALE = 300;
 
     private ?array $ratings = null;
+    private ?array $upsets = null;
     private ?array $rankCounts = null;
 
     private function read(string $file): array
@@ -254,6 +256,25 @@ class EloService extends Component
         usort($found, fn(array $a, array $b) => [$b['prefix'], $b['ranked'], $b['matches']] <=> [$a['prefix'], $a['ranked'], $a['matches']]);
 
         return array_map(fn(array $p) => ['id' => $p['id'], 'name' => $p['name'], 'club' => $p['club']], array_slice($found, 0, $limit));
+    }
+
+    /**
+     * Each week's biggest upsets, newest week first: [{ week (Monday), matches: [{ day, pool,
+     * poolLabel, event, winChance, winners, losers, score }] }], lowest win chance first. The newest
+     * week is the current one if it has had matches, else the last week that did.
+     *
+     * @return array<int, array{week: string, matches: array}>
+     */
+    public function getUpsetWeeks(): array
+    {
+        $weeks = $this->upsets ??= $this->read('upsets.json')['weeks'] ?? [];
+        foreach ($weeks as &$week) {
+            foreach ($week['matches'] as &$m) {
+                $m['poolLabel'] = self::POOLS[$m['pool']] ?? $m['pool'];
+            }
+        }
+
+        return $weeks;
     }
 
     /**

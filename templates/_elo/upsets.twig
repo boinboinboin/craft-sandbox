@@ -1,0 +1,108 @@
+{% extends "_elo/_layout.twig" %}
+
+{# Each week's biggest upsets (elo/data/upsets.json, from elo/rate.mjs): ?week=<Monday> shows that
+   week's top 10 (default: the newest week with matches), and the biggest upset of every week of
+   ?year= (default: the shown week's year). #}
+
+{% set weeks = craft.elo.upsetWeeks() %}
+{% set clubEntries = craft.entries.section('clubs').with(['clubLogo']).collect().keyBy('title') %}
+{% set byWeek = weeks|reduce((carry, w) => carry|merge({ (w.week): w }), {}) %}
+{% set requested = craft.app.request.getQueryParam('week') %}
+{% set current = byWeek[requested] ?? (weeks|first) %}
+{% set weekKeys = weeks|map(w => w.week) %}
+{% set index = current ? weekKeys|indexOf(current.week) : -1 %}
+{# Newest first: the previous week is the next item #}
+{% set previous = weeks[index + 1] ?? null %}
+{% set next = index > 0 ? weeks[index - 1] : null %}
+{% set years = weeks|map(w => w.week|slice(0, 4))|unique|values %}
+{% set year = craft.app.request.getQueryParam('year') %}
+{% set year = year in years ? year : (current ? current.week|slice(0, 4) : null) %}
+
+{# A player's name with their club's logo (if any) in front, the club named on hover, and the rating gained or lost #}
+{% macro player(p, clubEntries, bold) %}
+  {%- set entry = p.club ? (clubEntries[p.club] ?? null) : null -%}
+  {%- set logo = entry ? entry.clubLogo|first : null -%}
+  <span class="inline-flex items-center gap-1 align-middle" {% if p.club %}title="{{ p.club }}"{% endif %}>
+    {%- if logo %}<img src="{{ logo.url }}" alt="{{ p.club }}" class="w-4 h-4 object-contain shrink-0">{% endif -%}
+    <a href="{{ url('elo/players/' ~ p.id) }}" class="{{ bold ? 'font-semibold' : '' }} hover:text-blue-600">{{ p.name }}</a>
+    {%- if p.change is defined %} <span class="text-sm tabular-nums {{ p.change >= 0 ? 'text-green-700' : 'text-red-700' }}" title="Rating {{ p.change >= 0 ? 'gained' : 'lost' }}">{{ p.change >= 0 ? '+' : '−' }}{{ p.change|abs|number_format(1) }}</span>{% endif %}
+  </span>
+{%- endmacro %}
+
+{% block content %}
+  {% import _self as m %}
+  <section class="base-section">
+    <div class="base-container px-4">
+      <a href="{{ url('elo') }}" class="text-gray-600 hover:text-black">&larr; Rankings</a>
+      <h1 class="h1 mt-4">Biggest upsets</h1>
+      <p class="text-2xl max-w-3xl">The matches won with the lowest chance of winning, week by week.</p>
+      <p class="max-w-3xl mt-4 text-gray-700">
+        The win chance is from the ratings right before the match. Only matches between settled players count:
+        every player has played at least 10 matches and has a rating certain to within ±250 in singles or ±180 in doubles,
+        so a junior improving fast beating a favourite isn't counted as an upset. Walkovers and draws are left out.
+      </p>
+    </div>
+  </section>
+
+  {% if current %}
+    <section class="base-section">
+      <div class="base-container px-4">
+        {% set monday = current.week %}
+        <div class="flex flex-wrap items-baseline justify-between gap-4 mb-6">
+          <h2 class="text-3xl">Week of {{ monday|date('j') }}–{{ monday|date_modify('+6 days')|date('j F Y') }}</h2>
+          <nav class="flex gap-2" aria-label="Weeks">
+            {% if previous %}<a href="{{ url('elo/upsets', { week: previous.week }) }}" class="px-4 py-2 border border-black hover:bg-black hover:text-white transition-colors duration-200">&larr; Earlier</a>{% endif %}
+            {% if next %}<a href="{{ url('elo/upsets', { week: next.week }) }}" class="px-4 py-2 border border-black hover:bg-black hover:text-white transition-colors duration-200">Later &rarr;</a>{% endif %}
+          </nav>
+        </div>
+        <ol class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {% for upset in current.matches %}
+            <li>{% include '_elo/_upset' with { upset: upset, rank: loop.index, clubEntries: clubEntries } only %}</li>
+          {% endfor %}
+        </ol>
+      </div>
+    </section>
+
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-4">Biggest upset of each week</h2>
+        <nav class="flex flex-wrap gap-2 mb-6" aria-label="Year">
+          {% for y in years %}
+            <a href="{{ url('elo/upsets', { week: current.week, year: y }) }}"
+               class="px-3 py-1 border border-black transition-colors duration-200 {{ y == year ? 'bg-black text-white' : 'hover:bg-black hover:text-white' }}"
+               {% if y == year %}aria-current="page"{% endif %}>{{ y }}</a>
+          {% endfor %}
+        </nav>
+        <div class="bg-white overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="text-sm text-gray-600 border-b border-gray-200">
+              <tr>
+                <th scope="col" class="py-2 px-4 font-normal">Week</th>
+                <th scope="col" class="py-2 px-4 font-normal">Upset</th>
+                <th scope="col" class="py-2 px-4 font-normal text-right" title="The winner's chance of winning before the match">Chance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for w in weeks|filter(w => w.week|slice(0, 4) == year) %}
+                {% set u = w.matches|first %}
+                {% set chance = (u.winChance * 100)|round %}
+                <tr class="border-b border-gray-100 last:border-0 align-top {{ w.week == current.week ? 'bg-gray-50' : '' }}">
+                  <td class="py-2 px-4 whitespace-nowrap"><a href="{{ url('elo/upsets', { week: w.week }) }}" class="hover:text-blue-600">{{ w.week|date('j M') }}</a></td>
+                  <td class="py-2 px-4">
+                    {% for p in u.winners %}{{ m.player(p, clubEntries, true) }}{% if not loop.last %} / {% endif %}{% endfor %}
+                    <span class="text-gray-600">beat</span>
+                    {% for p in u.losers %}{{ m.player(p, clubEntries, false) }}{% if not loop.last %} / {% endif %}{% endfor %}
+                    <span class="block text-sm text-gray-600">{{ u.score }} · {{ u.poolLabel }} · {{ u.event }}</span>
+                  </td>
+                  <td class="py-2 px-4 text-right tabular-nums">{{ (chance < 1 ? '<1' : chance)|e }}%</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  {% else %}
+    <section class="base-section"><div class="base-container px-4"><p class="text-gray-600">No upsets calculated yet: run <code>node elo/rate.mjs</code>.</p></div></section>
+  {% endif %}
+{% endblock %}

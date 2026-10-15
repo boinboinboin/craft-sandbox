@@ -79,4 +79,9 @@ class EloVariable
     {
         return Module::getInstance()->elo->search($query);
     }
+
+    public function upsetWeeks(): array
+    {
+        return Module::getInstance()->elo->getUpsetWeeks();
+    }
 }
