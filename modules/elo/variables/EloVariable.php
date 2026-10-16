@@ -94,4 +94,9 @@ class EloVariable
     {
         return Module::getInstance()->elo->getTournament($cup2000Id);
     }
+
+    public function tournamentsEvaluation(): array
+    {
+        return Module::getInstance()->elo->getTournamentsEvaluation();
+    }
 }

@@ -1,7 +1,8 @@
 {% extends "_elo/_layout.twig" %}
 
-{# One tournament's draws and draw luck (elo/data/upcoming/<Cup2000 id>.json, from elo/upcoming.mjs).
-   `tournamentId` (the Cup2000 id) comes from the route; ?event=<index> picks the event shown. #}
+{# One tournament's draws, draw luck and, once played, how the predictions turned out
+   (elo/data/upcoming/<Cup2000 id>.json, from elo/upcoming.mjs). `tournamentId` (the Cup2000 id)
+   comes from the route; ?event=<index> picks the event shown. #}
 
 {% set t = craft.elo.tournament(tournamentId) %}
 {% if not t %}{% exit 404 %}{% endif %}
@@ -9,18 +10,25 @@
 {% set eventIndex = craft.app.request.getQueryParam('event')|default(0) %}
 {% set eventIndex = eventIndex matches '/^\\d+$/' and t.events[eventIndex + 0] is defined ? eventIndex + 0 : 0 %}
 {% set event = t.events[eventIndex] %}
-{# Every entry with its event, for the tournament-wide luckiest and unluckiest draws #}
+{% set view = craft.app.request.getQueryParam('view') == 'summary' ? 'summary' : 'events' %}
+{# Every entry with its event, for the tournament-wide lists: luck (events with a single group
+   have none) and the winners of played events #}
 {% set all = [] %}
 {% for e in t.events %}
   {% for entry in e.entries %}
-    {% set all = all|merge([entry|merge({ eventIndex: loop.parent.loop.index0, eventLabel: e.className ~ ' ' ~ e.poolLabel|lower, placement: e.placement ?? false })]) %}
+    {% set all = all|merge([entry|merge({ eventIndex: loop.parent.loop.index0, eventLabel: e.className ~ ' ' ~ e.poolLabel|lower, placement: e.placement ?? false, singleGroup: e.singleGroup ?? false })]) %}
   {% endfor %}
 {% endfor %}
 {# Luck in each event's own measure: places in events that place everyone (the X classes), else rounds #}
-{% set byLuck = all|sort((a, b) => (b.luck.score ?? b.luck.progress) <=> (a.luck.score ?? a.luck.progress)) %}
+{% set withLuck = all|filter(e => e.luck is not null) %}
+{% set byLuck = withLuck|sort((a, b) => (b.luck.score ?? b.luck.progress) <=> (a.luck.score ?? a.luck.progress)) %}
+{% set champions = all|filter(e => (e.result.win ?? 0) == 1)|sort((a, b) => a.actual.win <=> b.actual.win) %}
+{% set ev = t.evaluation ?? null %}
 
 {% macro pct(x) %}{% set p = (x * 100)|round %}{{ (x > 0 and p < 1 ? '<1%' : (x < 1 and p > 99 ? '>99%' : p ~ '%'))|e }}{% endmacro %}
 {% macro signed(x, decimals = 2) %}{{ x > 0 ? '+' : (x < 0 ? '−' : '±') }}{{ x|abs|number_format(decimals) }}{% endmacro %}
+{# A placement: 1, 2, 3–4 (shared, 3.5), 5, ... #}
+{% macro place(p) %}{{ p == p|round ? p|round : (p - 0.5)|round ~ '–' ~ (p + 0.5)|round }}{% endmacro %}
 
 {# An entry's players with their club logos and ratings; ≈ marks a rating estimated for someone without one in this discipline #}
 {% macro entry(e, clubEntries) %}
@@ -46,64 +54,152 @@
         <p class="text-2xl text-gray-700">{{ t.startDate|date('j') }}{{ t.endDate and t.endDate != t.startDate ? '–' ~ t.endDate|date('j F Y') : ' ' ~ t.startDate|date('F Y') }}</p>
       {% endif %}
       <p class="mt-2 flex flex-wrap gap-x-6 gap-y-1">
-        <a href="https://www.cup2000.dk/turnerings-system/Vis-turneringer/?tournamentid={{ t.cup2000Id }}" class="underline hover:text-blue-600" rel="noopener">Draw and programme on Cup2000</a>
+        <a href="https://www.cup2000.dk/turnerings-system/Vis-turneringer/?tournamentid={{ t.cup2000Id }}" class="underline hover:text-blue-600" rel="noopener">Draw and results on Cup2000</a>
         {% if t.portalenId %}<span class="text-gray-600">badmintonportalen tournament {{ t.portalenId }}</span>{% endif %}
       </p>
-      <div class="max-w-3xl mt-4 text-gray-700 space-y-2">
-        <p>
-          How lucky each player's draw is, from their ratings. Every event is played out {{ t.runs|number }} times with each match decided by the players' win chances,
-          once with the actual draw and once with a fair draw: the same players drawn again at random, with the seeds (the strongest by rating: one per group, or 2–8 in a knockout) kept where they are.
-        </p>
-        <p>
-          <strong class="font-semibold">Rounds</strong> is how far a player is expected to get: one round for getting out of the group and one for every knockout round after that (a bye counts too), and one more for winning.
-          <strong class="font-semibold">Luck</strong> is the rounds expected with the actual draw minus with a fair one.
-        </p>
-        <p>
-          In the X classes everyone gets a final place, so luck there is in places: the expected placement with a fair draw minus with the actual draw.
-          Eight players or pairs play two groups of four; the top two play cross-over semi-finals (group 1's winner against group 2's runner-up, and the other way round), the third-placed play for 5th place and the fourth-placed for 7th.
-        </p>
-      </div>
+      {# Two views: the event tables (default) and the tournament's summary #}
+      <nav class="flex gap-2 mt-6" aria-label="Views">
+        {% for key, label in { events: 'Events', summary: 'Summary' } %}
+          <a href="{{ url('elo/tournaments/' ~ t.cup2000Id, key == 'summary' ? { view: 'summary' } : {}) }}"
+             class="px-4 py-2 border border-black transition-colors duration-200 {{ view == key ? 'bg-black text-white' : 'hover:bg-black hover:text-white' }}"
+             {% if view == key %}aria-current="page"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      </nav>
     </div>
   </section>
 
-  {# Tournament-wide: the luckiest and unluckiest draws #}
-  <section class="base-section">
-    <div class="base-container px-4 grid gap-6 md:grid-cols-2">
-      {% for list in [{ title: 'Luckiest draws', entries: byLuck|slice(0, 5) }, { title: 'Unluckiest draws', entries: byLuck|reverse|slice(0, 5) }] %}
-        <div class="bg-white p-4 md:p-6">
-          <h2 class="text-xl mb-4">{{ list.title }}</h2>
-          <ol class="space-y-4">
-            {% for e in list.entries %}
-              <li class="flex justify-between gap-4">
-                <div>
-                  {{ m.entry(e, clubEntries) }}
-                  <a href="{{ url('elo/tournaments/' ~ t.cup2000Id, { event: e.eventIndex }) }}" class="block text-sm text-gray-600 hover:text-blue-600">{{ e.eventLabel }}{% if e.group %} · group {{ e.group }}{% endif %}</a>
-                </div>
-                <div class="text-right tabular-nums whitespace-nowrap">
-                  {% set score = e.luck.score ?? e.luck.progress %}
-                  <span class="text-xl font-semibold {{ score >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(score) }}</span>
-                  <span class="block text-sm text-gray-600">{{ e.placement ? 'places' : 'rounds' }}</span>
-                </div>
-              </li>
-            {% endfor %}
-          </ol>
+  {% if view == 'summary' %}
+    {# How the predictions turned out, once events are played #}
+    {% if ev and ev.events %}
+      {% set slope = ev.luck.rounds.xx > 0 ? ev.luck.rounds.xy / ev.luck.rounds.xx : null %}
+      <section class="base-section">
+        <div class="base-container px-4">
+          <h2 class="text-3xl mb-4">How the predictions turned out</h2>
+          <dl class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div class="bg-white p-4">
+              <dt class="text-sm text-gray-600">Favourites who won</dt>
+              <dd class="text-3xl font-semibold tabular-nums">{{ ev.favouritesWon }} <span class="text-base font-normal text-gray-500">of {{ ev.winners }}</span></dd>
+              <dd class="text-sm text-gray-600">{{ ev.favouritesExpected|number_format(1) }} expected</dd>
+            </div>
+            <div class="bg-white p-4">
+              <dt class="text-sm text-gray-600">Winners' predicted chance</dt>
+              <dd class="text-3xl font-semibold tabular-nums">{{ m.pct(ev.winnerChance / ev.winners) }}</dd>
+              <dd class="text-sm text-gray-600">on average</dd>
+            </div>
+            <div class="bg-white p-4">
+              <dt class="text-sm text-gray-600">Events played</dt>
+              <dd class="text-3xl font-semibold tabular-nums">{{ ev.events }} <span class="text-base font-normal text-gray-500">of {{ t.events|length }}</span></dd>
+            </div>
+            {% if slope is not null %}
+              <div class="bg-white p-4">
+                <dt class="text-sm text-gray-600" title="Results minus the fair-draw expectation against luck, regression slope">Luck showed in the results</dt>
+                <dd class="text-3xl font-semibold tabular-nums">{{ slope|number_format(2) }}×</dd>
+                <dd class="text-sm text-gray-600">over {{ ev.luck.rounds.n }} entries (1 = as predicted)</dd>
+              </div>
+            {% endif %}
+          </dl>
+          <p class="text-gray-700 max-w-3xl">
+            The favourite is the entry with the best chance of winning the event with the actual draw.
+            "Luck showed in the results": each entry's rounds minus its fair-draw expectation, against its luck (a regression through zero).
+            Near 1, a draw rated a round luckier gave about a round more; near 0, the luck didn't show.
+          </p>
         </div>
-      {% endfor %}
-    </div>
-  </section>
+      </section>
+    {% endif %}
 
+    {# Surprising winners, luckiest and unluckiest draws: one box, one tab each #}
+    {% set lists = [] %}
+    {% if champions is not empty %}{% set lists = lists|merge([{ key: 'surprises', title: 'Most surprising winners', entries: champions|slice(0, 8), kind: 'winner' }]) %}{% endif %}
+    {% if byLuck is not empty %}
+      {% set lists = lists|merge([
+        { key: 'luckiest', title: 'Luckiest draws', entries: byLuck|slice(0, 8), kind: 'luck' },
+        { key: 'unluckiest', title: 'Unluckiest draws', entries: byLuck|reverse|slice(0, 8), kind: 'luck' },
+      ]) %}
+    {% endif %}
+    {% if lists is not empty %}
+      <section class="base-section">
+        <div class="base-container px-4">
+          <div class="bg-white p-4 md:p-6" data-controller="tabs" data-tabs-hash-value="false">
+            <div role="tablist" aria-label="Lists" class="flex flex-wrap gap-2 mb-6">
+              {% for list in lists %}
+                <button type="button" role="tab" id="tab-{{ list.key }}" aria-controls="{{ list.key }}" aria-selected="{{ loop.first ? 'true' : 'false' }}" tabindex="{{ loop.first ? 0 : -1 }}"
+                        data-tabs-target="tab" data-action="tabs#choose keydown->tabs#key"
+                        class="px-4 py-2 border border-black transition-colors duration-200 hover:bg-black hover:text-white aria-selected:bg-black aria-selected:text-white cursor-pointer">{{ list.title }}</button>
+              {% endfor %}
+            </div>
+            {% for list in lists %}
+              <div id="{{ list.key }}" role="tabpanel" aria-labelledby="tab-{{ list.key }}" data-tabs-target="panel" {% if not loop.first %}hidden{% endif %}>
+                <ol class="grid gap-x-8 gap-y-4 md:grid-cols-2">
+                  {% for e in list.entries %}
+                    <li class="flex justify-between gap-4">
+                      <div>
+                        {{ m.entry(e, clubEntries) }}
+                        <a href="{{ url('elo/tournaments/' ~ t.cup2000Id, { event: e.eventIndex }) }}" class="block text-sm text-gray-600 hover:text-blue-600">{{ e.eventLabel }}{% if list.kind == 'luck' and e.group %} · group {{ e.group }}{% endif %}</a>
+                      </div>
+                      <div class="text-right tabular-nums whitespace-nowrap">
+                        {% if list.kind == 'winner' %}
+                          <span class="text-xl font-semibold">{{ m.pct(e.actual.win) }}</span>
+                          <span class="block text-sm text-gray-600">chance before</span>
+                        {% else %}
+                          {% set score = e.luck.score ?? e.luck.progress %}
+                          <span class="text-xl font-semibold {{ score >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(score) }}</span>
+                          <span class="block text-sm text-gray-600">{{ e.placement ? 'places' : 'rounds' }}</span>
+                        {% endif %}
+                      </div>
+                    </li>
+                  {% endfor %}
+                </ol>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    {% endif %}
+
+    {# How it works: only what this tournament's events need (rounds for knockouts, places for X
+       classes, which only Ranking/RT* tournaments have, and single groups) #}
+    {% set hasRounds = t.events|filter(e => not (e.singleGroup ?? false) and not (e.placement ?? false))|length > 0 %}
+    {% set hasPlacement = t.events|filter(e => e.placement ?? false)|length > 0 %}
+    {% set hasSingle = t.events|filter(e => e.singleGroup ?? false)|length > 0 %}
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-4">How it works</h2>
+        <div class="max-w-3xl text-gray-700 space-y-2">
+          <p>
+            How lucky each player's draw is, from their ratings at the end of the week before the tournament. Every event is played out {{ t.runs|number }} times with each match decided by the players' win chances,
+            once with the actual draw and once with a fair draw: the same players drawn again at random, with the seeds (the strongest by rating: one per group, or 2–8 in a knockout) kept where they are.
+          </p>
+          <p>
+            {% if hasRounds %}
+              <strong class="font-semibold">Rounds</strong> is how far a player is expected to get: one round for getting out of the group and one for every knockout round after that (a bye counts too), and one more for winning.
+              <strong class="font-semibold">Luck</strong> is the rounds expected with the actual draw minus with a fair one.
+            {% endif %}
+            {% if hasPlacement %}
+              In the X classes everyone gets a final place, so luck there is in places: eight players or pairs in two groups of four, the top two to cross-over semi-finals, the third-placed playing for 5th and the fourth-placed for 7th.
+            {% endif %}
+            {% if hasSingle %}
+              Events with a single group have no luck, as everyone plays everyone: they only show each player's chance of winning.
+            {% endif %}
+          </p>
+        </div>
+      </div>
+    </section>
+  {% else %}
   <section class="base-section">
     <div class="base-container px-4">
-      {# Events by class (seniors and veterans, then juniors from the oldest; A before B), each in
+      {# Events by class (seniors and veterans, then juniors from the oldest; levels X, E, A, B, C, D), each in
          the order men's singles, women's singles, men's, women's and mixed doubles #}
       {% set disciplineOrder = ['men', 'women', 'mensDoubles', 'womensDoubles', 'mixedDoubles'] %}
+      {# Levels within an age group: X (grand prix: the 6 highest ranked plus 2 wildcards, seniors
+         and juniors alike), E (elite), A, B, C, D #}
+      {% set levelOrder = { X: 0, E: 1, A: 2, B: 3, C: 4, D: 5 } %}
       {% set classes = t.events|map(e => e.className)|unique|values
-        |map(name => { name: name, key: (name|split(' ')|first matches '/^U\\d+$/' ? 'b' ~ (100 + 100 - (name|split(' ')|first|slice(1))) : 'a' ~ name) ~ ' ' ~ (name|split(' ')|last) })
+        |map(name => { name: name, key: (name|split(' ')|first matches '/^U\\d+$/' ? 'b' ~ (100 + 100 - (name|split(' ')|first|slice(1))) : 'a' ~ (name|split(' ')|first)) ~ ' ' ~ (levelOrder[name|split(' ')|last] ?? 9) ~ (name|split(' ')|last) })
         |sort((a, b) => a.key <=> b.key)|map(c => c.name) %}
       <nav class="grid gap-3 mb-8" aria-label="Events">
         {% for className in classes %}
           <div class="flex flex-wrap items-center gap-2">
-            <span class="w-16 shrink-0 font-semibold">{{ className }}</span>
+            <span class="w-20 shrink-0 font-semibold">{{ className }}</span>
             {% set classEvents = [] %}
             {% for i, e in t.events %}{% if e.className == className %}{% set classEvents = classEvents|merge([{ i: i, e: e }]) %}{% endif %}{% endfor %}
             {% for item in classEvents|sort((a, b) => (disciplineOrder|indexOf(a.e.pool)) <=> (disciplineOrder|indexOf(b.e.pool))) %}
@@ -115,6 +211,9 @@
         {% endfor %}
       </nav>
 
+      {% set single = event.singleGroup ?? false %}
+      {% set placement = event.placement ?? false %}
+      {% set played = event.played ?? false %}
       <h2 class="text-3xl mb-1">{{ event.className }} {{ event.poolLabel|lower }}</h2>
       <p class="text-gray-700 mb-4">
         {{ event.entries|length }} {{ event.pool in ['men', 'women'] ? 'players' : 'pairs' }}
@@ -126,19 +225,28 @@
           ~ (ranks == [1] ? 'the group winners' : 'the top ' ~ (numbers[ranks|length] ?? ranks|length) ~ ' of each group')
           ~ (best is not empty ? ' and the best ' ~ best|map(r => placeNames[r] ?? (r ~ '. place'))|join(' and ') ~ ' of all groups' : '')
           ~ ' go to the knockout' %}
-        {%- if event.groups is not empty %} in {{ event.groups|length }} {{ event.groups|length == 1 ? 'group' : 'groups' }}{% if event.knockout %}; {{ advanceText }}{% endif %}{% endif %}.
-        Luckiest first.
+        {%- set others = (event.stages ?? [])|filter(s => not s.main and not s.places)|length %}
+        {%- if event.groups is not empty %} in {{ event.groups|length }} {{ event.groups|length == 1 ? 'group' : 'groups' }}{% if event.knockout %}; {{ advanceText }}{% if others and not placement %}, the rest to {{ others == 1 ? 'a B play-off' : others ~ ' further play-offs' }}{% endif %}{% endif %}{% elseif event.knockout %}, knockout{% endif %}.
+        {% if single %}Everyone plays everyone, so there is no draw luck.{% else %}Luckiest first.{% endif %}
+        {% if played %}
+          {% set champion = event.entries|filter(e => (e.result.win ?? 0) == 1)|first %}
+          {% if champion %}<strong class="font-semibold">Won by {{ champion.players|map(p => p.name)|join(' / ') }}</strong>, with a {{ m.pct(champion.actual.win) }} chance before.{% endif %}
+        {% endif %}
       </p>
 
       {# The rounds of this event: out of the group, each knockout round reached, winning #}
       {% set max = event.maxRounds ?? null %}
       {% set roundNames = { 0: 'the final', 1: 'the semi-finals', 2: 'the quarter-finals', 3: 'the last 16', 4: 'the last 32', 5: 'the last 64', 6: 'the last 128' } %}
       {% set steps = [] %}
+      {% set short = [] %}
       {% if event.knockout and max %}
         {% set levels = max - (event.groups is not empty ? 1 : 0) - 1 %}
-        {% if event.groups is not empty %}{% set steps = steps|merge(['getting out of the group']) %}{% endif %}
-        {% if levels > 0 %}{% for level in (levels - 1)..0 %}{% set steps = steps|merge(['reaching ' ~ (roundNames[level] ?? ('round ' ~ (levels - level)))]) %}{% endfor %}{% endif %}
-        {% set steps = steps|merge(['winning the final']) %}
+        {% if event.groups is not empty %}{% set steps = steps|merge(['getting out of the group']) %}{% set short = short|merge(['knockout']) %}{% endif %}
+        {% if levels > 0 %}{% for level in (levels - 1)..0 %}
+          {% set name = roundNames[level] ?? ('round ' ~ (levels - level)) %}
+          {% set steps = steps|merge(['reaching ' ~ name]) %}{% set short = short|merge([name|replace({ 'the ': '' })]) %}
+        {% endfor %}{% endif %}
+        {% set steps = steps|merge(['winning the final']) %}{% set short = short|merge(['won']) %}
       {% endif %}
       <dl class="grid gap-2 md:grid-cols-[auto_1fr] md:gap-x-6 mb-6 max-w-4xl text-gray-700">
         {% if event.groups is not empty and event.knockout %}
@@ -147,31 +255,27 @@
         {% endif %}
         <dt class="font-semibold">Wins event</dt>
         <dd>The chance of winning the whole event{{ event.knockout ? ' (the final)' : ' (the group)' }}.</dd>
-        {% if event.placement ?? false %}
+        {% if single %}
+          <dt class="font-semibold">Wins</dt>
+          <dd>The matches the player is expected to win in the group, out of {{ max }}.</dd>
+        {% elseif placement %}
           <dt class="font-semibold">Placement</dt>
+          <dd>The expected final place, 1 to {{ event.entries|length }}: the final decides 1st and 2nd, the losing semi-finalists share 3rd–4th (3.5 each), the third-placed in the groups play for 5th and 6th and the fourth-placed for 7th and 8th.</dd>
+        {% else %}
+          <dt class="font-semibold">Rounds</dt>
           <dd>
-            The expected final place, 1 to {{ event.entries|length }}: the final decides 1st and 2nd, the losing semi-finalists share 3rd–4th (3.5 each), the third-placed in the groups play for 5th and 6th and the fourth-placed for 7th and 8th.
-          </dd>
-        {% endif %}
-        {% if not (event.placement ?? false) %}
-        <dt class="font-semibold">Rounds</dt>
-        <dd>
-          {% if event.knockout %}
             How many rounds the player is expected to get through, out of {{ max }}: {{ steps|join(', ') }}.
             A bye counts as a round got through, so a player with a bye starts one round ahead.
-          {% else %}
-            The matches the player is expected to win in the group, out of {{ max }}.
-          {% endif %}
-        </dd>
+          </dd>
         {% endif %}
-        <dt class="font-semibold">Luck</dt>
-        <dd>
-          {% if event.placement ?? false %}
-            The placement with a fair draw minus with the actual draw (in brackets in each column), in places: above zero, the draw helps; below, it hurts.
-          {% else %}
-            Rounds with the actual draw minus with a fair draw (in brackets in each column): above zero, the draw helps; below, it hurts.
-          {% endif %}
-        </dd>
+        {% if not single %}
+          <dt class="font-semibold">Luck</dt>
+          <dd>{{ placement ? 'The placement with a fair draw minus with the actual draw' : 'Rounds with the actual draw minus with a fair draw' }} (in brackets in each column): above zero, the draw helps; below, it hurts.</dd>
+        {% endif %}
+        {% if played %}
+          <dt class="font-semibold">Result</dt>
+          <dd>{{ single ? 'Matches won, and who won the group' : (placement ? 'The final place' : 'How far the player got') }}, and against the expectation with the actual draw.</dd>
+        {% endif %}
       </dl>
 
       {% if event.groups|length > 1 %}
@@ -182,50 +286,74 @@
         </p>
       {% endif %}
 
-      {% set placement = event.placement ?? false %}
-      {% set maxLuck = max(event.entries|map(e => (e.luck.score ?? e.luck.progress)|abs)|merge([0.01])) %}
+      {% set maxLuck = single ? 1 : max(event.entries|map(e => (e.luck.score ?? e.luck.progress)|abs)|merge([0.01])) %}
       <div class="bg-white overflow-x-auto">
         <table class="w-full text-left">
           <thead class="text-sm text-gray-600 border-b border-gray-200">
             <tr>
               <th scope="col" class="py-2 px-4 font-normal">{{ event.pool in ['men', 'women'] ? 'Player' : 'Pair' }}</th>
-              {% if event.groups is not empty %}<th scope="col" class="py-2 px-4 font-normal text-right">Group</th>{% endif %}
+              {% if event.groups|length > 1 %}<th scope="col" class="py-2 px-4 font-normal text-right">Group</th>{% endif %}
               <th scope="col" class="py-2 px-4 font-normal text-right" title="Sum of the players' ratings in doubles">Rating</th>
               {% if event.groups is not empty and event.knockout %}<th scope="col" class="py-2 px-4 font-normal text-right" title="Chance of reaching the knockout from the group: actual draw (fair draw)">Out of group</th>{% endif %}
-              <th scope="col" class="py-2 px-4 font-normal text-right" title="Chance of winning the event: actual draw (fair draw)">Wins event</th>
-              {% if placement %}
+              <th scope="col" class="py-2 px-4 font-normal text-right" title="Chance of winning the event{{ single ? '' : ': actual draw (fair draw)' }}">Wins event</th>
+              {% if single %}
+                <th scope="col" class="py-2 px-4 font-normal text-right" title="Expected match wins">Wins <span class="whitespace-nowrap">of {{ max }}</span></th>
+              {% elseif placement %}
                 <th scope="col" class="py-2 px-4 font-normal text-right" title="Expected final place: actual draw (fair draw)">Placement <span class="whitespace-nowrap">of {{ event.entries|length }}</span></th>
               {% else %}
                 <th scope="col" class="py-2 px-4 font-normal text-right" title="Rounds expected: actual draw (fair draw)">Rounds{% if max %} <span class="whitespace-nowrap">of {{ max }}</span>{% endif %}</th>
               {% endif %}
-              <th scope="col" class="py-2 px-4 font-normal">Luck</th>
+              {% if not single %}<th scope="col" class="py-2 px-4 font-normal">Luck</th>{% endif %}
+              {% if played %}<th scope="col" class="py-2 px-4 font-normal text-right">Result</th>{% endif %}
             </tr>
           </thead>
           <tbody>
-            {% for e in event.entries|sort((a, b) => (b.luck.score ?? b.luck.progress) <=> (a.luck.score ?? a.luck.progress)) %}
-              {% set luck = e.luck.score ?? e.luck.progress %}
+            {% set rows = single ? event.entries|sort((a, b) => b.actual.win <=> a.actual.win) : event.entries|sort((a, b) => (b.luck.score ?? b.luck.progress) <=> (a.luck.score ?? a.luck.progress)) %}
+            {% for e in rows %}
               <tr class="border-b border-gray-100 last:border-0 align-top">
                 <td class="py-2 px-4">{{ m.entry(e, clubEntries) }}</td>
-                {% if event.groups is not empty %}<td class="py-2 px-4 text-right tabular-nums">{{ e.group ?? '–' }}</td>{% endif %}
+                {% if event.groups|length > 1 %}<td class="py-2 px-4 text-right tabular-nums">{{ e.group ?? '–' }}</td>{% endif %}
                 <td class="py-2 px-4 text-right tabular-nums">{{ e.rating }}</td>
                 {% if event.groups is not empty and event.knockout %}
                   <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ m.pct(e.actual.knockout) }} <span class="block text-sm text-gray-500">({{ m.pct(e.fair.knockout) }})</span></td>
                 {% endif %}
-                <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ m.pct(e.actual.win) }} <span class="block text-sm text-gray-500">({{ m.pct(e.fair.win) }})</span></td>
-                {% if placement %}
+                <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ m.pct(e.actual.win) }}{% if not single %} <span class="block text-sm text-gray-500">({{ m.pct(e.fair.win) }})</span>{% endif %}</td>
+                {% if single %}
+                  <td class="py-2 px-4 text-right tabular-nums">{{ e.actual.wins|number_format(2) }}</td>
+                {% elseif placement %}
                   <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ e.actual.place|number_format(2) }} <span class="block text-sm text-gray-500">({{ e.fair.place|number_format(2) }})</span></td>
                 {% else %}
                   <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ e.actual.progress|number_format(2) }} <span class="block text-sm text-gray-500">({{ e.fair.progress|number_format(2) }})</span></td>
                 {% endif %}
-                <td class="py-2 px-4 min-w-40">
-                  <span class="tabular-nums font-semibold {{ luck >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(luck) }}</span>
-                  {# Diverging bar from the middle: right for a lucky draw, left for an unlucky one #}
-                  <span class="mt-1 flex h-2" aria-hidden="true">
-                    <span class="w-1/2 flex justify-end">{% if luck < 0 %}<span class="h-2 rounded-l bg-red-600" style="width: {{ (luck|abs / maxLuck * 100)|round(1) }}%"></span>{% endif %}</span>
-                    <span class="w-px bg-gray-400"></span>
-                    <span class="w-1/2">{% if luck > 0 %}<span class="block h-2 rounded-r bg-green-600" style="width: {{ (luck / maxLuck * 100)|round(1) }}%"></span>{% endif %}</span>
-                  </span>
-                </td>
+                {% if not single %}
+                  {% set luck = (e.luck.score ?? e.luck.progress) %}
+                  <td class="py-2 px-4 min-w-40">
+                    <span class="tabular-nums font-semibold {{ luck >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(luck) }}</span>
+                    {# Diverging bar from the middle: right for a lucky draw, left for an unlucky one #}
+                    <span class="mt-1 flex h-2" aria-hidden="true">
+                      <span class="w-1/2 flex justify-end">{% if luck < 0 %}<span class="h-2 rounded-l bg-red-600" style="width: {{ (luck|abs / maxLuck * 100)|round(1) }}%"></span>{% endif %}</span>
+                      <span class="w-px bg-gray-400"></span>
+                      <span class="w-1/2">{% if luck > 0 %}<span class="block h-2 rounded-r bg-green-600" style="width: {{ (luck / maxLuck * 100)|round(1) }}%"></span>{% endif %}</span>
+                    </span>
+                  </td>
+                {% endif %}
+                {% if played %}
+                  {% set r = e.result %}
+                  <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">
+                    {% if single %}
+                      <span class="{{ r.win ? 'font-semibold' : '' }}">{{ r.win ? 'Won' : r.wins|round ~ (r.wins|round == 1 ? ' win' : ' wins') }}</span>
+                      <span class="block text-sm {{ r.wins >= e.actual.wins ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(r.wins - e.actual.wins, 1) }} wins</span>
+                    {% elseif placement %}
+                      <span class="{{ r.place == 1 ? 'font-semibold' : '' }}">{{ m.place(r.place) }}</span>
+                      {% set diff = e.actual.place - r.place %}
+                      <span class="block text-sm {{ diff >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(diff, 1) }} places</span>
+                    {% else %}
+                      {% set got = r.progress|round %}
+                      <span class="{{ r.win ? 'font-semibold' : '' }}">{{ got == 0 ? (event.groups is not empty ? 'group' : 'first match') : (short[got - 1] ?? got) }}</span>
+                      <span class="block text-sm {{ r.progress >= e.actual.progress ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(r.progress - e.actual.progress, 1) }} rounds</span>
+                    {% endif %}
+                  </td>
+                {% endif %}
               </tr>
             {% endfor %}
           </tbody>
@@ -233,4 +361,5 @@
       </div>
     </div>
   </section>
+  {% endif %}
 {% endblock %}

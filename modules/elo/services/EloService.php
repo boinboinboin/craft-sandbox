@@ -269,6 +269,16 @@ class EloService extends Component
     }
 
     /**
+     * How the predictions turned out over every played event (elo/upcoming.mjs): favourites who
+     * won, against the number expected, the winners' summed predicted chance and log loss, and
+     * the sums for regressing results on luck (`luck.rounds`, `luck.places`: n, xx, xy, yy).
+     */
+    public function getTournamentsEvaluation(): array
+    {
+        return $this->read('upcoming.json')['evaluation'] ?? [];
+    }
+
+    /**
      * One tournament's events with every entry's chances in the actual draw and in a fair redraw,
      * and their draw luck (elo/upcoming.mjs); each event gets its `poolLabel`. Null if unknown.
      */

@@ -2,8 +2,8 @@
 // won by the expected score from the entries' ratings. Used by upcoming.mjs for draw luck.
 //
 // An event is a list of draw slots and:
-// - groups: [{ name, slots: [slot, ...], matches: [[slot, slot], ...] }]: each group is played as
-//   listed (round robin if no matches are listed) and ranked by wins, ties drawn at random;
+// - groups: [{ name, slots: [slot, ...], matches: [[slot, slot, match no], ...] }]: each group is
+//   played as listed (round robin if no matches are listed) and ranked by wins, ties drawn at random;
 // - stages: [{ title, main, matches: [{ no, sides: [source, source] }] }]: knockout matches in
 //   playing order. A source is { slot }, { winnerOf: match no }, { loserOf: match no } (a play-off
 //   for third), { group, rank } (e.g. the group
@@ -88,8 +88,11 @@ export function rng(seed = 1) {
 // rounds they get through. A round is a level of the main knockout counted back from the final
 // (reaching the semi-final is one round more than the quarter-final, winning one more than the
 // final), so a bye counts as a round got through; with no knockout, progress is the match wins.
-// With `redraw`, every run first redraws the entries as above.
-export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 1 } = {}) {
+// With `redraw`, every run first redraws the entries as above. With `forced` (a played draw's
+// results: { winners: { match no: 1 | 2 }, groupOrder: [[slot, ...] per group] }, or for results
+// known only by who beat whom, { pairs: Map("entry|entry" → winning entry) }), the matches go as
+// they did: one run gives each entry's actual outcome.
+export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 1, forced = null } = {}) {
   const n = event.slots;
   const random = rng(seed);
   // chance[a][b]: entry a beats entry b
@@ -98,7 +101,7 @@ export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 
   const free = [...Array(n).keys()].filter((s) => !seeds.has(s)); // slots of non-seeds (= their entries)
   const totals = ratings.map(() => ({ wins: 0, groupWin: 0, knockout: 0, win: 0 }));
   const groupMatches = event.groups.map((g) =>
-    g.matches?.length ? g.matches : g.slots.flatMap((a, i) => g.slots.slice(i + 1).map((b) => [a, b]))
+    g.matches?.length ? g.matches : g.slots.flatMap((a, i) => g.slots.slice(i + 1).map((b) => [a, b, null]))
   );
   const main = event.stages.find((s) => s.main);
   const levels = new Map(event.stages.map((stage) => [stage, stageLevels(stage)]));
@@ -114,8 +117,10 @@ export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 
       const shuffled = shuffle(free.slice(), random);
       free.forEach((slot, i) => (atSlot[slot] = shuffled[i]));
     }
-    const play = (a, b) => {
-      const winner = random() < chance[a][b] ? a : b;
+    const play = (a, b, no) => {
+      const side = forced?.winners?.[no];
+      const known = forced?.pairs?.get(`${a}|${b}`) ?? forced?.pairs?.get(`${b}|${a}`);
+      const winner = side === 1 ? a : side === 2 ? b : known !== undefined ? known : random() < chance[a][b] ? a : b;
       totals[winner].wins++;
       return winner;
     };
@@ -124,12 +129,14 @@ export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 
     const groupWins = new Map(); // entry -> wins in its group
     const ranking = event.groups.map((g, gi) => {
       const wins = new Map(g.slots.map((s) => [atSlot[s], 0]));
-      for (const [x, y] of groupMatches[gi]) {
-        const w = play(atSlot[x], atSlot[y]);
+      for (const [x, y, no] of groupMatches[gi]) {
+        const w = play(atSlot[x], atSlot[y], no);
         wins.set(w, wins.get(w) + 1);
       }
       for (const [e, w] of wins) groupWins.set(e, w);
-      const order = [...wins.keys()].map((e) => [e, wins.get(e) + random() * 0.5]).sort((p, q) => q[1] - p[1]).map(([e]) => e);
+      const order = forced?.groupOrder?.[gi]
+        ? forced.groupOrder[gi].map((s) => atSlot[s])
+        : [...wins.keys()].map((e) => [e, wins.get(e) + random() * 0.5]).sort((p, q) => q[1] - p[1]).map(([e]) => e);
       if (order.length) totals[order[0]].groupWin++;
       return order;
     });
@@ -167,7 +174,7 @@ export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 
           reached.add(e);
           if (stage === main && level.has(m.no)) deepest.set(e, Math.min(deepest.get(e) ?? Infinity, level.get(m.no)));
         }
-        last = a !== null && b !== null ? play(a, b) : a ?? b;
+        last = a !== null && b !== null ? play(a, b, m.no) : a ?? b;
         winners.set(m.no, last);
         const loser = last === a ? b : a;
         losers.set(m.no, loser);

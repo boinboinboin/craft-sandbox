@@ -3,6 +3,7 @@
 {# Tournaments with a published draw and draw luck (elo/data/upcoming.json, from elo/upcoming.mjs) #}
 
 {% set tournaments = craft.elo.tournaments() %}
+{% set season = craft.elo.tournamentsEvaluation() %}
 {% set today = now|date('Y-m-d') %}
 {% set upcoming = tournaments|filter(t => (t.endDate ?? today) >= today)|sort((a, b) => a.startDate <=> b.startDate) %}
 {% set past = tournaments|filter(t => (t.endDate ?? today) < today) %}
@@ -11,7 +12,10 @@
   <li class="bg-white p-4 md:p-5 flex flex-wrap items-baseline justify-between gap-3">
     <div>
       <a href="{{ url('elo/tournaments/' ~ t.cup2000Id) }}" class="text-xl hover:text-blue-600">{{ t.name }}</a>
-      <span class="block text-sm text-gray-600">{{ t.events }} events · {{ t.entries }} entries</span>
+      <span class="block text-sm text-gray-600">
+        {{ t.events }} events · {{ t.entries }} entries
+        {%- if (t.evaluation.winners ?? 0) > 0 %} · favourite won {{ t.evaluation.favouritesWon }} of {{ t.evaluation.winners }} ({{ t.evaluation.favouritesExpected|number_format(1) }} expected){% endif %}
+      </span>
     </div>
     {% if t.startDate %}<span class="text-gray-700 tabular-nums">{{ t.startDate|date('j') }}{{ t.endDate and t.endDate != t.startDate ? '–' ~ t.endDate|date('j M Y') : ' ' ~ t.startDate|date('M Y') }}</span>{% endif %}
   </li>
@@ -25,10 +29,50 @@
       <h1 class="h1 mt-4">Tournament draws</h1>
       <p class="text-2xl max-w-3xl">Who got a lucky or unlucky draw in upcoming tournaments, from the players' ratings.</p>
       <p class="max-w-3xl mt-4 text-gray-700">
-        Draws are from Cup2000 and the players from the entry lists on badmintonportalen, as soon as the draw is published.
+        Draws are from Cup2000 and the players from the entry lists on badmintonportalen, as soon as the draw is published, with their ratings from the week before.
+        Once a tournament is played, its page shows how the predictions turned out.
       </p>
     </div>
   </section>
+  {% if (season.winners ?? 0) > 0 %}
+    {% set r = season.luck.rounds %}
+    {% set slope = r.xx > 0 ? r.xy / r.xx : null %}
+    {% set corr = r.xx > 0 and r.yy > 0 ? r.xy / ((r.xx * r.yy) ** 0.5) : null %}
+    <section class="base-section">
+      <div class="base-container px-4">
+        <h2 class="text-3xl mb-4">How the predictions turned out</h2>
+        <dl class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+          <div class="bg-white p-4">
+            <dt class="text-sm text-gray-600">Events played</dt>
+            <dd class="text-3xl font-semibold tabular-nums">{{ season.events|number }}</dd>
+          </div>
+          <div class="bg-white p-4">
+            <dt class="text-sm text-gray-600">Favourites who won</dt>
+            <dd class="text-3xl font-semibold tabular-nums">{{ season.favouritesWon }} <span class="text-base font-normal text-gray-500">of {{ season.winners }}</span></dd>
+            <dd class="text-sm text-gray-600">{{ season.favouritesExpected|number_format(1) }} expected</dd>
+          </div>
+          <div class="bg-white p-4">
+            <dt class="text-sm text-gray-600">Winners' predicted chance</dt>
+            <dd class="text-3xl font-semibold tabular-nums">{{ (season.winnerChance / season.winners * 100)|round }}%</dd>
+            <dd class="text-sm text-gray-600">on average</dd>
+          </div>
+          {% if slope is not null %}
+            <div class="bg-white p-4">
+              <dt class="text-sm text-gray-600">Luck showed in the results</dt>
+              <dd class="text-3xl font-semibold tabular-nums">{{ slope|number_format(2) }}×</dd>
+              <dd class="text-sm text-gray-600">over {{ r.n|number }} entries (1 = as predicted)</dd>
+            </div>
+          {% endif %}
+        </dl>
+        <p class="text-gray-700 max-w-3xl">
+          The favourite is the entry with the best chance of winning the event with the actual draw; if the chances are right, about as many favourites win as expected.
+          "Luck showed in the results" compares each entry's result against a fair draw with its draw luck (in rounds, a regression through zero): near 1, a draw rated a round luckier gave about a round more.
+          {% if corr is not null %}Luck explains only a small part of a result (correlation {{ corr|number_format(2) }}): most of it is how the matches go.{% endif %}
+        </p>
+      </div>
+    </section>
+  {% endif %}
+
   <section class="base-section">
     <div class="base-container px-4">
       <h2 class="text-3xl mb-4">Upcoming</h2>
@@ -38,8 +82,12 @@
         <p class="text-gray-600">No upcoming tournaments with a published draw.</p>
       {% endif %}
       {% if past is not empty %}
-        <h2 class="text-3xl mt-10 mb-4">Played</h2>
-        <ul class="grid gap-3">{% for t in past %}{{ m.row(t) }}{% endfor %}</ul>
+        <h2 class="text-3xl mt-10 mb-2">Played</h2>
+        {# By month of the first day, newest first #}
+        {% for month, list in past|group(t => (t.startDate ?? today)|date('Y-m')) %}
+          <h3 class="text-xl mt-6 mb-3">{{ (month ~ '-01')|date('F Y') }}</h3>
+          <ul class="grid gap-3">{% for t in list %}{{ m.row(t) }}{% endfor %}</ul>
+        {% endfor %}
       {% endif %}
     </div>
   </section>
