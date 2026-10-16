@@ -158,9 +158,9 @@
 
     {# How it works: only what this tournament's events need (rounds for knockouts, places for X
        classes, which only Ranking/RT* tournaments have, and single groups) #}
-    {% set hasRounds = t.events|filter(e => not (e.singleGroup ?? false) and not (e.placement ?? false))|length > 0 %}
+    {% set hasRounds = t.events|filter(e => not (e.noLuck ?? e.singleGroup ?? false) and not (e.placement ?? false))|length > 0 %}
     {% set hasPlacement = t.events|filter(e => e.placement ?? false)|length > 0 %}
-    {% set hasSingle = t.events|filter(e => e.singleGroup ?? false)|length > 0 %}
+    {% set hasSingle = t.events|filter(e => e.noLuck ?? e.singleGroup ?? false)|length > 0 %}
     <section class="base-section">
       <div class="base-container px-4">
         <h2 class="text-3xl mb-4">How it works</h2>
@@ -178,7 +178,7 @@
               In the X classes everyone gets a final place, so luck there is in places: eight players or pairs in two groups of four, the top two to cross-over semi-finals, the third-placed playing for 5th and the fourth-placed for 7th.
             {% endif %}
             {% if hasSingle %}
-              Events with a single group have no luck, as everyone plays everyone: they only show each player's chance of winning.
+              Events with a single group (everyone plays everyone) or just two players or pairs have no luck: they only show each player's chance of winning.
             {% endif %}
           </p>
         </div>
@@ -211,7 +211,7 @@
         {% endfor %}
       </nav>
 
-      {% set single = event.singleGroup ?? false %}
+      {% set single = event.noLuck ?? event.singleGroup ?? false %}
       {% set placement = event.placement ?? false %}
       {% set played = event.played ?? false %}
       <h2 class="text-3xl mb-1">{{ event.className }} {{ event.poolLabel|lower }}</h2>
@@ -227,7 +227,7 @@
           ~ ' go to the knockout' %}
         {%- set others = (event.stages ?? [])|filter(s => not s.main and not s.places)|length %}
         {%- if event.groups is not empty %} in {{ event.groups|length }} {{ event.groups|length == 1 ? 'group' : 'groups' }}{% if event.knockout %}; {{ advanceText }}{% if others and not placement %}, the rest to {{ others == 1 ? 'a B play-off' : others ~ ' further play-offs' }}{% endif %}{% endif %}{% elseif event.knockout %}, knockout{% endif %}.
-        {% if single %}Everyone plays everyone, so there is no draw luck.{% endif %}
+        {% if single %}{{ event.entries|length <= 2 ? 'Just one match' : 'Everyone plays everyone' }}, so there is no draw luck.{% endif %}
         {% if played %}
           {% set champion = event.entries|filter(e => (e.result.win ?? 0) == 1)|first %}
           {% if champion %}<strong class="font-semibold">Won by {{ champion.players|map(p => p.name)|join(' / ') }}</strong>, with a {{ m.pct(champion.actual.win) }} chance before.{% endif %}
@@ -295,9 +295,16 @@
       {# Table order: luckiest first (single groups: most likely winner first), by group (each
          group with its players by rating), or by rating when there are no groups #}
       {% set grouped = event.groups|length > 1 %}
-      {% set orders = { default: single ? 'Most likely winner first' : 'Luckiest first' }|merge(grouped ? { group: 'By group' } : { rating: 'By rating' })|merge(played ? { standings: 'Final standings' } : {}) %}
+      {# A single group: the most likely winner first is also the rating order, so it's the only
+         order before it's played, and the final standings after #}
+      {% if single %}
+        {% set orders = played ? { standings: 'Final standings' } : { default: 'Most likely winner first' } %}
+      {% else %}
+        {% set orders = { default: 'Luckiest first' }|merge(grouped ? { group: 'By group' } : { rating: 'By rating' })|merge(played ? { standings: 'Final standings' } : {}) %}
+      {% endif %}
       {% set order = craft.app.request.getQueryParam('order') %}
-      {% set order = order in orders|keys and order != 'default' ? order : 'default' %}
+      {% set order = order in orders|keys and order != 'default' ? order : orders|keys|first %}
+      {% if orders|length > 1 %}
       <nav class="flex flex-wrap gap-2 mb-4" aria-label="Order">
         {% for key, label in orders %}
           <a href="{{ url('elo/tournaments/' ~ t.cup2000Id, { event: eventIndex }|merge(key != 'default' ? { order: key } : {})) }}"
@@ -305,6 +312,7 @@
              {% if order == key %}aria-current="true"{% endif %}>{{ label }}</a>
         {% endfor %}
       </nav>
+      {% endif %}
       {% set groupColumn = grouped and order != 'group' %}
       {% set numbered = order == 'standings' %}
       {% set columns = (numbered ? 1 : 0) + 4 + (groupColumn ? 1 : 0) + (event.groups is not empty and event.knockout ? 1 : 0) + (single ? 0 : 1) + (played ? 1 : 0) %}
@@ -357,7 +365,7 @@
             {% for e in rows %}
               {% if numbered %}
                 {% set key = placement ? e.result.place|round(0, 'floor')
-                  : (single ? e.result.groupRank : e.result.win ~ '|' ~ e.result.progress ~ '|' ~ (e.result.progress < 1 ? (e.result.groupRank ?? 0) : 0)) %}
+                  : (single ? (e.result.groupRank ?? (e.result.win ? 1 : 2)) : e.result.win ~ '|' ~ e.result.progress ~ '|' ~ (e.result.progress < 1 ? (e.result.groupRank ?? 0) : 0)) %}
                 {% if key != previous %}{% set place = loop.index %}{% endif %}
                 {% set previous = key %}
               {% endif %}

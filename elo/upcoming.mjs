@@ -431,8 +431,9 @@ function analyse({ cupId, portalenId, fetchedAt, info, draws }) {
     // Results from badmintonportalen count only if they decide the event (someone won it)
     if (outcome && !results && !outcome.some((o) => o.win === 1)) outcome = null;
     const groupOf = new Map(event.groups.flatMap((g, gi) => g.slots.map((s) => [s, gi])));
-    // A single group: everyone plays everyone, so there is no luck
+    // A single group (everyone plays everyone) or just two entries (one match): no draw luck
     const singleGroup = event.groups.length === 1 && !event.stages.length;
+    const noLuck = singleGroup || entries.length <= 2;
     const placement = actual.every((a) => a.place !== null);
     const main = event.stages.find((s) => s.main);
     const sources = (main?.matches ?? []).flatMap((m) => m.sides).filter(Boolean);
@@ -447,6 +448,7 @@ function analyse({ cupId, portalenId, fetchedAt, info, draws }) {
       stages: event.stages.map((s) => ({ title: s.title, main: s.main, places: s.places })),
       maxRounds: maxRounds(event),
       singleGroup,
+      noLuck,
       // Every entry gets a placement (the X classes): luck is measured in places
       placement,
       // Who goes from the groups to the main knockout, from the draw: group places, and the best
@@ -457,7 +459,7 @@ function analyse({ cupId, portalenId, fetchedAt, info, draws }) {
       },
       played: !!outcome,
       entries: entries.map((e, i) => {
-        const luck = singleGroup ? null : rounded(Object.fromEntries(["wins", "groupWin", "knockout", "win", "progress"].map((k) => [k, actual[i][k] - fair[i][k]])));
+        const luck = noLuck ? null : rounded(Object.fromEntries(["wins", "groupWin", "knockout", "win", "progress"].map((k) => [k, actual[i][k] - fair[i][k]])));
         // Placement: lower is better, so luck is the fair placement minus the actual one
         if (luck && placement) luck.place = round(fair[i].place - actual[i].place);
         // The event's luck measure: places when everyone is placed, else rounds
@@ -516,7 +518,7 @@ function evaluate(events) {
       const favourite = Math.max(...chances);
       winners.push({ chance: champion.actual.win, favourite: champion.actual.win === favourite, favouriteChance: favourite, entries: e.entries.length });
     }
-    if (e.singleGroup) continue;
+    if (e.noLuck ?? e.singleGroup) continue;
     for (const x of e.entries) {
       if (x.withdrew) continue;
       if (e.placement) luckRows.places.push([x.luck.place, x.fair.place - x.result.place]);
