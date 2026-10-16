@@ -6,6 +6,8 @@
 {% if not player %}
   {% exit 404 %}
 {% endif %}
+{# Tournaments with a draw-luck page, for linking matches to them #}
+{% set tournamentLinks = craft.elo.tournamentLinks() %}
 
 {% block content %}
   <section class="base-section">
@@ -230,7 +232,7 @@
                 {% endif %}
               </div>
             {% endif %}
-            {% include '_elo/_matches' with { title: 'Matches', matches: matches.all, limit: 20 } only %}
+            {% include '_elo/_matches' with { title: 'Matches', matches: matches.all, limit: 20, pool: handle, tournamentLinks: tournamentLinks } only %}
             {# Biggest wins and losses (by win chance) and biggest rating gains and losses, as tabs in one box #}
             {% set highlights = [
               { key: 'wins', label: 'Biggest wins', subtitle: 'Wins with the lowest chance of winning before the match', matches: matches.biggestWins ?? [] },
@@ -250,7 +252,7 @@
                 </div>
                 {% for h in highlights %}
                   <div id="{{ handle }}-{{ h.key }}" role="tabpanel" aria-labelledby="tab-{{ handle }}-{{ h.key }}" data-tabs-target="panel" {% if not loop.first %}hidden{% endif %}>
-                    {% include '_elo/_matches' with { title: h.label, subtitle: h.subtitle, matches: h.matches, embedded: true } only %}
+                    {% include '_elo/_matches' with { title: h.label, subtitle: h.subtitle, matches: h.matches, embedded: true, pool: handle, tournamentLinks: tournamentLinks } only %}
                   </div>
                 {% endfor %}
               </div>

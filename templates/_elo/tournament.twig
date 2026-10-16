@@ -7,8 +7,14 @@
 {% set t = craft.elo.tournament(tournamentId) %}
 {% if not t %}{% exit 404 %}{% endif %}
 {% set clubEntries = craft.entries.section('clubs').with(['clubLogo']).collect().keyBy('title') %}
-{% set eventIndex = craft.app.request.getQueryParam('event')|default(0) %}
-{% set eventIndex = eventIndex matches '/^\\d+$/' and t.events[eventIndex + 0] is defined ? eventIndex + 0 : 0 %}
+{% set eventIndex = craft.app.request.getQueryParam('event') ?? '' %}
+{% set eventIndex = eventIndex matches '/^\\d+$/' and t.events[eventIndex + 0] is defined ? eventIndex + 0 : null %}
+{# Or by class and pool (?class=SEN X&pool=men), as the links from match lists give #}
+{% if eventIndex is null %}
+  {% set wanted = { class: craft.app.request.getQueryParam('class'), pool: craft.app.request.getQueryParam('pool') } %}
+  {% set eventIndex = 0 %}
+  {% for i, e in t.events %}{% if wanted.class and e.className == wanted.class and (not wanted.pool or e.pool == wanted.pool) %}{% set eventIndex = i %}{% endif %}{% endfor %}
+{% endif %}
 {% set event = t.events[eventIndex] %}
 {% set view = craft.app.request.getQueryParam('view') == 'summary' ? 'summary' : 'events' %}
 {# Every entry with its event, for the tournament-wide lists: luck (events with a single group

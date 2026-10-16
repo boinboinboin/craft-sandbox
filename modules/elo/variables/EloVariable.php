@@ -99,4 +99,9 @@ class EloVariable
     {
         return Module::getInstance()->elo->getTournamentsEvaluation();
     }
+
+    public function tournamentLinks(): array
+    {
+        return Module::getInstance()->elo->getTournamentLinks();
+    }
 }

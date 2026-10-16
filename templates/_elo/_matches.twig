@@ -1,8 +1,11 @@
 {# A table of one player's matches (singles or doubles: opponents, and the partner in doubles). Expects `matches` (records from elo/data/matches/<id>.json, newest first) and `title`.
    Optional: `subtitle`; `limit` shows only that many rows, with a button to show all (match_list controller); `sortable` adds buttons to sort by date or rating change;
    `embedded` leaves out the box and title, for a table inside another box (the subtitle is kept);
-   `showMargin` shows each match's point margin next to the result (`margin`, as on the head-to-head page). #}
+   `showMargin` shows each match's point margin next to the result (`margin`, as on the head-to-head page);
+   `pool` (the matches' discipline, unless each match has its own `pool`) and `tournamentLinks` (craft.elo.tournamentLinks(), looked up if not given)
+   link each tournament with a draw-luck page to it. #}
 {% set limit = limit ?? null %}
+{% set tournamentLinks = tournamentLinks ?? craft.elo.tournamentLinks() %}
 {% set sortable = (sortable ?? false) and limit %}
 {% set embedded = embedded ?? false %}
 <div class="{{ embedded ? '' : 'bg-white p-4 md:p-6' }}" {% if limit %}data-controller="match-list" data-match-list-limit-value="{{ limit }}"{% endif %}>
@@ -49,7 +52,16 @@
                   <span class="text-gray-500 tabular-nums">{{ m.partner.rating }}</span>
                 </span>
               {% endif %}
-              <span class="block text-sm text-gray-600">{{ m.event }}</span>
+              {# The tournament's draw-luck page, if it has one: by its badmintonportalen id (the
+                 match key, "T7075 ..."), opening the event of this class ("... (SEN X)") and pool #}
+              {% set tournamentId = (m.key ?? '') matches '/^T\\d+/' ? (m.key|split(' ')|first|slice(1)|split('.')|first) + 0 : null %}
+              {% set cupId = tournamentId ? (tournamentLinks[tournamentId] ?? null) : null %}
+              {% if cupId %}
+                {% set className = m.event matches '/\\(([^()]+)\\)\\s*$/' ? m.event|split('(')|last|trim(' )') : null %}
+                <a href="{{ url('elo/tournaments/' ~ cupId, { class: className, pool: m.pool ?? pool ?? null }|filter(v => v)) }}" class="block text-sm text-gray-600 underline hover:text-blue-600">{{ m.event }}</a>
+              {% else %}
+                <span class="block text-sm text-gray-600">{{ m.event }}</span>
+              {% endif %}
               {% if m.key ?? null %}
                 {# Match key for elo/corrections.txt; one click selects all of it for copying #}
                 <code class="block text-xs text-gray-400 select-all" title="Match key, for corrections">{{ m.key }}</code>

@@ -279,6 +279,24 @@ class EloService extends Component
     }
 
     /**
+     * The tournaments with a page (elo/upcoming.mjs) by badmintonportalen tournament id, for linking
+     * matches to them: [portalen id => Cup2000 id].
+     *
+     * @return array<int, int>
+     */
+    public function getTournamentLinks(): array
+    {
+        $links = [];
+        foreach ($this->getTournaments() as $t) {
+            if ($t['portalenId'] ?? null) {
+                $links[$t['portalenId']] = $t['cup2000Id'];
+            }
+        }
+
+        return $links;
+    }
+
+    /**
      * One tournament's events with every entry's chances in the actual draw and in a fair redraw,
      * and their draw luck (elo/upcoming.mjs); each event gets its `poolLabel`. Null if unknown.
      */
