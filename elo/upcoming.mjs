@@ -112,10 +112,13 @@ function placeholder(name) {
   return /x/i.test(m[4]) ? { bestOfRank: rank } : { group: +m[4], rank };
 }
 const groupNumber = (title) => +(title.match(/(?:group|pulje)\s*(\d+)\s*$/i)?.[1] ?? 0);
-// A stage deciding places: "Herresingle U15 X 5-6 plassen" → [5, 6]
+// A stage deciding places: "Herresingle U15 X 5-6 plassen" → [5, 6]; "Sluttspill 5.plass" (a
+// match for 5th) → [5, 6]
 const stagePlaces = (title) => {
-  const m = title.match(/(\d+)\s*[-–]\s*(\d+)\.?\s*plass/i);
-  return m ? [+m[1], +m[2]] : null;
+  const range = title.match(/(\d+)\s*[-–]\s*(\d+)\.?\s*plass/i);
+  if (range) return [+range[1], +range[2]];
+  const one = title.match(/(\d+)\.?\s*plass/i);
+  return one ? [+one[1], +one[1] + 1] : null;
 };
 
 // The service pages of one event (class c, event code e): its groups and knockout stages
@@ -149,11 +152,17 @@ function parseEvent(pages) {
   const winners = {}; // match no -> 1 | 2 (0: not played)
   const walkovers = new Set();
   const groupOrder = []; // group index -> slots in final order, once played
+  const withdrawals = new Map(); // slot -> number of the first match it lost by walkover
   const placing = new Map(); // slot -> { group number, rank } once the group is played
   const unknownPlaceholders = new Set();
-  const record = (m) => {
+  // A match's result; `sides` (slots of side 1 and 2, if known) to note who lost by walkover
+  const record = (m, sides = []) => {
     winners[String(m[0])] = m[5] === 1 || m[5] === 2 ? m[5] : 0;
-    if (/w\.?\s*o/i.test(m[3] ?? "")) walkovers.add(String(m[0]));
+    if (/w\.?\s*o/i.test(m[3] ?? "") && (m[5] === 1 || m[5] === 2)) {
+      walkovers.add(String(m[0]));
+      const loser = sides[m[5] === 1 ? 1 : 0];
+      if (loser !== undefined && !(withdrawals.get(loser) <= +m[0])) withdrawals.set(loser, +m[0]);
+    }
   };
 
   for (const page of pages.filter((p) => p.renderMethod === 3)) {
@@ -163,11 +172,14 @@ function parseEvent(pages) {
     const byIndex = new Map(rows.map((row) => [row[0], slot(row[5].map(unescape))]));
     const number = groupNumber(unescape(data[0])) || groups.length + 1;
     const matches = data[2][0].filter((m) => byIndex.has(m[8]) && byIndex.has(m[9]));
-    matches.forEach(record);
+    matches.forEach((m) => record(m, [byIndex.get(m[8]), byIndex.get(m[9])]));
     groups.push({ name: unescape(data[0]), number, slots: [...byIndex.values()], matches: matches.map((m) => [byIndex.get(m[8]), byIndex.get(m[9]), String(m[0])]) });
-    // Played: each row's place ("1", "2", ...)
-    const places = rows.map((row) => [byIndex.get(row[0]), +row[4]]);
-    if (places.every(([, p]) => p > 0)) {
+    // Played: each row's place ("1", "2", ...); a row without one (a player who withdrew) comes
+    // after the ranked ones
+    const ranked = rows.filter((row) => +row[4] > 0).length;
+    let unranked = ranked;
+    const places = rows.map((row) => [byIndex.get(row[0]), +row[4] > 0 ? +row[4] : ++unranked]);
+    if (ranked > 0 && ranked >= rows.length - 2) {
       groupOrder[groups.length - 1] = places.sort((a, b) => a[1] - b[1]).map(([s]) => s);
       for (const [s, p] of places) placing.set(s, { group: number, rank: p });
     }
@@ -177,15 +189,19 @@ function parseEvent(pages) {
     // [title, players [[position, empty, place, names]], rounds [[size, [matches, venues]]]]
     const data = page.data;
     const byPosition = new Map();
+    const slotAt = new Map(); // position -> slot (in a played draw)
     for (const [position, empty, , names] of data[1]) {
       const list = (names ?? []).map(unescape);
-      if (empty || !list.length) continue;
+      if (!list.length) continue;
+      // A group place left empty (its player withdrew) is still that place in the draw
       const ph = list.length === 1 ? placeholder(list[0]) : null;
       if (ph) byPosition.set(position, ph);
+      else if (empty) continue;
       else if (/vinner|pulje|winner/i.test(list[0])) unknownPlaceholders.add(list[0]);
       else {
         // A played draw lists the player who came through a group: their group place
         const s = slot(list);
+        slotAt.set(position, s);
         byPosition.set(position, placing.get(s) ?? { slot: s });
       }
     }
@@ -196,7 +212,7 @@ function parseEvent(pages) {
     for (const [, [list]] of data[2]) {
       for (const m of list) {
         const no = String(m[0]);
-        record(m);
+        record(m, [slotAt.get(m[8]), slotAt.get(m[9])]);
         const sides = [[m[8], m[6]], [m[9], m[7]]].map(([position, label], i) => {
           if (position >= 0) {
             const before = seen.get(position);
@@ -234,7 +250,7 @@ function parseEvent(pages) {
     title: pages[0].stageTitle,
     entries,
     event,
-    results: played ? { winners, groupOrder, walkovers: [...walkovers] } : null,
+    results: played ? { winners, groupOrder, walkovers: [...walkovers], withdrawals: [...withdrawals] } : null,
     unknownPlaceholders: [...unknownPlaceholders],
   };
 }
@@ -377,6 +393,16 @@ function analyse({ cupId, portalenId, fetchedAt, info, draws }) {
     // No draw yet, or nothing to play (a single entry)
     if (!parsed || parsed.entries.length < 2) continue;
     const { event, results } = parsed;
+    // An X class's stages decide places also when their titles don't say so ("Semi-/Finale",
+    // "Sluttspill 2"): the main knockout 1–4, then each further stage the next two
+    if (/\sX$/.test(d.className) && event.stages.length > 1) {
+      let next = 1;
+      for (const st of [...event.stages.filter((x) => x.main), ...event.stages.filter((x) => !x.main)]) {
+        const size = st.main ? 4 : 2;
+        st.places ??= [next, next + size - 1];
+        next = st.places[1] + 1;
+      }
+    }
     const { pool, discipline, heading } = EVENTS[d.e];
     const level = R.tournamentLevel(d.className);
     const eventList = lists.filter((l) => l.className === d.className && l.heading === heading).flatMap((l) => l.entries);
@@ -397,6 +423,11 @@ function analyse({ cupId, portalenId, fetchedAt, info, draws }) {
     const fair = simulate(event, ratings, { runs: RUNS, redraw: true, seed: 2 });
     const forced = results ?? portalenResults(portalenId, d.className, discipline, event, entries);
     let outcome = forced ? simulate(event, ratings, { runs: 1, forced }) : null;
+    // Withdrawals (played draws): entries that lost by walkover are out from that match on. The
+    // chances with them out, with the actual draw and with a fair one, give the luck including them.
+    const withdrawn = new Map(results?.withdrawals ?? []);
+    const after = withdrawn.size ? simulate(event, ratings, { runs: RUNS, seed: 3, withdrawn }) : null;
+    const fairAfter = withdrawn.size ? simulate(event, ratings, { runs: RUNS, redraw: true, seed: 4, withdrawn }) : null;
     // Results from badmintonportalen count only if they decide the event (someone won it)
     if (outcome && !results && !outcome.some((o) => o.win === 1)) outcome = null;
     const groupOf = new Map(event.groups.flatMap((g, gi) => g.slots.map((s) => [s, gi])));
@@ -431,6 +462,13 @@ function analyse({ cupId, portalenId, fetchedAt, info, draws }) {
         if (luck && placement) luck.place = round(fair[i].place - actual[i].place);
         // The event's luck measure: places when everyone is placed, else rounds
         if (luck) luck.score = luck.place ?? luck.progress;
+        // With withdrawals: the luck including them, and the part they make
+        if (luck && after) {
+          const total = placement ? fairAfter[i].place - after[i].place : after[i].progress - fairAfter[i].progress;
+          luck.draw = luck.score;
+          luck.withdrawals = round(total - luck.score);
+          luck.score = round(total);
+        }
         return {
           ...e,
           group: groupOf.has(i) ? event.groups[groupOf.get(i)].number : null,
@@ -439,6 +477,10 @@ function analyse({ cupId, portalenId, fetchedAt, info, draws }) {
           luck,
           // What happened: rounds, placement, reaching the knockout and winning
           result: outcome ? rounded(outcome[i]) : null,
+          // With withdrawals: the expectation with the actual draw once they're out, and whether this entry withdrew
+          after: after ? rounded(after[i]) : null,
+          fairAfter: fairAfter ? rounded(fairAfter[i]) : null,
+          withdrew: withdrawn.has(i),
         };
       }),
       unknownPlaceholders: parsed.unknownPlaceholders,
@@ -476,6 +518,7 @@ function evaluate(events) {
     }
     if (e.singleGroup) continue;
     for (const x of e.entries) {
+      if (x.withdrew) continue;
       if (e.placement) luckRows.places.push([x.luck.place, x.fair.place - x.result.place]);
       else luckRows.rounds.push([x.luck.progress, x.result.progress - x.fair.progress]);
     }

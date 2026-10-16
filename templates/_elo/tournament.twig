@@ -227,7 +227,7 @@
           ~ ' go to the knockout' %}
         {%- set others = (event.stages ?? [])|filter(s => not s.main and not s.places)|length %}
         {%- if event.groups is not empty %} in {{ event.groups|length }} {{ event.groups|length == 1 ? 'group' : 'groups' }}{% if event.knockout %}; {{ advanceText }}{% if others and not placement %}, the rest to {{ others == 1 ? 'a B play-off' : others ~ ' further play-offs' }}{% endif %}{% endif %}{% elseif event.knockout %}, knockout{% endif %}.
-        {% if single %}Everyone plays everyone, so there is no draw luck.{% else %}Luckiest first.{% endif %}
+        {% if single %}Everyone plays everyone, so there is no draw luck.{% endif %}
         {% if played %}
           {% set champion = event.entries|filter(e => (e.result.win ?? 0) == 1)|first %}
           {% if champion %}<strong class="font-semibold">Won by {{ champion.players|map(p => p.name)|join(' / ') }}</strong>, with a {{ m.pct(champion.actual.win) }} chance before.{% endif %}
@@ -270,11 +270,16 @@
         {% endif %}
         {% if not single %}
           <dt class="font-semibold">Luck</dt>
-          <dd>{{ placement ? 'The placement with a fair draw minus with the actual draw' : 'Rounds with the actual draw minus with a fair draw' }} (in brackets in each column): above zero, the draw helps; below, it hurts.</dd>
+          <dd>
+            {{ placement ? 'The placement with a fair draw minus with the actual draw' : 'Rounds with the actual draw minus with a fair draw' }} (in brackets in each column): above zero, the draw helps; below, it hurts.
+            {% if event.entries|filter(e => e.withdrew ?? false) is not empty %}
+              Players who withdrew (lost by walkover) count too: the numbers are with them out from then on, against a fair draw with the same withdrawals. A * marks luck that withdrawals changed (hover for the split).
+            {% endif %}
+          </dd>
         {% endif %}
         {% if played %}
           <dt class="font-semibold">Result</dt>
-          <dd>{{ single ? 'Matches won, and who won the group' : (placement ? 'The final place' : 'How far the player got') }}, and against the expectation with the actual draw.</dd>
+          <dd>{{ single ? 'Matches won, and who won the group' : (placement ? 'The final place' : 'How far the player got') }}, and against the expectation with the actual draw (once any withdrawn players were out).</dd>
         {% endif %}
       </dl>
 
@@ -287,12 +292,29 @@
       {% endif %}
 
       {% set maxLuck = single ? 1 : max(event.entries|map(e => (e.luck.score ?? e.luck.progress)|abs)|merge([0.01])) %}
+      {# Table order: luckiest first (single groups: most likely winner first), by group (each
+         group with its players by rating), or by rating when there are no groups #}
+      {% set grouped = event.groups|length > 1 %}
+      {% set orders = { default: single ? 'Most likely winner first' : 'Luckiest first' }|merge(grouped ? { group: 'By group' } : { rating: 'By rating' })|merge(played ? { standings: 'Final standings' } : {}) %}
+      {% set order = craft.app.request.getQueryParam('order') %}
+      {% set order = order in orders|keys and order != 'default' ? order : 'default' %}
+      <nav class="flex flex-wrap gap-2 mb-4" aria-label="Order">
+        {% for key, label in orders %}
+          <a href="{{ url('elo/tournaments/' ~ t.cup2000Id, { event: eventIndex }|merge(key != 'default' ? { order: key } : {})) }}"
+             class="px-3 py-1 text-sm border border-black transition-colors duration-200 {{ order == key ? 'bg-black text-white' : 'hover:bg-black hover:text-white' }}"
+             {% if order == key %}aria-current="true"{% endif %}>{{ label }}</a>
+        {% endfor %}
+      </nav>
+      {% set groupColumn = grouped and order != 'group' %}
+      {% set numbered = order == 'standings' %}
+      {% set columns = (numbered ? 1 : 0) + 4 + (groupColumn ? 1 : 0) + (event.groups is not empty and event.knockout ? 1 : 0) + (single ? 0 : 1) + (played ? 1 : 0) %}
       <div class="bg-white overflow-x-auto">
         <table class="w-full text-left">
           <thead class="text-sm text-gray-600 border-b border-gray-200">
             <tr>
+              {% if numbered %}<th scope="col" class="py-2 pl-4 pr-0 font-normal text-right">#</th>{% endif %}
               <th scope="col" class="py-2 px-4 font-normal">{{ event.pool in ['men', 'women'] ? 'Player' : 'Pair' }}</th>
-              {% if event.groups|length > 1 %}<th scope="col" class="py-2 px-4 font-normal text-right">Group</th>{% endif %}
+              {% if groupColumn %}<th scope="col" class="py-2 px-4 font-normal text-right">Group</th>{% endif %}
               <th scope="col" class="py-2 px-4 font-normal text-right" title="Sum of the players' ratings in doubles">Rating</th>
               {% if event.groups is not empty and event.knockout %}<th scope="col" class="py-2 px-4 font-normal text-right" title="Chance of reaching the knockout from the group: actual draw (fair draw)">Out of group</th>{% endif %}
               <th scope="col" class="py-2 px-4 font-normal text-right" title="Chance of winning the event{{ single ? '' : ': actual draw (fair draw)' }}">Wins event</th>
@@ -308,27 +330,79 @@
             </tr>
           </thead>
           <tbody>
-            {% set rows = single ? event.entries|sort((a, b) => b.actual.win <=> a.actual.win) : event.entries|sort((a, b) => (b.luck.score ?? b.luck.progress) <=> (a.luck.score ?? a.luck.progress)) %}
+            {% if order == 'group' %}
+              {# A header row per group (in number order), then its players by rating; players who
+                 start in the knockout last #}
+              {% set rows = [] %}
+              {% for g in event.groups|sort((a, b) => a.number <=> b.number) %}
+                {% set rows = rows|merge([{ header: 'Group ' ~ g.number, detail: 'average rating ' ~ g.rating }])|merge(g.entries|map(i => event.entries[i])|sort((a, b) => b.rating <=> a.rating)) %}
+              {% endfor %}
+              {% set rest = event.entries|filter(e => e.group is null) %}
+              {% if rest is not empty %}{% set rows = rows|merge([{ header: 'Straight to the knockout', detail: '' }])|merge(rest|sort((a, b) => b.rating <=> a.rating)) %}{% endif %}
+            {% elseif order == 'standings' %}
+              {# How they finished: the winner first, then by place (X classes), or by how far they
+                 got and their group place, ties by rating #}
+              {% set rows = placement
+                ? event.entries|sort((a, b) => (a.result.place <=> b.result.place) ?: (b.rating <=> a.rating))
+                : event.entries|sort((a, b) => (b.result.win <=> a.result.win) ?: (b.result.progress <=> a.result.progress) ?: ((a.result.groupRank ?? 99) <=> (b.result.groupRank ?? 99)) ?: (b.rating <=> a.rating)) %}
+            {% elseif order == 'rating' %}
+              {% set rows = event.entries|sort((a, b) => b.rating <=> a.rating) %}
+            {% else %}
+              {% set rows = single ? event.entries|sort((a, b) => b.actual.win <=> a.actual.win) : event.entries|sort((a, b) => (b.luck.score ?? b.luck.progress) <=> (a.luck.score ?? a.luck.progress)) %}
+            {% endif %}
+            {# Final standings: places shared by those who went out at the same stage (the same round,
+               or the same group place for those out in the groups; in X classes the same place) #}
+            {% set place = 0 %}
+            {% set previous = null %}
             {% for e in rows %}
+              {% if numbered %}
+                {% set key = placement ? e.result.place|round(0, 'floor')
+                  : (single ? e.result.groupRank : e.result.win ~ '|' ~ e.result.progress ~ '|' ~ (e.result.progress < 1 ? (e.result.groupRank ?? 0) : 0)) %}
+                {% if key != previous %}{% set place = loop.index %}{% endif %}
+                {% set previous = key %}
+              {% endif %}
+              {% if e.header is defined %}
+                <tr class="bg-gray-50 border-b border-gray-200">
+                  <th scope="colgroup" colspan="{{ columns }}" class="py-2 px-4 text-left font-semibold">{{ e.header }} {% if e.detail %}<span class="font-normal text-sm text-gray-600">· {{ e.detail }}</span>{% endif %}</th>
+                </tr>
+              {% else %}
+              {# Played events with withdrawals: the chances once the withdrawn players were out #}
+              {% set ex = e.after ?? e.actual %}
+              {% set fx = e.fairAfter ?? e.fair %}
               <tr class="border-b border-gray-100 last:border-0 align-top">
-                <td class="py-2 px-4">{{ m.entry(e, clubEntries) }}</td>
-                {% if event.groups|length > 1 %}<td class="py-2 px-4 text-right tabular-nums">{{ e.group ?? '–' }}</td>{% endif %}
+                {% if numbered %}<td class="py-2 pl-4 pr-0 text-right tabular-nums font-semibold">{{ place }}</td>{% endif %}
+                <td class="py-2 px-4">
+                  {{ m.entry(e, clubEntries) }}
+                  {% if e.withdrew ?? false %}<span class="inline-block mt-1 text-xs px-1.5 py-0.5 border border-red-700 text-red-700 rounded">Withdrew</span>{% endif %}
+                  {# Played, in the group view: the group places that count, the ones going through
+                     (the winner, or the top two), and in the X classes all four (each plays for
+                     its places) #}
+                  {% set rank = (e.result.groupRank ?? null) %}
+                  {% set marked = placement ? [1, 2, 3, 4] : (event.advance.ranks ?? [1]) %}
+                  {% if order == 'group' and played and rank and rank in marked %}
+                    {% set rankLabels = { 1: 'Won the group', 2: '2nd in the group', 3: '3rd in the group', 4: '4th in the group' } %}
+                    <span class="inline-block mt-1 text-xs px-1.5 py-0.5 border rounded {{ rank == 1 ? 'border-green-700 text-green-700' : 'border-gray-500 text-gray-700' }}">{{ rankLabels[rank] ?? (rank ~ '. in the group') }}</span>
+                  {% endif %}
+                </td>
+                {% if groupColumn %}<td class="py-2 px-4 text-right tabular-nums">{{ e.group ?? '–' }}</td>{% endif %}
                 <td class="py-2 px-4 text-right tabular-nums">{{ e.rating }}</td>
                 {% if event.groups is not empty and event.knockout %}
-                  <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ m.pct(e.actual.knockout) }} <span class="block text-sm text-gray-500">({{ m.pct(e.fair.knockout) }})</span></td>
+                  <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ m.pct(ex.knockout) }} <span class="block text-sm text-gray-500">({{ m.pct(fx.knockout) }})</span></td>
                 {% endif %}
-                <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ m.pct(e.actual.win) }}{% if not single %} <span class="block text-sm text-gray-500">({{ m.pct(e.fair.win) }})</span>{% endif %}</td>
+                <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ m.pct(ex.win) }}{% if not single %} <span class="block text-sm text-gray-500">({{ m.pct(fx.win) }})</span>{% endif %}</td>
                 {% if single %}
-                  <td class="py-2 px-4 text-right tabular-nums">{{ e.actual.wins|number_format(2) }}</td>
+                  <td class="py-2 px-4 text-right tabular-nums">{{ ex.wins|number_format(2) }}</td>
                 {% elseif placement %}
-                  <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ e.actual.place|number_format(2) }} <span class="block text-sm text-gray-500">({{ e.fair.place|number_format(2) }})</span></td>
+                  <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ ex.place|number_format(2) }} <span class="block text-sm text-gray-500">({{ fx.place|number_format(2) }})</span>
+                  </td>
                 {% else %}
-                  <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ e.actual.progress|number_format(2) }} <span class="block text-sm text-gray-500">({{ e.fair.progress|number_format(2) }})</span></td>
+                  <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">{{ ex.progress|number_format(2) }} <span class="block text-sm text-gray-500">({{ fx.progress|number_format(2) }})</span>
+                  </td>
                 {% endif %}
                 {% if not single %}
                   {% set luck = (e.luck.score ?? e.luck.progress) %}
                   <td class="py-2 px-4 min-w-40">
-                    <span class="tabular-nums font-semibold {{ luck >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(luck) }}</span>
+                    <span class="tabular-nums font-semibold {{ luck >= 0 ? 'text-green-700' : 'text-red-700' }}"{% if (e.luck.withdrawals ?? 0)|abs >= 0.01 %} title="Draw {{ m.signed(e.luck.draw) }}, withdrawals {{ m.signed(e.luck.withdrawals) }}"{% endif %}>{{ m.signed(luck) }}{% if (e.luck.withdrawals ?? 0)|abs >= 0.01 %}<span class="text-gray-500">*</span>{% endif %}</span>
                     {# Diverging bar from the middle: right for a lucky draw, left for an unlucky one #}
                     <span class="mt-1 flex h-2" aria-hidden="true">
                       <span class="w-1/2 flex justify-end">{% if luck < 0 %}<span class="h-2 rounded-l bg-red-600" style="width: {{ (luck|abs / maxLuck * 100)|round(1) }}%"></span>{% endif %}</span>
@@ -342,19 +416,21 @@
                   <td class="py-2 px-4 text-right tabular-nums whitespace-nowrap">
                     {% if single %}
                       <span class="{{ r.win ? 'font-semibold' : '' }}">{{ r.win ? 'Won' : r.wins|round ~ (r.wins|round == 1 ? ' win' : ' wins') }}</span>
-                      <span class="block text-sm {{ r.wins >= e.actual.wins ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(r.wins - e.actual.wins, 1) }} wins</span>
+                      <span class="block text-sm {{ r.wins >= ex.wins ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(r.wins - ex.wins, 1) }} wins</span>
                     {% elseif placement %}
                       <span class="{{ r.place == 1 ? 'font-semibold' : '' }}">{{ m.place(r.place) }}</span>
-                      {% set diff = e.actual.place - r.place %}
+                      {% set diff = ex.place - r.place %}
                       <span class="block text-sm {{ diff >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(diff, 1) }} places</span>
                     {% else %}
                       {% set got = r.progress|round %}
                       <span class="{{ r.win ? 'font-semibold' : '' }}">{{ got == 0 ? (event.groups is not empty ? 'group' : 'first match') : (short[got - 1] ?? got) }}</span>
-                      <span class="block text-sm {{ r.progress >= e.actual.progress ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(r.progress - e.actual.progress, 1) }} rounds</span>
+                      {% set expected = ex.progress %}
+                      <span class="block text-sm {{ r.progress >= expected ? 'text-green-700' : 'text-red-700' }}">{{ m.signed(r.progress - expected, 1) }} rounds</span>
                     {% endif %}
                   </td>
                 {% endif %}
               </tr>
+              {% endif %}
             {% endfor %}
           </tbody>
         </table>

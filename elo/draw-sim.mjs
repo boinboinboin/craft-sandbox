@@ -92,14 +92,16 @@ export function rng(seed = 1) {
 // results: { winners: { match no: 1 | 2 }, groupOrder: [[slot, ...] per group] }, or for results
 // known only by who beat whom, { pairs: Map("entry|entry" → winning entry) }), the matches go as
 // they did: one run gives each entry's actual outcome.
-export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 1, forced = null } = {}) {
+// With `withdrawn` (Map entry → match no), an entry that withdrew loses every match from that one
+// on (numbered after it; generated round-robin matches have no number and count as after).
+export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 1, forced = null, withdrawn = null } = {}) {
   const n = event.slots;
   const random = rng(seed);
   // chance[a][b]: entry a beats entry b
   const chance = ratings.map((ra) => ratings.map((rb) => expectedScore(ra, rb)));
   const seeds = new Set([...ratings.keys()].sort((a, b) => ratings[b] - ratings[a]).slice(0, seedCount(event)));
   const free = [...Array(n).keys()].filter((s) => !seeds.has(s)); // slots of non-seeds (= their entries)
-  const totals = ratings.map(() => ({ wins: 0, groupWin: 0, knockout: 0, win: 0 }));
+  const totals = ratings.map(() => ({ wins: 0, groupWin: 0, knockout: 0, win: 0, groupRank: 0 }));
   const groupMatches = event.groups.map((g) =>
     g.matches?.length ? g.matches : g.slots.flatMap((a, i) => g.slots.slice(i + 1).map((b) => [a, b, null]))
   );
@@ -120,7 +122,12 @@ export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 
     const play = (a, b, no) => {
       const side = forced?.winners?.[no];
       const known = forced?.pairs?.get(`${a}|${b}`) ?? forced?.pairs?.get(`${b}|${a}`);
-      const winner = side === 1 ? a : side === 2 ? b : known !== undefined ? known : random() < chance[a][b] ? a : b;
+      const out = (e) => {
+        const from = withdrawn?.get(e);
+        return from !== undefined && (no === null || no === undefined || +no >= from);
+      };
+      const walkover = !side && known === undefined && out(a) !== out(b) ? (out(a) ? b : a) : null;
+      const winner = side === 1 ? a : side === 2 ? b : known !== undefined ? known : walkover ?? (random() < chance[a][b] ? a : b);
       totals[winner].wins++;
       return winner;
     };
@@ -138,6 +145,7 @@ export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 
         ? forced.groupOrder[gi].map((s) => atSlot[s])
         : [...wins.keys()].map((e) => [e, wins.get(e) + random() * 0.5]).sort((p, q) => q[1] - p[1]).map(([e]) => e);
       if (order.length) totals[order[0]].groupWin++;
+      order.forEach((e, i) => (totals[e].groupRank += i + 1));
       return order;
     });
 
@@ -203,6 +211,15 @@ export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 
       for (const [e, l] of deepest) progress[e] += top - l;
       if (winner !== null) progress[winner]++;
     }
+    // Anyone left unplaced (e.g. withdrawn, with a walkover for their opponent) shares the places
+    // left over
+    if (placed.length && place.size && place.size < n) {
+      const taken = new Set();
+      for (const p of place.values()) for (let k = Math.ceil(p - 0.5); k <= Math.floor(p + 0.5); k++) taken.add(k);
+      const free = [...Array(n).keys()].map((k) => k + 1).filter((k) => !taken.has(k));
+      const share = free.length ? free.reduce((a, b) => a + b, 0) / free.length : n;
+      for (let e = 0; e < n; e++) if (!place.has(e)) place.set(e, share);
+    }
     if (placed.length && place.size === n) {
       for (const [e, p] of place) placements[e] += p;
       placedRuns++;
@@ -213,6 +230,8 @@ export function simulate(event, ratings, { runs = 20000, redraw = false, seed = 
     groupWin: t.groupWin / runs,
     knockout: t.knockout / runs,
     win: t.win / runs,
+    // Expected place in the group (with `forced`: the actual one); null outside groups
+    groupRank: event.groups.length ? t.groupRank / runs || null : null,
     progress: main ? progress[e] / runs + (event.groups.length ? t.knockout / runs : 0) : t.wins / runs,
     // Expected placement, when every entry is placed (null otherwise)
     place: placed.length && placedRuns === runs ? placements[e] / runs : null,
