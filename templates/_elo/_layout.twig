@@ -7,8 +7,8 @@
   <div class="base-container px-4 pt-6">
     <form role="search" class="relative max-w-md ml-auto"
           data-controller="elo-search" data-elo-search-url-value="{{ url('elo/search') }}" data-action="submit->elo-search#submit">
-      <label for="elo-search" class="sr-only">Search players, clubs and Eliteserien</label>
-      <input id="elo-search" type="search" autocomplete="off" placeholder="Search players, clubs and Eliteserien"
+      <label for="elo-search" class="sr-only">Search players, clubs, tournaments and Eliteserien</label>
+      <input id="elo-search" type="search" autocomplete="off" placeholder="Search players, clubs, tournaments and Eliteserien"
              role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="elo-search-list"
              data-elo-search-target="input"
              data-action="input->elo-search#search keydown->elo-search#key blur->elo-search#close"

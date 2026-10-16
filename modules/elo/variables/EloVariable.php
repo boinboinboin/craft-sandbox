@@ -84,4 +84,14 @@ class EloVariable
     {
         return Module::getInstance()->elo->getUpsetWeeks();
     }
+
+    public function tournaments(): array
+    {
+        return Module::getInstance()->elo->getTournaments();
+    }
+
+    public function tournament(int $cup2000Id): ?array
+    {
+        return Module::getInstance()->elo->getTournament($cup2000Id);
+    }
 }

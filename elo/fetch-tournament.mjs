@@ -25,13 +25,13 @@ async function get(url, attempt = 1) {
 }
 
 // Returns null for tournaments that don't exist (empty body).
-async function service(id, params = {}) {
+export async function service(id, params = {}) {
   const body = await get(`${SERVICE}?${new URLSearchParams({ tournamentid: id, ...params })}`);
   return body ? JSON.parse(body) : null;
 }
 
 const ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
-const unescape = (s) =>
+export const unescape = (s) =>
   s
     .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n))
     .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
@@ -41,7 +41,7 @@ const stripTags = (s) => unescape(s.replace(/<[^>]*>/g, "")).trim();
 const oneLine = (s) => s.replace(/\s+/g, " ").trim();
 
 // "Name, Club" -> { name, club }
-function parsePlayer(s) {
+export function parsePlayer(s) {
   const str = unescape(s);
   const i = str.lastIndexOf(", ");
   return i === -1 ? { name: str, club: null } : { name: str.slice(0, i), club: str.slice(i + 2) };

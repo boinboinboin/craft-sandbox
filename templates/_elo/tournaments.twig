@@ -1,0 +1,46 @@
+{% extends "_elo/_layout.twig" %}
+
+{# Tournaments with a published draw and draw luck (elo/data/upcoming.json, from elo/upcoming.mjs) #}
+
+{% set tournaments = craft.elo.tournaments() %}
+{% set today = now|date('Y-m-d') %}
+{% set upcoming = tournaments|filter(t => (t.endDate ?? today) >= today)|sort((a, b) => a.startDate <=> b.startDate) %}
+{% set past = tournaments|filter(t => (t.endDate ?? today) < today) %}
+
+{% macro row(t) %}
+  <li class="bg-white p-4 md:p-5 flex flex-wrap items-baseline justify-between gap-3">
+    <div>
+      <a href="{{ url('elo/tournaments/' ~ t.cup2000Id) }}" class="text-xl hover:text-blue-600">{{ t.name }}</a>
+      <span class="block text-sm text-gray-600">{{ t.events }} events · {{ t.entries }} entries</span>
+    </div>
+    {% if t.startDate %}<span class="text-gray-700 tabular-nums">{{ t.startDate|date('j') }}{{ t.endDate and t.endDate != t.startDate ? '–' ~ t.endDate|date('j M Y') : ' ' ~ t.startDate|date('M Y') }}</span>{% endif %}
+  </li>
+{% endmacro %}
+
+{% block content %}
+  {% import _self as m %}
+  <section class="base-section">
+    <div class="base-container px-4">
+      <a href="{{ url('elo') }}" class="text-gray-600 hover:text-black">&larr; Rankings</a>
+      <h1 class="h1 mt-4">Tournament draws</h1>
+      <p class="text-2xl max-w-3xl">Who got a lucky or unlucky draw in upcoming tournaments, from the players' ratings.</p>
+      <p class="max-w-3xl mt-4 text-gray-700">
+        Draws are from Cup2000 and the players from the entry lists on badmintonportalen, as soon as the draw is published.
+      </p>
+    </div>
+  </section>
+  <section class="base-section">
+    <div class="base-container px-4">
+      <h2 class="text-3xl mb-4">Upcoming</h2>
+      {% if upcoming is not empty %}
+        <ul class="grid gap-3">{% for t in upcoming %}{{ m.row(t) }}{% endfor %}</ul>
+      {% else %}
+        <p class="text-gray-600">No upcoming tournaments with a published draw.</p>
+      {% endif %}
+      {% if past is not empty %}
+        <h2 class="text-3xl mt-10 mb-4">Played</h2>
+        <ul class="grid gap-3">{% for t in past %}{{ m.row(t) }}{% endfor %}</ul>
+      {% endif %}
+    </div>
+  </section>
+{% endblock %}

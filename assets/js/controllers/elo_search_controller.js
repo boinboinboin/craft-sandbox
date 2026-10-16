@@ -1,10 +1,10 @@
 import { Controller } from '@hotwired/stimulus'
 
 // The search bar on every Elo page (an ARIA combobox): typing searches `url` (?q=<text>, which
-// returns { players, clubs, eliteserien }, each [{ name, detail?, club?, url, logo? }]) and lists
+// returns { players, clubs, tournaments, eliteserien }, each [{ name, detail?, club?, url, logo? }]) and lists
 // the results in groups. Choosing one (click, or arrow keys and Enter) opens its page; Enter
 // without moving opens the first result. Escape closes the list.
-const GROUPS = { players: 'Players', clubs: 'Clubs', eliteserien: 'Eliteserien' }
+const GROUPS = { players: 'Players', clubs: 'Clubs', tournaments: 'Tournaments', eliteserien: 'Eliteserien' }
 
 export default class extends Controller {
   static targets = ['input', 'list']

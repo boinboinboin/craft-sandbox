@@ -17,6 +17,8 @@ return [
     'elo/search' => ['template' => '_elo/search.json'],
     'elo/head-to-head' => ['template' => '_elo/head-to-head'],
     'elo/upsets' => ['template' => '_elo/upsets'],
+    'elo/tournaments' => ['template' => '_elo/tournaments'],
+    'elo/tournaments/<tournamentId:\d+>' => ['template' => '_elo/tournament'],
     'elo/clubs' => ['template' => '_elo/clubs'],
     'elo/eliteserien' => ['template' => '_elo/eliteserien'],
     'elo/eliteserien/<season:\d{4}-\d{2}>' => ['template' => '_elo/eliteserien-review'],

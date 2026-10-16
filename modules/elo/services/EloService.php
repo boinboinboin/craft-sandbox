@@ -16,6 +16,7 @@ use yii\base\Component;
  * - elo/data/matches/<id>.json: one player's last matches and biggest wins and losses, per pool
  * - elo/data/eliteserien.json: Eliteserien team strengths (elo/eliteserien.mjs)
  * - elo/data/club-history/<NBF club id>.json: a club's strength and rank at the end of every week, per pool
+ * - elo/data/upcoming.json, elo/data/upcoming/<Cup2000 id>.json: upcoming tournaments' draws and draw luck (elo/upcoming.mjs)
  * - elo/data/upsets.json: each week's biggest upsets (matches won with the lowest win chance)
  * - elo/data/eliteserien-<season>.json: an Eliteserien season in review (elo/eliteserien-review.mjs)
  *
@@ -259,6 +260,32 @@ class EloService extends Component
     }
 
     /**
+     * Tournaments with a draw and draw luck (elo/upcoming.mjs), newest first: [{ cup2000Id,
+     * portalenId, name, startDate, endDate, events, entries }].
+     */
+    public function getTournaments(): array
+    {
+        return $this->read('upcoming.json')['tournaments'] ?? [];
+    }
+
+    /**
+     * One tournament's events with every entry's chances in the actual draw and in a fair redraw,
+     * and their draw luck (elo/upcoming.mjs); each event gets its `poolLabel`. Null if unknown.
+     */
+    public function getTournament(int $cup2000Id): ?array
+    {
+        $tournament = $this->read("upcoming/$cup2000Id.json");
+        if (!$tournament) {
+            return null;
+        }
+        foreach ($tournament['events'] as &$event) {
+            $event['poolLabel'] = self::POOLS[$event['pool']] ?? $event['pool'];
+        }
+
+        return $tournament;
+    }
+
+    /**
      * Each week's biggest upsets, newest week first: [{ week (Monday), matches: [{ day, pool,
      * poolLabel, event, winChance, winners, losers, score }] }], lowest win chance first. The newest
      * week is the current one if it has had matches, else the last week that did.
@@ -279,16 +306,16 @@ class EloService extends Component
 
     /**
      * The search bar on every Elo page: players (as searchPlayers), clubs (club entries by short or
-     * full name) and the Eliteserien pages (this season's team strengths and each season in
+     * full name), tournaments with a draw (elo/upcoming.mjs) and the Eliteserien pages (this season's team strengths and each season in
      * review), each with the URL to go to. Every word of $query must match.
      *
-     * @return array{players: array, clubs: array, eliteserien: array}
+     * @return array{players: array, clubs: array, tournaments: array, eliteserien: array}
      */
     public function search(string $query): array
     {
         $words = preg_split('/\s+/', $this->normalize($query), -1, PREG_SPLIT_NO_EMPTY);
         if (!$words) {
-            return ['players' => [], 'clubs' => [], 'eliteserien' => []];
+            return ['players' => [], 'clubs' => [], 'tournaments' => [], 'eliteserien' => []];
         }
         $matches = function(string $text) use ($words): bool {
             $text = $this->normalize($text);
@@ -331,9 +358,21 @@ class EloService extends Component
         }
         $eliteserien = array_values(array_filter($pages, fn(array $page) => $matches("eliteserie {$page['name']} {$page['terms']}")));
 
+        $tournaments = [];
+        foreach ($this->getTournaments() as $t) {
+            if ($matches("{$t['name']} turnering tournament draw") && count($tournaments) < 6) {
+                $tournaments[] = [
+                    'name' => $t['name'],
+                    'detail' => ($t['startDate'] ? date('j M Y', strtotime($t['startDate'])) . ' · ' : '') . 'Draw luck',
+                    'url' => UrlHelper::siteUrl("elo/tournaments/{$t['cup2000Id']}"),
+                ];
+            }
+        }
+
         return [
             'players' => $players,
             'clubs' => $clubs,
+            'tournaments' => $tournaments,
             'eliteserien' => array_map(fn(array $page) => array_diff_key($page, ['terms' => true]), $eliteserien),
         ];
     }
