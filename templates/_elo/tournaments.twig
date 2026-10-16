@@ -12,7 +12,9 @@
   <li class="bg-white p-4 md:p-5 flex flex-wrap items-baseline justify-between gap-3">
     <div>
       <a href="{{ url('elo/tournaments/' ~ t.cup2000Id) }}" class="text-xl hover:text-blue-600">{{ t.name }}</a>
+      {% if t.cancelled ?? null %}<span class="ml-2 align-middle text-xs px-1.5 py-0.5 border border-red-700 text-red-700 rounded" title="{{ t.cancelled }}">Not played</span>{% endif %}
       <span class="block text-sm text-gray-600">
+        {%- if t.cancelled ?? null %}{{ t.cancelled }} · {% endif %}
         {{ t.events }} events · {{ t.entries }} entries
         {%- if (t.evaluation.winners ?? 0) > 0 %} · favourite won {{ t.evaluation.favouritesWon }} of {{ t.evaluation.winners }} ({{ t.evaluation.favouritesExpected|number_format(1) }} expected){% endif %}
       </span>

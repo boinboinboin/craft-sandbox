@@ -57,6 +57,9 @@
         <a href="https://www.cup2000.dk/turnerings-system/Vis-turneringer/?tournamentid={{ t.cup2000Id }}" class="underline hover:text-blue-600" rel="noopener">Draw and results on Cup2000</a>
         {% if t.portalenId %}<span class="text-gray-600">badmintonportalen tournament {{ t.portalenId }}</span>{% endif %}
       </p>
+      {% if t.cancelled ?? null %}
+        <p class="mt-4 inline-block px-3 py-2 border border-red-700 text-red-700"><strong class="font-semibold">Not played.</strong> {{ t.cancelled }}. The draw and its luck are as they were published.</p>
+      {% endif %}
       {# Two views: the event tables (default) and the tournament's summary #}
       <nav class="flex gap-2 mt-6" aria-label="Views">
         {% for key, label in { events: 'Events', summary: 'Summary' } %}

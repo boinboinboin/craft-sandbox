@@ -51,6 +51,11 @@ const EVENTS = {
 };
 const HEADING = Object.fromEntries(Object.values(EVENTS).map((e) => [e.discipline, e.heading]));
 const SINGLES = new Set(["men", "women"]);
+// Tournaments that were drawn but not played, by badmintonportalen id, with why. A tournament
+// whose name says "AVLYST" (cancelled) counts too.
+const CANCELLED = {
+  7093: "Cancelled at the last minute, in mourning for the King",
+};
 
 const normalize = (s) =>
   s.toLowerCase().replace(/æ/g, "ae").replace(/ø/g, "o").replace(/å/g, "a").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
@@ -488,10 +493,13 @@ function analyse({ cupId, portalenId, fetchedAt, info, draws }) {
       unknownPlaceholders: parsed.unknownPlaceholders,
     });
   }
+  const name = info.name ?? draws[0]?.title ?? `Cup2000 ${cupId}`;
   return {
     cup2000Id: cupId,
     portalenId,
-    name: info.name ?? draws[0]?.title ?? `Cup2000 ${cupId}`,
+    name,
+    // Not played: the draw stands, without results
+    cancelled: CANCELLED[portalenId] ?? (/avlyst/i.test(name) ? "Cancelled" : null),
     startDate: info.startDate,
     endDate: info.endDate,
     fetchedAt,
